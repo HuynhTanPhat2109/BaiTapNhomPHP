@@ -13,7 +13,6 @@
                 <a class="btn btn--outline" href="<?= e(url('/login')) ?>">Đăng nhập</a>
             <?php endif; ?>
         </div>
-        <div class="hero-caption"><span>Không chỉ là một trận đấu.</span><span>Là thời gian dành cho đam mê.</span></div>
     </div>
     <div class="hero-bottom container"><span>RA SÂN. KẾT NỐI. BỨT PHÁ.</span><a href="#about" aria-label="Khám phá STRYKE">Khám phá <span aria-hidden="true">↓</span></a></div>
 </section>

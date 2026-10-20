@@ -4,6 +4,8 @@
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const menu = document.getElementById('nav-menu');
   const toggle = document.getElementById('nav-toggle');
+  const accountMenu = document.getElementById('account-menu');
+  const accountTrigger = accountMenu?.querySelector('summary');
   if (menu && toggle) {
     document.documentElement.classList.add('nav-enhanced');
     toggle.hidden = false;
@@ -11,6 +13,7 @@
       menu.classList.remove('is-open');
       toggle.setAttribute('aria-expanded', 'false');
       toggle.setAttribute('aria-label', 'Mở menu');
+      if (accountMenu) accountMenu.open = false;
     };
     toggle.addEventListener('click', () => {
       const opened = menu.classList.toggle('is-open');
@@ -21,9 +24,20 @@
       if (!menu.contains(event.target) && !toggle.contains(event.target)) closeMenu();
     });
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && menu.classList.contains('is-open')) {
+      if (event.key === 'Escape' && menu.classList.contains('is-open') && !accountMenu?.open) {
         closeMenu();
         toggle.focus();
+      }
+    });
+  }
+  if (accountMenu && accountTrigger) {
+    document.addEventListener('click', event => {
+      if (!accountMenu.contains(event.target)) accountMenu.open = false;
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && accountMenu.open) {
+        accountMenu.open = false;
+        accountTrigger.focus();
       }
     });
   }
@@ -43,6 +57,8 @@
       button.setAttribute('aria-pressed', String(showing));
     });
   });
+  const invalidAccountField = document.querySelector('.account-page [aria-invalid="true"]');
+  if (invalidAccountField) invalidAccountField.focus({ preventScroll: false });
   const shell = document.querySelector('[data-auth-shell]');
   if (!shell) return;
   // Place keyboard focus at the first relevant feedback after a server response.

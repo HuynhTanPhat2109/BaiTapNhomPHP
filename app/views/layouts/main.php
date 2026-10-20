@@ -1,4 +1,8 @@
-<?php $isAuthPage = ($bodyClass ?? '') === 'page-auth'; ?>
+<?php
+$isAuthPage = ($bodyClass ?? '') === 'page-auth';
+$navAuthenticated = Core\Session::accountId() !== null;
+$navUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'] : 'Tài khoản';
+?>
 <!doctype html>
 <html lang="vi">
 <head>
@@ -23,12 +27,22 @@
             <a href="<?= e(url('/')) ?>">Trang chủ</a>
             <a href="<?= e(url('/') . '#about') ?>">Về STRYKE</a>
             <span class="nav-divider" aria-hidden="true"></span>
-            <?php if (isset($_SESSION['account_id'])): ?>
-                <a href="<?= e(url('/account')) ?>">Tài khoản</a>
-                <form method="post" action="<?= e(url('/logout')) ?>">
-                    <?= csrf_field() ?>
-                    <button class="btn btn--outline btn--small" type="submit">Đăng xuất <span aria-hidden="true">↗</span></button>
-                </form>
+            <?php if ($navAuthenticated): ?>
+                <details class="account-menu" id="account-menu">
+                    <summary class="account-menu__trigger">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.4-3.7 2.9-5.5 7-5.5s6.6 1.8 7 5.5"/></svg>
+                        <span class="account-menu__name" title="<?= e($navUsername) ?>"><?= e($navUsername) ?></span>
+                        <svg class="account-menu__chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3 6 5 5 5-5"/></svg>
+                    </summary>
+                    <div class="account-menu__panel">
+                        <a href="<?= e(url('/account')) ?>">Thông tin cá nhân</a>
+                        <a href="<?= e(url('/account/settings')) ?>">Cài đặt tài khoản</a>
+                        <form method="post" action="<?= e(url('/logout')) ?>">
+                            <?= csrf_field() ?>
+                            <button type="submit">Đăng xuất</button>
+                        </form>
+                    </div>
+                </details>
             <?php else: ?>
                 <a href="<?= e(url('/login')) ?>" <?= $isAuthPage ? 'data-auth-link' : '' ?>>Đăng nhập</a>
                 <a class="btn btn--primary btn--small" href="<?= e(url('/register')) ?>" <?= $isAuthPage ? 'data-auth-link' : '' ?>>Đăng ký <span aria-hidden="true">↗</span></a>

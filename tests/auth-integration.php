@@ -98,11 +98,70 @@ try {
     $injection = requestIntegration('/login', ['_token' => $token, 'username' => "' OR 1=1 --", 'password' => 'Wrong1!x']);
     verifyIntegration($injection['status'] === 422, 'SQL injection cannot log in');
     verifyIntegration(requestIntegration('/account')['status'] === 303, 'failed attempts not authenticated');
+    verifyIntegration(requestIntegration('/account/settings')['status'] === 303, 'settings requires login');
     verifyIntegration(requestIntegration('/login', ['_token' => $token, 'username' => $username, 'password' => $password])['status'] === 303, 'login success');
     verifyIntegration($before !== integrationSessionId(), 'session ID rotated');
     $accountPage = requestIntegration('/account');
     verifyIntegration($accountPage['status'] === 200 && strpos($accountPage['body'], '&lt;svg onload=alert(1)&gt;') !== false
         && strpos($accountPage['body'], '<svg onload=alert(1)>') === false, 'stored XSS escaped');
+    verifyIntegration(strpos($accountPage['body'], 'class="account-menu__name" title="' . $username . '">' . $username . '</span>') !== false,
+        'navbar displays escaped login name');
+    $settingsPage = requestIntegration('/account/settings');
+    verifyIntegration($settingsPage['status'] === 200 && strpos($settingsPage['body'], 'id="settings-title"') !== false
+        && strpos($accountPage['body'], 'id="settings-title"') === false,
+        'settings and personal information are separate pages');
+    $profileToken = integrationToken($accountPage);
+    $profile = ['name' => "O'Neil <img src=x onerror=alert(1)>", 'phone' => '0987654321', 'email' => $email,
+        'birth_date' => '2000-02-29', 'gender' => 'NU'];
+    verifyIntegration(requestIntegration('/account', $profile)['status'] === 403, 'profile update requires CSRF');
+    $badProfile = $profile; $badProfile['phone'] = '1987654321';
+    $response = requestIntegration('/account', ['_token' => $profileToken] + $badProfile);
+    verifyIntegration($response['status'] === 422 && strpos($response['body'], 'id="phone-error"') !== false,
+        'profile phone validated');
+    $badProfile = $profile; $badProfile['birth_date'] = '2025-02-30';
+    verifyIntegration(requestIntegration('/account', ['_token' => $profileToken] + $badProfile)['status'] === 422,
+        'invalid profile date rejected');
+    verifyIntegration(requestIntegration('/account', ['_token' => $profileToken] + $profile)['status'] === 303,
+        'customer profile updated');
+    $stmt = $pdo->prepare('SELECT ho_ten, so_dien_thoai, email, ngay_sinh, gioi_tinh FROM khach_hang WHERE ma_tai_khoan = :id');
+    $stmt->execute(['id' => $id]);
+    $savedProfile = $stmt->fetch();
+    verifyIntegration($savedProfile['ho_ten'] === $profile['name'] && $savedProfile['so_dien_thoai'] === $profile['phone']
+        && $savedProfile['email'] === $email && $savedProfile['ngay_sinh'] === $profile['birth_date']
+        && $savedProfile['gioi_tinh'] === $profile['gender'], 'profile fields persisted on own customer row');
+    $accountPage = requestIntegration('/account');
+    verifyIntegration(strpos($accountPage['body'], 'value="0987654321"') !== false
+        && strpos($accountPage['body'], '&lt;img src=x onerror=alert(1)&gt;') !== false
+        && strpos($accountPage['body'], '<img src=x onerror=alert(1)>') === false, 'updated profile escaped when rendered');
+    $profileToken = integrationToken($accountPage);
+    $newPassword = 'NewSecret1!';
+    $passwordFields = ['current_password' => $password, 'new_password' => $newPassword,
+        'new_password_confirmation' => $newPassword];
+    verifyIntegration(requestIntegration('/account/password', $passwordFields)['status'] === 403,
+        'password change requires CSRF');
+    $badPassword = $passwordFields; $badPassword['current_password'] = 'Wrong1!x';
+    $response = requestIntegration('/account/password', ['_token' => $profileToken] + $badPassword);
+    verifyIntegration($response['status'] === 422 && strpos($response['body'], 'id="current_password-error"') !== false,
+        'current password checked');
+    verifyIntegration(strpos($response['body'], 'id="settings-title"') !== false, 'password errors stay on settings page');
+    $badPassword = $passwordFields; $badPassword['new_password'] = 'short';
+    verifyIntegration(requestIntegration('/account/password', ['_token' => $profileToken] + $badPassword)['status'] === 422,
+        'new password policy checked');
+    $sessionBeforePassword = integrationSessionId();
+    $passwordChange = requestIntegration('/account/password', ['_token' => $profileToken] + $passwordFields);
+    verifyIntegration($passwordChange['status'] === 303
+        && strpos($passwordChange['headers'], 'route=%2Faccount%2Fsettings') !== false,
+        'password changed and redirects to settings');
+    verifyIntegration($sessionBeforePassword !== integrationSessionId(), 'password change rotates session ID');
+    verifyIntegration(requestIntegration('/account/password', ['_token' => $profileToken] + $passwordFields)['status'] === 403,
+        'password change invalidates previous CSRF token');
+    $stmt = $pdo->prepare('SELECT mat_khau FROM tai_khoan WHERE ma_tai_khoan = :id');
+    $stmt->execute(['id' => $id]);
+    $changedHash = $stmt->fetchColumn();
+    verifyIntegration(password_verify($newPassword, $changedHash) && !password_verify($password, $changedHash),
+        'new password hash stored, old password rejected');
+    $password = $newPassword;
+    $accountPage = requestIntegration('/account');
     verifyIntegration(requestIntegration('/customer')['status'] === 200, 'correct role allowed');
     verifyIntegration(requestIntegration('/admin')['status'] === 403, 'wrong role denied');
     verifyIntegration(requestIntegration('/not-a-route')['status'] === 404, '404 page');
@@ -125,6 +184,9 @@ try {
     $token = integrationToken(requestIntegration('/login'));
     requestIntegration('/login', ['_token' => $token, 'username' => $username, 'password' => $password]);
     verifyIntegration(requestIntegration('/admin')['status'] === 200, 'admin role resolved without hardcoded ID');
+    $adminAccount = requestIntegration('/account');
+    verifyIntegration(requestIntegration('/account', ['_token' => integrationToken($adminAccount)] + $profile)['status'] === 403,
+        'non-customer role cannot update customer profile');
     $roleStmt->execute(['code' => 'QUAN_LY_CO_SO']);
     updateFixture('ma_vai_tro', (int) $roleStmt->fetchColumn());
     verifyIntegration(requestIntegration('/account')['status'] === 303, 'role without required employee profile denied');

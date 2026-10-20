@@ -1,12 +1,17 @@
 <?php
 
 use App\Controllers\HomeController;
+use App\Controllers\AccountController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\RoleMiddleware;
 
 $home = new HomeController($app);
+$account = new AccountController($app);
 $router->get('/', [$home, 'index']);
-$router->get('/account', [$home, 'account'], [new AuthMiddleware($app)]);
+$router->get('/account', [$account, 'show'], [new AuthMiddleware($app)]);
+$router->get('/account/settings', [$account, 'settings'], [new AuthMiddleware($app)]);
+$router->post('/account', [$account, 'updateProfile'], [new RoleMiddleware($app, ['KHACH_HANG'])]);
+$router->post('/account/password', [$account, 'changePassword'], [new AuthMiddleware($app)]);
 
 // Auth-only landing pages, not implementations of business modules.
 $areas = [

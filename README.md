@@ -66,7 +66,7 @@ PDO MySQL, Composer và Apache. Không dùng framework, không thêm dependency.
   không đưa lại vào view/log. Backend kiểm tra độ dài theo ký tự, không theo byte.
   Đăng nhập vẫn xác minh hash hiện có, không áp quy tắc tạo mới lên tài khoản cũ.
   Dùng `password_hash(PASSWORD_DEFAULT)` và `password_verify`.
-- Session lưu ID tài khoản và mốc thời gian (không lưu mật khẩu/vai trò để cấp quyền); đăng nhập thành công đổi session ID và xóa
+- Session lưu ID tài khoản, tên đăng nhập để hiển thị navbar và mốc thời gian (không lưu mật khẩu/vai trò để cấp quyền); đăng nhập thành công đổi session ID và xóa
   trạng thái session cũ, tạo CSRF mới khi render form tiếp theo.
 - Backend hết phiên sau 30 phút không hoạt động hoặc 8 giờ kể từ đăng nhập.
   Khi khóa tài khoản/hồ sơ, session và token cũ bị thu hồi ở request tiếp theo.
@@ -77,6 +77,13 @@ PDO MySQL, Composer và Apache. Không dùng framework, không thêm dependency.
   Quản trị tập đoàn không bắt buộc hồ sơ nhân viên.
 - Session cookie có HttpOnly, SameSite=Lax, Secure khi chạy HTTPS.
   Đăng xuất chỉ POST+CSRF, xóa dữ liệu, cookie và hủy session.
+- GET `/account` hiển thị hồ sơ; khách hàng cập nhật họ tên, điện thoại, email,
+  ngày sinh và giới tính bằng POST `/account` (chỉ vai trò `KHACH_HANG`).
+  Tên đăng nhập, vai trò và ngày tạo chỉ đọc. Email vẫn có thể trùng theo schema.
+- Mục Cài đặt trong dropdown dẫn đến trang riêng `/account/settings`. POST
+  `/account/password` đổi mật khẩu sau khi xác minh mật khẩu hiện tại, áp cùng
+  chính sách mật khẩu mới, đổi session ID và CSRF token. Mọi vai trò đã đăng nhập
+  dùng được; form không điền lại mật khẩu sau lỗi.
 - Đăng nhập có giới hạn 20 lần thử/10 phút cho mỗi IP, tính cả lần thành công,
   lưu bộ đếm không chứa thông tin đăng nhập tại `storage/temp/login-throttle/`.
   `flock` bảo đảm tăng bộ đếm nguyên tử; tạo session mới không vượt qua được giới hạn.
@@ -108,6 +115,7 @@ tài nguyên, không tin ID phạm vi do client gửi.
 - Các test giả lập không thay thế kiểm thử tích hợp MySQL và đăng nhập trình duyệt.
 - `php tests/auth-integration.php --run`: chạy luồng HTTP thật với DB đang cấu hình,
   tạo một tài khoản tên ngẫu nhiên `pr2_...`, kiểm tra đăng ký/login/logout/role/CSRF,
+  cập nhật hồ sơ, đổi mật khẩu và session,
   khóa và thay vai trò CHỈ tài khoản này, cuối cùng xóa tài khoản và hồ sơ fixture.
   Không import hoặc sửa schema. Có thể đặt `AUTH_TEST_URL` nếu URL khác mặc định.
   Chạy trên DB phát triển; nếu kiểm thử bị dừng đột ngột, kiểm tra fixture còn lại.
@@ -127,6 +135,12 @@ Checklist thủ công sau khi chuẩn bị database:
 - [ ] Mật khẩu không được điền lại sau lỗi; input chứa HTML được escape.
 - [ ] Sai username/password hoặc tài khoản khóa dùng cùng thông báo thất bại.
 - [ ] Login đúng đổi session ID; cookie có HttpOnly và SameSite.
+- [ ] Navbar hiện tên đăng nhập, dropdown mở/đóng bằng click, click ra ngoài hoặc Esc;
+      nút và form dùng được ở màn hình điện thoại.
+- [ ] Khách sửa hồ sơ và xem lại giá trị đã lưu; số điện thoại phải bắt đầu bằng 0,
+      ngày sinh không ở tương lai; nhân viên không được POST sửa hồ sơ khách.
+- [ ] Cài đặt đổi mật khẩu: sai mật khẩu hiện tại bị từ chối; thành công đổi
+      session ID và token CSRF, mật khẩu cũ không còn đăng nhập được.
 - [ ] Khách vào customer được; vào admin/company/facility/staff trả 403.
 - [ ] Với tài khoản từng vai trò được chuẩn bị riêng, đúng khu vực trả 200,
       sai khu vực trả 403; thiếu hồ sơ/phạm vi hợp lệ không đăng nhập được.
