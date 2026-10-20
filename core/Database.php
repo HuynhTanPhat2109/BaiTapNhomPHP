@@ -1,5 +1,9 @@
 <?php
 
+namespace Core;
+
+use PDO;
+
 class Database
 {
     private PDO $connection;
@@ -13,13 +17,15 @@ class Database
         $this->connection = new PDO(
             $dsn,
             $config['username'],
-            $config['password']
+            $config['password'],
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]
         );
 
-        $this->connection->setAttribute(
-            PDO::ATTR_ERRMODE,
-            PDO::ERRMODE_EXCEPTION
-        );
+        $this->connection->exec("SET time_zone = '+07:00'");
     }
 
     public function getConnection(): PDO
@@ -27,4 +33,3 @@ class Database
         return $this->connection;
     }
 }
-?>
