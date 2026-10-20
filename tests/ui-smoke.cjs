@@ -76,6 +76,7 @@ fs.mkdirSync(output, { recursive: true });
     // or a test endpoint in the application.
     const fixtures = [
       ['account', 'auth/account', "['title'=>'Tài khoản','user'=>['ten_vai_tro'=>'KHACH_HANG','ten_dang_nhap'=>'sample.user','ten_khach_hang'=>'Người dùng kiểm thử']]"],
+      ['settings', 'auth/settings', "['title'=>'Cài đặt tài khoản','user'=>['ten_dang_nhap'=>'sample.user']]"],
       ['role', 'auth/role', "['title'=>'Khách hàng','user'=>['ten_dang_nhap'=>'sample.user']]"],
       ['403', 'errors/error', "['title'=>'403','message'=>'Bạn không có quyền truy cập trang này.']"],
       ['500', 'errors/error', "['title'=>'500','message'=>'Hệ thống tạm thời không khả dụng. Vui lòng thử lại sau.']"],
@@ -99,7 +100,38 @@ fs.mkdirSync(output, { recursive: true });
       }
       await fixturePage.unroute('**/ui-fixture');
     }
+    const signedInCode = `require 'vendor/autoload.php'; $_ENV['APP_BASE_PATH'] = '/BaiTapNhomPHP/public'; $_SESSION = ['account_id'=>1,'authenticated_at'=>time(),'last_active_at'=>time(),'username'=>'sample.user']; Core\\View::render('auth/account', ['title'=>'Tài khoản','user'=>['ten_vai_tro'=>'KHACH_HANG','ten_dang_nhap'=>'sample.user','ten_khach_hang'=>'Người dùng kiểm thử','so_dien_thoai_khach'=>'0901234567','email_khach'=>'sample@example.test','ngay_sinh_khach'=>'2000-01-01','gioi_tinh_khach'=>'NU']]);`;
+    const signedInHtml = execFileSync('php', ['-r', signedInCode], { encoding: 'utf8' });
+    await fixturePage.route('**/ui-fixture', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: signedInHtml }));
+    for (const width of [375, 768, 1440]) {
+      await fixturePage.setViewportSize({ width, height: 960 });
+      await fixturePage.goto(`${base}/ui-fixture`);
+      if (width <= 800) await fixturePage.locator('#nav-toggle').click();
+      const trigger = fixturePage.locator('.account-menu__trigger');
+      assert.equal((await trigger.innerText()).includes('sample.user'), true, 'navbar username');
+      const avatarBox = await fixturePage.locator('.account-identity .profile-avatar').boundingBox();
+      const infoBox = await fixturePage.locator('.account-identity__info').boundingBox();
+      assert.equal(infoBox.x > avatarBox.x + avatarBox.width, true, 'avatar and name are horizontal');
+      assert.equal(Math.abs((avatarBox.y + avatarBox.height / 2) - (infoBox.y + infoBox.height / 2)) < 3,
+        true, 'avatar and name are vertically centered');
+      assert.equal(await fixturePage.locator('.account-identity').innerText().then(text => text.includes('@sample.user')), false,
+        'identity header has no username');
+      await trigger.click();
+      assert.equal(await fixturePage.locator('#account-menu').getAttribute('open'), '', 'dropdown opens');
+      assert.equal(await fixturePage.locator('.account-menu__chevron').evaluate(el => getComputedStyle(el).transform), 'none', 'chevron does not rotate');
+      assert.equal(await fixturePage.locator('.account-menu__panel a').count(), 2, 'profile and settings links');
+      assert.equal((await fixturePage.locator('.account-menu__panel a').nth(1).getAttribute('href')).includes('account%2Fsettings'), true,
+        'settings menu opens separate route');
+      await fixturePage.screenshot({ path: path.join(output, `${width}-account-dropdown.png`), fullPage: true });
+      assert.equal(await fixturePage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${width} dropdown overflow`);
+      await fixturePage.keyboard.press('Escape');
+      assert.equal(await fixturePage.locator('#account-menu').getAttribute('open'), null, 'Escape closes dropdown');
+      await trigger.click();
+      await fixturePage.locator('.account-page__intro h1').click();
+      assert.equal(await fixturePage.locator('#account-menu').getAttribute('open'), null, 'outside click closes dropdown');
+    }
+    await fixturePage.unroute('**/ui-fixture');
     assert.deepEqual(errors, []);
-    console.log('PASS: 375/768/1440 layouts including account/role/error fixtures, auth navigation, password toggle, validation, CSRF, no JS, reduced motion, missing-image fallback.');
+    console.log('PASS: 375/768/1440 layouts, signed-in dropdown, account/profile, auth navigation, password toggle, validation, CSRF, no JS, reduced motion, missing-image fallback.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

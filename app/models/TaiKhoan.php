@@ -23,8 +23,10 @@ class TaiKhoan
     public function identity(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT tk.ma_tai_khoan, tk.ten_dang_nhap, tk.trang_thai, vt.ten_vai_tro,
-                kh.ma_khach_hang, kh.ho_ten AS ten_khach_hang, kh.trang_thai AS trang_thai_khach,
+            'SELECT tk.ma_tai_khoan, tk.ten_dang_nhap, tk.trang_thai, tk.ngay_tao AS ngay_tao_tai_khoan, vt.ten_vai_tro,
+                kh.ma_khach_hang, kh.ho_ten AS ten_khach_hang, kh.so_dien_thoai AS so_dien_thoai_khach,
+                kh.email AS email_khach, kh.ngay_sinh AS ngay_sinh_khach, kh.gioi_tinh AS gioi_tinh_khach,
+                kh.ngay_tao AS ngay_tao_khach, kh.trang_thai AS trang_thai_khach,
                 nv.ma_nhan_vien, nv.ho_ten AS ten_nhan_vien, nv.trang_thai AS trang_thai_nhan_vien,
                 nv.ma_cong_ty, nv.ma_co_so, cs.ma_cong_ty AS cong_ty_cua_co_so,
                 ct.trang_thai AS trang_thai_cong_ty, cs.trang_thai AS trang_thai_co_so
@@ -48,5 +50,24 @@ class TaiKhoan
         );
         $stmt->execute(['username' => $username, 'hash' => $hash, 'role' => $roleId]);
         return (int) $this->pdo->lastInsertId();
+    }
+
+    public function passwordHash(int $accountId): ?string
+    {
+        $stmt = $this->pdo->prepare('SELECT mat_khau FROM tai_khoan WHERE ma_tai_khoan = :id AND trang_thai = :active');
+        $stmt->execute(['id' => $accountId, 'active' => 'HOAT_DONG']);
+        $hash = $stmt->fetchColumn();
+        return is_string($hash) ? $hash : null;
+    }
+
+    public function replacePassword(int $accountId, string $oldHash, string $newHash): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE tai_khoan SET mat_khau = :new_hash
+             WHERE ma_tai_khoan = :id AND BINARY mat_khau = BINARY :old_hash AND trang_thai = :active'
+        );
+        $stmt->execute(['new_hash' => $newHash, 'id' => $accountId,
+            'old_hash' => $oldHash, 'active' => 'HOAT_DONG']);
+        return $stmt->rowCount() === 1;
     }
 }

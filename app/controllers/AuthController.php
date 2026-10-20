@@ -59,7 +59,7 @@ final class AuthController extends Controller
             }
             try {
                 if ($this->app->auth()->attempt($username, $password)) {
-                    $this->redirect('/account');
+                    $this->redirect('/');
                 }
             } catch (\PDOException $e) {
                 $this->connectionError($e);
@@ -69,7 +69,7 @@ final class AuthController extends Controller
                 ], 503);
                 return;
             }
-            $loginError = 'Đăng nhập thất bại: Tài khoản hoặc mật khẩu bị sai';
+            $loginError = 'Tên đăng nhập hoặc mật khẩu không chính xác';
         }
         $this->render('auth/login', [
             'title' => 'Đăng nhập',

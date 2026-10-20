@@ -22,4 +22,17 @@ final class KhachHang
         );
         $stmt->execute(['account' => $accountId, 'name' => $name, 'phone' => $phone, 'email' => $email]);
     }
+
+    public function updateProfile(int $accountId, string $name, string $phone, ?string $email,
+        ?string $birthDate, ?string $gender): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE khach_hang SET ho_ten = :name, so_dien_thoai = :phone, email = :email,
+                ngay_sinh = :birth_date, gioi_tinh = :gender
+             WHERE ma_tai_khoan = :account AND trang_thai = :active'
+        );
+        $stmt->execute(['name' => $name, 'phone' => $phone, 'email' => $email,
+            'birth_date' => $birthDate, 'gender' => $gender,
+            'account' => $accountId, 'active' => 'HOAT_DONG']);
+    }
 }

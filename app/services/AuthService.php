@@ -31,6 +31,7 @@ final class AuthService
             return false;
         }
         Session::authenticate((int) $identity['ma_tai_khoan']);
+        $_SESSION['username'] = $identity['ten_dang_nhap'];
         return true;
     }
 
@@ -45,6 +46,7 @@ final class AuthService
             Session::forgetAuthentication();
             return null;
         }
+        $_SESSION['username'] = $identity['ten_dang_nhap'];
         return $identity;
     }
 
