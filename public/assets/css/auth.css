@@ -1,0 +1,99 @@
+/* Login/Register only. Replace ../images/auth-background.jpg with your own photo.
+   This image is independent of the homepage tennis-court.jpg. */
+.auth-standalone {
+    --auth-background: url('../images/auth-background.jpg');
+    --muted: #c1cec2;
+    background: #14241a;
+}
+.auth-standalone::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(110deg, #071b1266, #07170e80), var(--auth-background) center / cover no-repeat;
+    pointer-events: none;
+}
+.auth-standalone main {
+    width: 100%;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 30px 0;
+}
+.auth-home-link {
+    width: min(1200px, calc(100% - 80px));
+    margin: 0 auto 22px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 750;
+    font-size: 21px;
+    text-shadow: 0 1px 12px #0008;
+}
+.auth-home-link > span:first-child { margin-right: 10px; font-size: 18px; }
+.auth-home-label { margin-left: auto; font-size: 12px; font-weight: 500; }
+.auth-standalone .auth-page { width: min(1200px, calc(100% - 80px)); padding: 0; }
+.auth-standalone .auth-shell {
+    background: rgba(9, 25, 16, .30);
+
+    box-shadow:
+        0 18px 60px rgba(0, 0, 0, .16),
+        inset 0 1px 0 rgba(255, 255, 255, .07);
+
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+
+    min-height: 650px;
+}
+.auth-standalone .auth-visual { background: transparent; padding: 38px 44px 30px; }
+.auth-standalone .auth-visual__image,
+.auth-standalone .auth-visual::after { display: none; }
+.auth-standalone .auth-visual__copy { margin-block: auto; padding-block: 70px; }
+.auth-standalone .auth-visual__copy p { color: #e0e8df; }
+.auth-standalone .auth-panel {
+    background: rgba(3, 14, 8, .64);
+    padding: 40px 44px;
+}
+.auth-standalone .auth-shell--register .auth-panel { padding-block: 30px; }
+.auth-standalone .form-control {
+    background: #ffffff05;
+    border: 0;
+    border-bottom: 1px solid #ffffff55;
+    border-radius: 0;
+    padding-left: 2px;
+}
+.auth-standalone .form-control::placeholder { color: #b1c0b4; }
+.auth-standalone .form-control:focus {
+    background: #ffffff08;
+    border-bottom-color: var(--primary);
+    box-shadow: 0 1px 0 var(--primary);
+}
+.auth-standalone .form-control[aria-invalid='true'] { border-bottom-color: var(--danger); }
+.auth-standalone .form-control[aria-invalid='true']:focus { box-shadow: 0 1px 0 var(--danger); }
+.auth-standalone .form-control:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #14261b inset; }
+.auth-standalone .auth-tabs { border-color: #ffffff30; }
+.auth-standalone .pw-toggle:focus-visible { outline-offset: -5px; }
+.auth-standalone .form-control { min-height: 48px; }
+.auth-standalone .auth-page-note { color: #e1e9dd; text-shadow: 0 1px 8px #000; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .auth-standalone .auth-shell { background: #102219ed; }
+}
+@media (max-width: 1100px) {
+    .auth-standalone .auth-panel { padding-inline: 30px; }
+    .auth-standalone .auth-visual { padding-inline: 32px; }
+}
+@media (max-width: 800px) {
+    .auth-standalone main { justify-content: flex-start; padding-block: 22px; }
+    .auth-home-link, .auth-standalone .auth-page { width: calc(100% - 40px); }
+    .auth-standalone .auth-visual { min-height: 170px; padding: 26px 32px; }
+    .auth-standalone .auth-visual__copy { padding: 0; }
+    .auth-standalone .auth-panel { border-left: 0; border-top: 1px solid #ffffff25; padding: 30px; }
+}
+@media (max-width: 480px) {
+    .auth-home-link, .auth-standalone .auth-page { width: calc(100% - 28px); }
+    .auth-home-link { margin-bottom: 18px; font-size: 19px; }
+    .auth-standalone .auth-visual { min-height: 150px; padding: 22px; }
+    .auth-standalone .auth-panel, .auth-standalone .auth-shell--register .auth-panel { padding: 26px 22px; }
+    .auth-standalone .auth-shell { border-radius: 8px; }
+}

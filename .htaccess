@@ -1,0 +1,4 @@
+# For XAMPP installations under htdocs, expose only public/.
+RewriteEngine On
+RewriteRule ^$ public/ [R=302,L]
+RewriteRule !^public(?:/|$) - [F,L]
