@@ -2,16 +2,25 @@
 
 use App\Controllers\HomeController;
 use App\Controllers\AccountController;
+use App\Controllers\CompanyController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\RoleMiddleware;
 
 $home = new HomeController($app);
 $account = new AccountController($app);
+$company = new CompanyController($app);
 $router->get('/', [$home, 'index']);
 $router->get('/account', [$account, 'show'], [new AuthMiddleware($app)]);
 $router->get('/account/settings', [$account, 'settings'], [new AuthMiddleware($app)]);
 $router->post('/account', [$account, 'updateProfile'], [new RoleMiddleware($app, ['KHACH_HANG'])]);
 $router->post('/account/password', [$account, 'changePassword'], [new AuthMiddleware($app)]);
+
+$router->get('/admin/companies', [$company, 'index'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->get('/admin/companies/create', [$company, 'create'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->post('/admin/companies', [$company, 'store'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->get('/admin/companies/edit', [$company, 'edit'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->post('/admin/companies/update', [$company, 'update'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->post('/admin/companies/status', [$company, 'changeStatus'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
 
 // Auth-only landing pages, not implementations of business modules.
 $areas = [
