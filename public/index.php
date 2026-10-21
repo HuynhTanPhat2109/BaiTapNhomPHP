@@ -39,3 +39,4 @@ try {
             . '<h1>500</h1><p>Hệ thống tạm thời không khả dụng. Vui lòng thử lại sau.</p></html>';
     }
 }
+?>
