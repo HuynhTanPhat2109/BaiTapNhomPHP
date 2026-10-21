@@ -1,5 +1,6 @@
 <?php
 $isAuthPage = ($bodyClass ?? '') === 'page-auth';
+$isAdminArea = str_starts_with($template ?? '', 'admin/');
 $navAuthenticated = Core\Session::accountId() !== null;
 $navUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'] : 'Tài khoản';
 ?>
@@ -12,20 +13,30 @@ $navUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'] 
     <meta name="description" content="STRYKE — Hệ thống sân thể thao đa bộ môn tại Việt Nam, dành cho các môn thể thao có nhu cầu đặt sân.">
     <title><?= e($title ?? 'Quản lý sân thể thao') ?> — STRYKE</title>
     <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/app.css') ?>">
+    <?php if (($bodyClass ?? '') === 'page-catalog'): ?>
+        <link rel="stylesheet"
+              href="<?= e(base_path() . '/assets/css/catalog.css') ?>">
+    <?php endif; ?>
     <script src="<?= e(base_path() . '/assets/js/app.js') ?>" defer></script>
 </head>
 <body class="<?= e($bodyClass ?? '') ?>">
 <a class="skip-link" href="#main-content">Bỏ qua điều hướng</a>
 <header class="navbar">
     <nav class="container navbar__inner" aria-label="Điều hướng chính">
-        <a class="navbar__brand" href="<?= e(url('/')) ?>" aria-label="STRYKE — Trang chủ">
+        <a class="navbar__brand" href="<?= e(url($isAdminArea ? '/admin' : '/')) ?>" aria-label="STRYKE — Trang chủ">
             <svg class="brand-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true"><rect x="3" y="5" width="30" height="26" rx="1"/><path d="M18 5v26M3 11h7v14H3m30-14h-7v14h7"/><circle cx="18" cy="18" r="5"/></svg>
             <span>STRYKE<span class="brand-dot">.</span></span>
         </a>
         <button class="navbar__toggle" type="button" id="nav-toggle" aria-controls="nav-menu" aria-expanded="false" aria-label="Mở menu" hidden><span></span><span></span></button>
         <div class="navbar__links" id="nav-menu">
-            <a href="<?= e(url('/')) ?>">Trang chủ</a>
-            <a href="<?= e(url('/') . '#about') ?>">Về STRYKE</a>
+            <?php if ($isAdminArea): ?>
+                <a href="<?= e(url('/admin')) ?>">Tổng quan</a>
+                <a href="<?= e(url('/admin/bo-mon')) ?>">Bộ môn</a>
+                <a href="<?= e(url('/admin/loai-san')) ?>">Loại sân</a>
+            <?php else: ?>
+                <a href="<?= e(url('/')) ?>">Trang chủ</a>
+                <a href="<?= e(url('/') . '#about') ?>">Về STRYKE</a>
+            <?php endif; ?>
             <span class="nav-divider" aria-hidden="true"></span>
             <?php if ($navAuthenticated): ?>
                 <details class="account-menu" id="account-menu">

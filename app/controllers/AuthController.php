@@ -20,9 +20,23 @@ final class AuthController extends Controller
 
     private function guestOnly(): void
     {
-        if (isset($_SESSION['account_id']) && $this->app->auth()->user()) {
-            $this->redirect('/account');
+        if (isset($_SESSION['account_id']) && ($user = $this->app->auth()->user())) {
+            $this->redirect($this->roleHome($user['ten_vai_tro'] ?? null));
         }
+    }
+
+    private function roleHome($role): string
+    {
+        if (!is_string($role)) {
+            return '/account';
+        }
+        return [
+            'QUAN_TRI_TAP_DOAN' => '/admin',
+            'KHACH_HANG' => '/',
+            'QUAN_LY_CONG_TY' => '/company',
+            'QUAN_LY_CO_SO' => '/facility',
+            'NHAN_VIEN' => '/staff',
+        ][$role] ?? '/account';
     }
 
     public function loginForm(): void
@@ -59,7 +73,8 @@ final class AuthController extends Controller
             }
             try {
                 if ($this->app->auth()->attempt($username, $password)) {
-                    $this->redirect('/');
+                    $user = $this->app->auth()->user();
+                    $this->redirect($this->roleHome($user['ten_vai_tro'] ?? null));
                 }
             } catch (\PDOException $e) {
                 $this->connectionError($e);

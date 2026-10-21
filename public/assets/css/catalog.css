@@ -1,0 +1,34 @@
+/* Catalog styles stay within PR 1 pages. Shared STRYKE controls are reused. */
+.page-catalog .catalog-page { padding-block: 36px 64px; }
+.page-catalog .catalog-dashboard { gap: 18px; }
+.page-catalog .catalog-nav { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-bottom: 32px; font-size: 14px; }
+.page-catalog .catalog-nav a, .page-catalog .catalog-table a, .page-catalog .catalog-details a, .page-catalog .catalog-related a { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.page-catalog .catalog-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin-bottom: 28px; }
+.page-catalog .catalog-heading h1 { font-size: clamp(26px, 4vw, 42px); overflow-wrap: anywhere; }
+.page-catalog .catalog-heading .eyebrow { margin-bottom: 10px; }
+.page-catalog .catalog-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+.page-catalog .catalog-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+.page-catalog .catalog-table caption { padding: 16px; text-align: left; color: var(--muted); }
+.page-catalog .catalog-table th, .page-catalog .catalog-table td { padding: 16px; border-top: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; max-width: 320px; min-width: 70px; }
+.page-catalog .catalog-table thead { background: var(--surface); }
+.page-catalog .catalog-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.page-catalog .catalog-table .catalog-actions { min-width: 150px; }
+.page-catalog .catalog-status { white-space: nowrap; }
+.page-catalog .catalog-form, .page-catalog .catalog-delete { max-width: 720px; }
+.page-catalog .catalog-form { padding: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.page-catalog .catalog-form textarea { resize: vertical; }
+.page-catalog .catalog-details { max-width: 800px; margin-bottom: 28px; }
+.page-catalog .catalog-details > div { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 20px; padding-block: 16px; border-bottom: 1px solid var(--border); }
+.page-catalog .catalog-details dt { color: var(--muted); }
+.page-catalog .catalog-details dd { margin: 0; overflow-wrap: anywhere; }
+.page-catalog .catalog-description { white-space: pre-wrap; }
+.page-catalog .catalog-related { padding-left: 20px; margin-block: 18px 28px; }
+.page-catalog .catalog-related li { padding-block: 5px; overflow-wrap: anywhere; }
+.page-catalog .catalog-delete > p { margin-bottom: 20px; overflow-wrap: anywhere; }
+.page-catalog button:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 600px) {
+    .page-catalog .catalog-form { padding: 18px; }
+    .page-catalog .catalog-details > div { grid-template-columns: 1fr; gap: 6px; }
+    .page-catalog .catalog-heading > .btn { width: 100%; }
+}
+

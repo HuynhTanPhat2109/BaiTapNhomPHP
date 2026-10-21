@@ -15,11 +15,9 @@ $router->post('/account/password', [$account, 'changePassword'], [new AuthMiddle
 
 // Auth-only landing pages, not implementations of business modules.
 $areas = [
-    '/admin' => ['Quản trị tập đoàn', ['QUAN_TRI_TAP_DOAN']],
     '/company' => ['Quản lý công ty', ['QUAN_LY_CONG_TY']],
     '/facility' => ['Quản lý cơ sở', ['QUAN_LY_CO_SO']],
     '/staff' => ['Nhân viên', ['NHAN_VIEN']],
-    '/customer' => ['Khách hàng', ['KHACH_HANG']],
 ];
 foreach ($areas as $path => [$title, $roles]) {
     $router->get($path, static function () use ($home, $title): void {
@@ -27,4 +25,10 @@ foreach ($areas as $path => [$title, $roles]) {
     }, [new RoleMiddleware($app, $roles)]);
 }
 
+$router->get('/customer', static function (): void {
+    header('Location: ' . url('/'), true, 303);
+    exit;
+}, [new RoleMiddleware($app, ['KHACH_HANG'])]);
+
 require __DIR__ . '/auth.php';
+require __DIR__ . '/catalog.php';
