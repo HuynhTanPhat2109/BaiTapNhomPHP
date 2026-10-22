@@ -23,6 +23,11 @@ final class LoaiSan
         return $stmt->fetchAll();
     }
 
+    public function countAll(): int
+    {
+        return (int) $this->pdo->query('SELECT COUNT(*) FROM loai_san')->fetchColumn();
+    }
+
     public function find(int $id, bool $lock = false): ?array
     {
         $stmt = $this->pdo->prepare($lock

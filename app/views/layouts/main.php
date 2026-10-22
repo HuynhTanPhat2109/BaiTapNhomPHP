@@ -3,6 +3,14 @@ $isAuthPage = ($bodyClass ?? '') === 'page-auth';
 $isAdminArea = str_starts_with($template ?? '', 'admin/');
 $navAuthenticated = Core\Session::accountId() !== null;
 $navUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'] : 'Tài khoản';
+$accountArea = null;
+if (in_array($template, ['auth/account', 'auth/settings'], true)) {
+    $accountArea = [
+        'QUAN_LY_CONG_TY' => ['/company', 'Quản lý công ty'],
+        'QUAN_LY_CO_SO' => ['/facility', 'Quản lý cơ sở'],
+        'NHAN_VIEN' => ['/staff', 'Nhân viên'],
+    ][$data['user']['ten_vai_tro'] ?? ''] ?? null;
+}
 ?>
 <!doctype html>
 <html lang="vi">
@@ -23,13 +31,16 @@ $navUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'] 
 <a class="skip-link" href="#main-content">Bỏ qua điều hướng</a>
 <header class="navbar">
     <nav class="container navbar__inner" aria-label="Điều hướng chính">
-        <a class="navbar__brand" href="<?= e(url($isAdminArea ? '/admin' : '/')) ?>" aria-label="STRYKE — Trang chủ">
+        <a class="navbar__brand" href="<?= e(url($accountArea[0] ?? ($isAdminArea ? '/admin' : '/'))) ?>" aria-label="STRYKE — Trang chủ">
             <svg class="brand-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true"><rect x="3" y="5" width="30" height="26" rx="1"/><path d="M18 5v26M3 11h7v14H3m30-14h-7v14h7"/><circle cx="18" cy="18" r="5"/></svg>
             <span>STRYKE<span class="brand-dot">.</span></span>
         </a>
         <button class="navbar__toggle" type="button" id="nav-toggle" aria-controls="nav-menu" aria-expanded="false" aria-label="Mở menu" hidden><span></span><span></span></button>
         <div class="navbar__links" id="nav-menu">
-            <?php if ($isAdminArea): ?>
+            <?php if ($accountArea !== null): ?>
+                <a href="<?= e(url($accountArea[0])) ?>"><?= e($accountArea[1]) ?></a>
+                <a href="<?= e(url('/account')) ?>">Thông tin cá nhân</a>
+            <?php elseif ($isAdminArea): ?>
                 <a href="<?= e(url('/admin')) ?>">Tổng quan</a>
                 <a href="<?= e(url('/admin/bo-mon')) ?>">Bộ môn</a>
                 <a href="<?= e(url('/admin/loai-san')) ?>">Loại sân</a>

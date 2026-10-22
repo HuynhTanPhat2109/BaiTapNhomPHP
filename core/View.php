@@ -20,7 +20,11 @@ final class View
             ob_end_clean();
             throw $e;
         }
-        $layout = in_array($template, ['auth/login', 'auth/register'], true) ? 'auth' : 'main';
+        $isAccountPage = in_array($template, ['auth/account', 'auth/settings'], true);
+        $isAdminAccount = $isAccountPage
+            && ($data['user']['ten_vai_tro'] ?? null) === 'QUAN_TRI_TAP_DOAN';
+        $layout = (str_starts_with($template, 'admin/') || $isAdminAccount) ? 'admin'
+            : (in_array($template, ['auth/login', 'auth/register'], true) ? 'auth' : 'main');
         require dirname(__DIR__) . '/app/views/layouts/' . $layout . '.php';
     }
 }
