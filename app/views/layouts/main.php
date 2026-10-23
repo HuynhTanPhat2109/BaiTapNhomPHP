@@ -26,6 +26,10 @@ if (in_array($template, ['auth/account', 'auth/settings'], true)) {
               href="<?= e(base_path() . '/assets/css/catalog.css') ?>">
     <?php endif; ?>
     <script src="<?= e(base_path() . '/assets/js/app.js') ?>" defer></script>
+    <?php if (str_starts_with($template, 'courts/')): ?>
+        <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/courts.css') ?>">
+        <script src="<?= e(base_path() . '/assets/js/courts.js') ?>" defer></script>
+    <?php endif; ?>
 </head>
 <body class="<?= e($bodyClass ?? '') ?>">
 <a class="skip-link" href="#main-content">Bỏ qua điều hướng</a>
@@ -46,6 +50,7 @@ if (in_array($template, ['auth/account', 'auth/settings'], true)) {
                 <a href="<?= e(url('/admin/loai-san')) ?>">Loại sân</a>
             <?php else: ?>
                 <a href="<?= e(url('/')) ?>">Trang chủ</a>
+                <a href="<?= e(url('/courts')) ?>">Đặt sân</a>
                 <a href="<?= e(url('/') . '#about') ?>">Về STRYKE</a>
             <?php endif; ?>
             <span class="nav-divider" aria-hidden="true"></span>

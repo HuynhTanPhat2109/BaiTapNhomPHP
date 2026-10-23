@@ -1,0 +1,3 @@
+﻿Source: https://github.com/thanglequoc/vietnamese-provinces-database
+Commit: 8b78ba5118715e1fa81769286724db79346abf52
+Retrieved: 2026-10-23; local snapshot, manual updates only.

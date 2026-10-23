@@ -51,3 +51,4 @@ $router->get('/customer', static function (): void {
 require __DIR__ . '/auth.php';
 require __DIR__ . '/catalog.php';
 require __DIR__ . '/facilities.php';
+require __DIR__ . '/courts.php';

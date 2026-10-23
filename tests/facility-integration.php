@@ -48,6 +48,9 @@ function insertFacilityFixture(string $table, array $data): int
 function facilityClient(): CurlHandle
 {
     $client = curl_init();
+    $testIp = getenv('STRYKE_TEST_CLIENT_IP') ?: '127.0.0.1';
+    if (!preg_match('/\A127\.0\.0\.[0-9]{1,3}\z/', $testIp)) throw new RuntimeException('Test client must use loopback.');
+    curl_setopt($client, CURLOPT_INTERFACE, $testIp);
     curl_setopt_array($client, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HEADER => true,
         CURLOPT_COOKIEFILE => '', CURLOPT_FOLLOWLOCATION => false, CURLOPT_TIMEOUT => 15]);
     return $client;
@@ -105,7 +108,7 @@ $facilities = new App\Services\CoSoService($pdo);
 $courts = new App\Services\SanService($pdo);
 $facilityModel = new App\Models\CoSo($pdo);
 $courtModel = new App\Models\San($pdo);
-$facility = ['ma_cong_ty' => (string) $companies[0], 'ten_co_so' => $tag . ' Cơ sở', 'dia_chi' => 'Địa chỉ',
+$facility = ['ma_tinh' => '01', 'ma_phuong_xa' => '00004', 'ma_cong_ty' => (string) $companies[0], 'ten_co_so' => $tag . ' Cơ sở', 'dia_chi' => 'Địa chỉ',
     'gio_mo_cua' => '06:00', 'gio_dong_cua' => '23:00', 'mo_ta' => '0', 'trang_thai' => 'HOAT_DONG'];
 $f = $facilities->save($facility);
 $f2 = $facilities->save($facility);
@@ -325,6 +328,59 @@ foreach (['/admin', '/admin/companies', '/admin/companies/create', '/admin/compa
     $response = facilityRequest($admin, $path, null, ['id' => $id]);
     checkFacility($response['status'] === 200 && str_contains($response['body'], 'class="admin-sidebar"'), 'existing Admin regression ' . $path);
 }
+// Real multipart upload, retained on omitted input, and removed explicitly.
+$imageFixture = tempnam(dirname(__DIR__) . '/storage/temp', 'image-test-');
+file_put_contents($imageFixture, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='));
+try {
+    curl_setopt($admin, CURLOPT_URL, $base . '/index.php?' . http_build_query(['route' => '/admin/co-so/update']));
+    curl_setopt($admin, CURLOPT_POST, true);
+    curl_setopt($admin, CURLOPT_POSTFIELDS, ['_token' => $token, 'id' => (string) $f] + $facility
+        + ['anh_dai_dien' => new CURLFile($imageFixture, 'image/png', 'court.png')]);
+    curl_exec($admin);
+    checkFacility(curl_getinfo($admin, CURLINFO_RESPONSE_CODE) === 303, 'multipart image saved');
+    $saved = $facilityModel->find($f);
+    $savedPath = $saved['anh_dai_dien'];
+    checkFacility(App\Services\FacilityImage::validPath($savedPath), 'generated image path');
+    checkFacility(is_file(dirname(__DIR__) . '/public/' . $savedPath), 'uploaded file exists');
+    checkFacility($saved['ten_tinh'] === 'Thành phố Hà Nội', 'canonical province snapshot');
+    $facilities->save(array_diff_key($facility, array_flip(['ma_tinh', 'ma_phuong_xa'])), $f);
+    checkFacility($facilityModel->find($f)['ma_tinh'] === '01' && $facilityModel->find($f)['anh_dai_dien'] === $savedPath, 'legacy payload preserves metadata');
+    $response = facilityRequest($admin, '/admin/co-so/update', ['_token' => $token, 'id' => (string) $f, 'xoa_anh' => '1'] + $facility);
+    checkFacility($response['status'] === 303 && $facilityModel->find($f)['anh_dai_dien'] === null, 'explicit image removal');
+    clearstatcache(true, dirname(__DIR__) . '/public/' . $savedPath);
+    checkFacility(!is_file(dirname(__DIR__) . '/public/' . $savedPath), 'old file removed after commit');
+    $logoPaths = [];
+    for ($attempt = 0; $attempt < 2; $attempt++) {
+        curl_setopt($admin, CURLOPT_URL, $base . '/index.php?' . http_build_query(['route' => '/admin/co-so/update']));
+        curl_setopt($admin, CURLOPT_POST, true);
+        curl_setopt($admin, CURLOPT_POSTFIELDS, ['_token' => $token, 'id' => (string) $f] + $facility
+            + ['logo_clb' => new CURLFile($imageFixture, 'image/png', 'logo.png')]);
+        curl_exec($admin);
+        checkFacility(curl_getinfo($admin, CURLINFO_RESPONSE_CODE) === 303, 'logo upload/replace');
+        $logoPaths[] = $facilityModel->find($f)['logo_clb'];
+        checkFacility(App\Services\FacilityImage::validPath(end($logoPaths)), 'logo relative generated path');
+    }
+    clearstatcache();
+    checkFacility(!is_file(dirname(__DIR__) . '/public/' . $logoPaths[0]), 'replaced logo cleaned');
+    $facilities->save($facility, $f);
+    checkFacility($facilityModel->find($f)['logo_clb'] === $logoPaths[1], 'omitted logo preserved');
+    $beforeFiles = glob(dirname(__DIR__) . '/public/uploads/co-so/*.png');
+    try {
+        $facilities->save($facility, $f, null, ['error' => UPLOAD_ERR_INI_SIZE]);
+        throw new RuntimeException('Invalid logo accepted');
+    } catch (App\Services\ValidationException $e) {
+        checkFacility(isset($e->errors['logo_clb']), 'logo error attached to logo field');
+    }
+    checkFacility($facilityModel->find($f)['logo_clb'] === $logoPaths[1], 'invalid logo keeps stored logo');
+    $response = facilityRequest($admin, '/admin/co-so/update', ['_token' => $token, 'id' => (string) $f, 'xoa_logo' => '1'] + $facility);
+    clearstatcache();
+    checkFacility($response['status'] === 303 && $facilityModel->find($f)['logo_clb'] === null && !is_file(dirname(__DIR__) . '/public/' . $logoPaths[1]), 'logo explicit removal');
+} finally {
+    unlink($imageFixture);
+    if (isset($savedPath)) App\Services\FacilityImage::remove($savedPath);
+    foreach ($logoPaths ?? [] as $path) App\Services\FacilityImage::remove($path);
+}
+require __DIR__ . '/courts-integration.php';
 $nextPassword = 'Bb2!' . bin2hex(random_bytes(5));
 $changed = facilityRequest($admin, '/account/password', ['_token' => $token, 'current_password' => $password,
     'new_password' => $nextPassword, 'new_password_confirmation' => $nextPassword]);
