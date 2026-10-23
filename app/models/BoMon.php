@@ -21,6 +21,11 @@ final class BoMon
         )->fetchAll();
     }
 
+    public function countAll(): int
+    {
+        return (int) $this->pdo->query('SELECT COUNT(*) FROM bo_mon')->fetchColumn();
+    }
+
     public function options(?int $currentId = null): array
     {
         $stmt = $this->pdo->prepare(

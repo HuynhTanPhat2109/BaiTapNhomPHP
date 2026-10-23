@@ -24,7 +24,7 @@ $profile = $profileOld ?? [
     <div class="account-page__intro">
         <p class="eyebrow">STRYKE / Tài khoản / Thông tin cá nhân</p>
         <h1 class="account-h1">Thông tin cá nhân.</h1>
-        <p>Giữ thông tin liên hệ chính xác để các hoạt động trên sân luôn thuận tiện.</p>
+        <p><?= $isCustomer ? 'Giữ thông tin liên hệ chính xác để các hoạt động trên sân luôn thuận tiện.' : 'Thông tin tài khoản và khu vực làm việc theo vai trò của bạn.' ?></p>
     </div>
     <?php if (!empty($notice)): ?><div class="alert alert--success account-notice" role="status"><?= e($notice) ?></div><?php endif; ?>
     <div class="account-layout">
@@ -49,7 +49,7 @@ $profile = $profileOld ?? [
         </aside>
         <div class="account-content">
             <section class="account-card" id="profile" aria-labelledby="profile-title">
-                <div class="account-card__heading"><div><h2 id="profile-title">Cập nhật thông tin</h2></div>
+                <div class="account-card__heading"><div><h2 id="profile-title"><?= $isCustomer ? 'Cập nhật thông tin' : 'Thông tin tài khoản' ?></h2></div>
                 </div>
                 <?php if ($isCustomer): ?>
                     <p class="account-card__description">Thông tin liên hệ của bạn được dùng cho việc đặt sân sau này.</p>
@@ -89,6 +89,8 @@ $profile = $profileOld ?? [
                         </div>
                         <button class="btn btn--primary account-save" type="submit">Lưu thay đổi</button>
                     </form>
+                <?php elseif ($roleKey === 'QUAN_TRI_TAP_DOAN'): ?>
+                    <p class="account-card__description">Tài khoản quản trị: <strong><?= e($user['ten_dang_nhap']) ?></strong>. Chọn Tổng quan trên Sidebar để quay lại Dashboard.</p>
                 <?php else: ?>
                     <p class="account-card__description">Họ và tên: <strong><?= e($displayName) ?></strong>. Thông tin nhân sự được quản lý tại khu vực dành cho nhân viên.</p>
                 <?php endif; ?>

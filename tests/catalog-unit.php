@@ -128,29 +128,52 @@ try {
     // Render the real views with in-memory values; never create database fixtures.
     $viewData = [
         'title' => 'Kiểm tra quản trị', 'user' => ['ten_dang_nhap' => '<Admin>'],
+        'stats' => ['bo_mon' => 7, 'loai_san' => 12],
+        'companies' => [], 'company' => ['ma_cong_ty' => 3, 'ten_cong_ty' => '<Công ty>'],
         'items' => [], 'types' => [], 'sports' => [], 'errors' => [], 'old' => [],
         'item' => ['ma_bo_mon' => 1, 'ma_loai_san' => 2, 'ten_bo_mon' => 'Bộ môn mẫu',
             'ten_loai_san' => 'Loại sân mẫu', 'trang_thai' => 'NGUNG', 'trang_thai_bo_mon' => 'NGUNG'],
         'related' => ['loai_san' => 0, 'loai_san_dang_dung' => 0, 'san' => 0,
             'san_dang_dung' => 0, 'bang_gia' => 0, 'bang_gia_dang_dung' => 0],
     ];
-    $templates = ['admin/dashboard'];
+    $templates = ['admin/dashboard', 'admin/companies/index', 'admin/companies/create', 'admin/companies/edit'];
     foreach (['bo-mon', 'loai-san'] as $module) {
         foreach (['index', 'form', 'show', 'delete'] as $page) {
             $templates[] = 'admin/' . $module . '/' . $page;
+        }
+    }
+    $menuGroups = require dirname(__DIR__) . '/config/admin-menu.php';
+    $upcoming = 0;
+    foreach ($menuGroups as $group) {
+        foreach ($group as $entry) {
+            $upcoming += $entry['route'] === null ? 1 : 0;
         }
     }
     foreach ($templates as $template) {
         ob_start();
         View::render($template, $viewData);
         $html = ob_get_clean();
-        preg_match('/<header class="navbar">.*?<\/header>/s', $html, $match);
-        $navbar = $match[0] ?? '';
-        foreach (['/admin', '/admin/bo-mon', '/admin/loai-san'] as $path) {
-            checkCatalogUnit(strpos($navbar, 'href="' . e(url($path)) . '"') !== false, $template . ': Admin navigation ' . $path);
+        preg_match('/<aside class="admin-sidebar".*?<\/aside>/s', $html, $match);
+        $sidebar = $match[0] ?? '';
+        foreach (['/admin', '/admin/companies', '/admin/bo-mon', '/admin/loai-san', '/admin/co-so', '/admin/san'] as $path) {
+            checkCatalogUnit(strpos($sidebar, 'href="' . e(url($path)) . '"') !== false, $template . ': Admin navigation ' . $path);
         }
-        checkCatalogUnit(strpos($navbar, '>Trang chủ</a>') === false, $template . ': no customer navigation');
+        checkCatalogUnit(substr_count($sidebar, 'aria-current="page"') === 1, $template . ': exactly one active menu');
+        $expectedPath = str_starts_with($template, 'admin/companies/') ? '/admin/companies'
+            : (str_starts_with($template, 'admin/bo-mon/') ? '/admin/bo-mon'
+                : (str_starts_with($template, 'admin/loai-san/') ? '/admin/loai-san' : '/admin'));
+        checkCatalogUnit(strpos($sidebar, 'href="' . e(url($expectedPath)) . '" aria-current="page"') !== false, $template . ': correct active module');
+        checkCatalogUnit(substr_count($sidebar, 'aria-disabled="true"') === $upcoming, $template . ': upcoming items');
+        checkCatalogUnit(substr_count($sidebar, '<small>Sắp phát triển</small>') === $upcoming, $template . ': upcoming labels');
+        checkCatalogUnit(strpos($sidebar, '<a class="admin-menu__item is-disabled"') === false, $template . ': upcoming items have no links');
+        checkCatalogUnit(strpos($sidebar, '>Trang chủ</a>') === false, $template . ': no customer navigation');
+        checkCatalogUnit(strpos($html, '/assets/css/admin.css') !== false, $template . ': isolated Admin styles');
         checkCatalogUnit(strpos($html, 'role-notice') === false, $template . ': dedicated Admin content');
+        if ($template === 'admin/dashboard') {
+            checkCatalogUnit(strpos($html, 'data-stat="bo_mon">7</p>') !== false, 'dashboard uses supplied sport count');
+            checkCatalogUnit(strpos($html, 'data-stat="loai_san">12</p>') !== false, 'dashboard uses supplied type count');
+            checkCatalogUnit(strpos($html, '<strong>&lt;Admin&gt;</strong>') !== false, 'dashboard escapes username');
+        }
     }
     ob_start();
     View::render('home', ['template' => 'admin/dashboard', 'isAdminArea' => true]);
@@ -158,6 +181,7 @@ try {
     checkCatalogUnit(strpos($homeHtml, 'hero-section') !== false, 'original customer homepage still renders');
     checkCatalogUnit(strpos($homeHtml, '>Trang chủ</a>') !== false, 'customer navbar preserved');
     checkCatalogUnit(strpos($homeHtml, '>Tổng quan</a>') === false, 'template cannot be overridden by view data');
+    checkCatalogUnit(strpos($homeHtml, 'admin-sidebar') === false && strpos($homeHtml, '/assets/css/admin.css') === false, 'customer homepage has no Admin UI or styles');
 } finally {
     Session::logout();
 }
