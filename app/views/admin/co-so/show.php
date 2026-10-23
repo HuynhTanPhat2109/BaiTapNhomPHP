@@ -8,7 +8,13 @@
         </div>
     </header>
     <?php if ($item['trang_thai_cong_ty'] !== 'HOAT_DONG'): ?><p class="alert alert--danger" role="status">Công ty đã ngừng hoạt động. Không thể tạo hoặc kích hoạt sân tại cơ sở này.</p><?php endif; ?>
+    <?php if (App\Services\FacilityImage::validPath($item['anh_dai_dien'] ?? null)): ?>
+        <img src="<?= e(base_path() . '/' . $item['anh_dai_dien']) ?>" alt="<?= e($item['ten_co_so']) ?>" class="facility-photo">
+    <?php else: ?><p class="form-hint">Chưa có ảnh đại diện.</p><?php endif; ?>
+    <?php if (App\Services\FacilityImage::validPath($item['logo_clb'] ?? null)): ?><img class="facility-logo" src="<?= e(base_path() . '/' . $item['logo_clb']) ?>" alt="Logo CLB"><?php endif; ?>
     <dl class="catalog-details">
+        <div><dt>Tỉnh/Thành phố</dt><dd><?= e($item['ten_tinh'] ?? 'Chưa bổ sung') ?></dd></div>
+        <div><dt>Phường/Xã</dt><dd><?= e($item['ten_phuong_xa'] ?? 'Chưa bổ sung') ?></dd></div>
         <div><dt>Công ty</dt><dd><a href="<?= e(url('/admin/companies/edit') . '&id=' . $item['ma_cong_ty']) ?>"><?= e($item['ten_cong_ty']) ?></a></dd></div>
         <div><dt>Địa chỉ</dt><dd><?= e($item['dia_chi']) ?></dd></div>
         <div><dt>Điện thoại</dt><dd><?= e($item['so_dien_thoai'] ?? '—') ?></dd></div>

@@ -71,7 +71,7 @@ final class CoSoService
         return strlen($value) === 5 ? $value . ':00' : $value;
     }
 
-    public function save(array $data, ?int $id = null): int
+    public function save(array $data, ?int $id = null, ?array $image = null, ?array $logo = null): int
     {
         if ($errors = self::validate($data)) {
             throw new ValidationException($errors);
@@ -87,6 +87,8 @@ final class CoSoService
         if ($id !== null && !$before) {
             throw new HttpException(404, 'Không tìm thấy cơ sở.');
         }
+        $newImage = null;
+        $newLogo = null;
         $this->pdo->beginTransaction();
         try {
             $companyIds = array_unique([$clean['ma_cong_ty'], (int) ($before['ma_cong_ty'] ?? $clean['ma_cong_ty'])]);
@@ -125,10 +127,31 @@ final class CoSoService
                     throw new ValidationException(['gio_dong_cua' => 'Khung giờ mới không bao phủ bảng giá đang áp dụng hoặc lịch đặt còn hiệu lực.']);
                 }
             }
+            // Resolve after locking so omitted fields preserve the latest stored values.
+            $addressFields = ['ma_tinh', 'ten_tinh', 'ma_phuong_xa', 'ten_phuong_xa'];
+            foreach ($addressFields as $field) $clean[$field] = $current[$field] ?? null;
+            if (array_key_exists('ma_tinh', $data) || array_key_exists('ma_phuong_xa', $data)) {
+                $province = $data['ma_tinh'] ?? '';
+                $ward = $data['ma_phuong_xa'] ?? '';
+                $unchanged = $current && $province === ($current['ma_tinh'] ?? '') && $ward === ($current['ma_phuong_xa'] ?? '');
+                if (!$unchanged && !($current && !$current['ma_tinh'] && $province === '' && $ward === '')) {
+                    $clean = array_replace($clean, AdministrativeAddress::resolve($province, $ward));
+                }
+            }
+            $newImage = FacilityImage::store($image);
+            $oldImage = $current['anh_dai_dien'] ?? null;
+            $clean['anh_dai_dien'] = $newImage ?? (($data['xoa_anh'] ?? '') === '1' ? null : $oldImage);
+            $newLogo = FacilityImage::store($logo, 'logo_clb');
+            $oldLogo = $current['logo_clb'] ?? null;
+            $clean['logo_clb'] = $newLogo ?? (($data['xoa_logo'] ?? '') === '1' ? null : $oldLogo);
             $id = $this->facilities->save($clean, $id);
             $this->pdo->commit();
+            if ($oldImage !== $clean['anh_dai_dien']) FacilityImage::remove($oldImage);
+            if ($oldLogo !== $clean['logo_clb']) FacilityImage::remove($oldLogo);
             return $id;
         } catch (\Throwable $e) {
+            FacilityImage::remove($newImage);
+            FacilityImage::remove($newLogo);
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
@@ -148,6 +171,8 @@ final class CoSoService
         if (!$before) {
             throw new HttpException(404, 'Không tìm thấy cơ sở.');
         }
+        $newImage = null;
+        $newLogo = null;
         $this->pdo->beginTransaction();
         try {
             $this->facilities->company((int) $before['ma_cong_ty'], true);
@@ -165,7 +190,11 @@ final class CoSoService
             }
             $this->facilities->delete($id);
             $this->pdo->commit();
+            FacilityImage::remove($current['anh_dai_dien'] ?? null);
+            FacilityImage::remove($current['logo_clb'] ?? null);
         } catch (\Throwable $e) {
+            FacilityImage::remove($newImage);
+            FacilityImage::remove($newLogo);
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }

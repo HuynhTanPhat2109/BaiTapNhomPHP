@@ -130,6 +130,14 @@ CREATE TABLE hop_dong_nhuong_quyen (
 -- =========================================================
 
 CREATE TABLE co_so (
+    ma_tinh VARCHAR(10) NULL DEFAULT NULL,
+    ten_tinh VARCHAR(150) NULL DEFAULT NULL,
+    ma_phuong_xa VARCHAR(10) NULL DEFAULT NULL,
+    ten_phuong_xa VARCHAR(150) NULL DEFAULT NULL,
+    anh_dai_dien VARCHAR(255) NULL DEFAULT NULL,
+    logo_clb VARCHAR(255) NULL DEFAULT NULL,
+    INDEX idx_coso_tinh (ma_tinh),
+
     ma_co_so INT AUTO_INCREMENT PRIMARY KEY,
     ma_cong_ty INT NOT NULL,
     ten_co_so VARCHAR(200) NOT NULL,

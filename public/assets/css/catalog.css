@@ -32,3 +32,8 @@
     .page-catalog .catalog-heading > .btn { width: 100%; }
 }
 
+
+.facility-photo { display: block; width: 100%; max-width: 640px; max-height: 360px; object-fit: cover; border-radius: 12px; margin-block: 1rem; }
+.facility-photo[hidden] { display: none; }
+
+.facility-logo, #facility-logo-preview { width: 96px; height: 96px; object-fit: contain; border-radius: 50%; }

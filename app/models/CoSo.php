@@ -120,10 +120,10 @@ final class CoSo
     public function save(array $data, ?int $id): int
     {
         if ($id === null) {
-            $sql = 'INSERT INTO co_so (ma_cong_ty, ten_co_so, dia_chi, so_dien_thoai, email, gio_mo_cua, gio_dong_cua, mo_ta, trang_thai)
-                VALUES (:ma_cong_ty, :ten_co_so, :dia_chi, :so_dien_thoai, :email, :gio_mo_cua, :gio_dong_cua, :mo_ta, :trang_thai)';
+            $sql = 'INSERT INTO co_so (ma_tinh, ten_tinh, ma_phuong_xa, ten_phuong_xa, anh_dai_dien, logo_clb, ma_cong_ty, ten_co_so, dia_chi, so_dien_thoai, email, gio_mo_cua, gio_dong_cua, mo_ta, trang_thai)
+                VALUES (:ma_tinh, :ten_tinh, :ma_phuong_xa, :ten_phuong_xa, :anh_dai_dien, :logo_clb, :ma_cong_ty, :ten_co_so, :dia_chi, :so_dien_thoai, :email, :gio_mo_cua, :gio_dong_cua, :mo_ta, :trang_thai)';
         } else {
-            $sql = 'UPDATE co_so SET ma_cong_ty = :ma_cong_ty, ten_co_so = :ten_co_so, dia_chi = :dia_chi,
+            $sql = 'UPDATE co_so SET ma_tinh = :ma_tinh, ten_tinh = :ten_tinh, ma_phuong_xa = :ma_phuong_xa, ten_phuong_xa = :ten_phuong_xa, anh_dai_dien = :anh_dai_dien, logo_clb = :logo_clb, ma_cong_ty = :ma_cong_ty, ten_co_so = :ten_co_so, dia_chi = :dia_chi,
                 so_dien_thoai = :so_dien_thoai, email = :email, gio_mo_cua = :gio_mo_cua,
                 gio_dong_cua = :gio_dong_cua, mo_ta = :mo_ta, trang_thai = :trang_thai WHERE ma_co_so = :id';
             $data['id'] = $id;
