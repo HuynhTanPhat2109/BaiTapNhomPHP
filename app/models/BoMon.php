@@ -21,6 +21,13 @@ final class BoMon
         )->fetchAll();
     }
 
+    public function page(array $filters): array
+    {
+        return AdminList::page($this->pdo, ' FROM bo_mon b',
+            'b.*, (SELECT COUNT(*) FROM loai_san l WHERE l.ma_bo_mon = b.ma_bo_mon) AS so_loai_san',
+            'b.ma_bo_mon', ['q' => 'b.ten_bo_mon', 'trang_thai' => 'b.trang_thai'], $filters);
+    }
+
     public function countAll(): int
     {
         return (int) $this->pdo->query('SELECT COUNT(*) FROM bo_mon')->fetchColumn();

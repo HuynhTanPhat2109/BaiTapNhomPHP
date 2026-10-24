@@ -69,7 +69,8 @@ try {
                 'nhan_vien_dang_lam', 'booking_hieu_luc', 'chi_tiet_dat_san'], 0);
             $data = ['title' => 'Kiểm thử', 'user' => ['ten_dang_nhap' => '<Admin>'], 'item' => $item,
                 'items' => [$item], 'old' => $item, 'errors' => [], 'related' => $related, 'courts' => [],
-                'companies' => [], 'facilities' => [], 'types' => []];
+                'companies' => [], 'facilities' => [], 'types' => [], 'page' => 1, 'pages' => 1, 'total' => 1,
+                'filters' => ['q' => '', 'ma_cong_ty' => '', 'ma_co_so' => '', 'ma_loai_san' => '', 'trang_thai' => '', 'per_page' => 10, 'page' => 1]];
             ob_start();
             View::render('admin/' . $module . '/' . $page, $data);
             $html = ob_get_clean();

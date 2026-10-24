@@ -52,3 +52,5 @@ require __DIR__ . '/auth.php';
 require __DIR__ . '/catalog.php';
 require __DIR__ . '/facilities.php';
 require __DIR__ . '/courts.php';
+require __DIR__ . '/prices.php';
+require __DIR__ . '/services.php';

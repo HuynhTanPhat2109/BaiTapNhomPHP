@@ -5,6 +5,7 @@ namespace App\Controllers\admin;
 use App\Models\BoMon;
 use App\Models\LoaiSan;
 use App\Services\BoMonService;
+use App\Services\AdminListService;
 use App\Services\ValidationException;
 use Core\Application;
 use Core\Controller;
@@ -21,10 +22,11 @@ final class BoMonController extends Controller
 
     public function index(): void
     {
+        $filters = AdminListService::filters($_GET, [], ['trang_thai' => ['HOAT_DONG', 'NGUNG']]);
         $notice = $_SESSION['catalog_notice'] ?? null;
         unset($_SESSION['catalog_notice']);
-        $this->render('admin/bo-mon/index', [
-            'title' => 'Quản lý bộ môn', 'items' => (new BoMon($this->app->pdo()))->all(), 'notice' => $notice,
+        $this->render('admin/bo-mon/index', (new BoMon($this->app->pdo()))->page($filters) + [
+            'title' => 'Quản lý bộ môn', 'filters' => $filters, 'notice' => $notice,
         ]);
     }
 

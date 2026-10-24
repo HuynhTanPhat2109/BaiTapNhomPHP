@@ -5,6 +5,7 @@ namespace App\Controllers\admin;
 use App\Models\LoaiSan;
 use App\Models\BoMon;
 use App\Services\LoaiSanService;
+use App\Services\AdminListService;
 use App\Services\ValidationException;
 use Core\Application;
 use Core\Controller;
@@ -21,10 +22,12 @@ final class LoaiSanController extends Controller
 
     public function index(): void
     {
+        $filters = AdminListService::filters($_GET, ['ma_bo_mon'], ['trang_thai' => ['HOAT_DONG', 'NGUNG']]);
         $notice = $_SESSION['catalog_notice'] ?? null;
         unset($_SESSION['catalog_notice']);
-        $this->render('admin/loai-san/index', [
-            'title' => 'Quản lý loại sân', 'items' => (new LoaiSan($this->app->pdo()))->all(), 'notice' => $notice,
+        $this->render('admin/loai-san/index', (new LoaiSan($this->app->pdo()))->page($filters) + [
+            'title' => 'Quản lý loại sân', 'filters' => $filters, 'notice' => $notice,
+            'sports' => (new BoMon($this->app->pdo()))->all(),
         ]);
     }
 

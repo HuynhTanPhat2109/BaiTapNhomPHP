@@ -4,6 +4,8 @@ namespace App\Controllers\admin;
 
 use App\Models\San;
 use App\Models\CoSo;
+use App\Models\LoaiSan;
+use App\Services\AdminListService;
 use App\Services\SanService;
 use App\Services\CoSoService;
 use App\Services\ValidationException;
@@ -22,10 +24,13 @@ final class SanController extends Controller
 
     public function index(): void
     {
+        $filters = AdminListService::filters($_GET, ['ma_co_so', 'ma_loai_san'],
+            ['trang_thai' => ['HOAT_DONG', 'BAO_TRI', 'TAM_NGUNG']]);
         $notice = $_SESSION['facility_notice'] ?? null;
         unset($_SESSION['facility_notice']);
-        $this->render('admin/san/index', [
-            'title' => 'Quản lý sân', 'items' => (new San($this->app->pdo()))->all(), 'notice' => $notice,
+        $this->render('admin/san/index', (new San($this->app->pdo()))->page($filters) + [
+            'title' => 'Quản lý sân', 'filters' => $filters, 'notice' => $notice,
+            'facilities' => (new CoSo($this->app->pdo()))->all(), 'types' => (new LoaiSan($this->app->pdo()))->all(),
         ]);
     }
 

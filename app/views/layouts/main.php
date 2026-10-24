@@ -4,7 +4,7 @@ $isAdminArea = str_starts_with($template ?? '', 'admin/');
 $navAuthenticated = Core\Session::accountId() !== null;
 $navUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'] : 'Tài khoản';
 $accountArea = null;
-if (in_array($template, ['auth/account', 'auth/settings'], true)) {
+if (in_array($template, ['auth/account', 'auth/settings', 'services/page'], true)) {
     $accountArea = [
         'QUAN_LY_CONG_TY' => ['/company', 'Quản lý công ty'],
         'QUAN_LY_CO_SO' => ['/facility', 'Quản lý cơ sở'],
@@ -26,12 +26,13 @@ if (in_array($template, ['auth/account', 'auth/settings'], true)) {
               href="<?= e(base_path() . '/assets/css/catalog.css') ?>">
     <?php endif; ?>
     <script src="<?= e(base_path() . '/assets/js/app.js') ?>" defer></script>
+    <?php if ($template === 'services/page'): ?><link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin.css') ?>"><?php endif; ?>
     <?php if (str_starts_with($template, 'courts/')): ?>
         <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/courts.css') ?>">
         <script src="<?= e(base_path() . '/assets/js/courts.js') ?>" defer></script>
     <?php endif; ?>
 </head>
-<body class="<?= e($bodyClass ?? '') ?>">
+<body class="<?= e($bodyClass ?? '') ?><?= $template === 'services/page' ? ' page-admin page-services' : '' ?>">
 <a class="skip-link" href="#main-content">Bỏ qua điều hướng</a>
 <header class="navbar">
     <nav class="container navbar__inner" aria-label="Điều hướng chính">

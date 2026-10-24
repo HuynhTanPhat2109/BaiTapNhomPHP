@@ -23,6 +23,13 @@ final class LoaiSan
         return $stmt->fetchAll();
     }
 
+    public function page(array $filters): array
+    {
+        return AdminList::page($this->pdo, ' FROM loai_san l JOIN bo_mon b ON b.ma_bo_mon = l.ma_bo_mon',
+            'l.*, b.ten_bo_mon', 'l.ma_loai_san',
+            ['q' => 'l.ten_loai_san', 'ma_bo_mon' => 'l.ma_bo_mon', 'trang_thai' => 'l.trang_thai'], $filters);
+    }
+
     public function countAll(): int
     {
         return (int) $this->pdo->query('SELECT COUNT(*) FROM loai_san')->fetchColumn();

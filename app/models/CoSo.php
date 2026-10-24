@@ -22,6 +22,19 @@ final class CoSo
         )->fetchAll();
     }
 
+    public function page(array $filters): array
+    {
+        return AdminList::page($this->pdo, ' FROM co_so f JOIN cong_ty_nhuong_quyen c ON c.ma_cong_ty = f.ma_cong_ty',
+            'f.*, c.ten_cong_ty, c.trang_thai AS trang_thai_cong_ty,
+                (SELECT COUNT(*) FROM san s WHERE s.ma_co_so = f.ma_co_so) AS so_san', 'f.ma_co_so',
+            ['q' => 'f.ten_co_so', 'ma_cong_ty' => 'f.ma_cong_ty', 'trang_thai' => 'f.trang_thai'], $filters);
+    }
+
+    public function filterCompanies(): array
+    {
+        return $this->pdo->query('SELECT ma_cong_ty, ten_cong_ty FROM cong_ty_nhuong_quyen ORDER BY ten_cong_ty, ma_cong_ty')->fetchAll();
+    }
+
     public function find(int $id, bool $lock = false): ?array
     {
         $stmt = $this->pdo->prepare($lock
