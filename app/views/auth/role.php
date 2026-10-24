@@ -1,6 +1,16 @@
 <section class="container inner-page role-page">
     <header class="page-heading"><p class="eyebrow">STRYKE / Khu vực của bạn</p><h1><?= e($title) ?></h1><p>Xin chào, <strong><?= e($user['ten_dang_nhap']) ?></strong>.</p></header>
-    <p class="role-notice">Bạn đã đăng nhập vào khu vực dành cho vai trò của mình. Các chức năng nghiệp vụ sẽ được bổ sung ở giai đoạn tiếp theo.</p>
+    <?php if (($user['ten_vai_tro'] ?? '') === 'QUAN_LY_CONG_TY'): ?>
+        <section aria-labelledby="company-management-heading">
+            <h2 id="company-management-heading">Chức năng quản lý</h2>
+            <div class="hero__actions">
+                <a class="btn btn--primary" href="<?= e(url('/company/employees')) ?>">Quản lý nhân viên</a>
+                <a class="btn btn--outline" href="<?= e(url('/company/employees/create')) ?>">Thêm nhân viên</a>
+            </div>
+        </section>
+    <?php else: ?>
+        <p class="role-notice">Bạn đã đăng nhập vào khu vực dành cho vai trò của mình. Các chức năng nghiệp vụ sẽ được bổ sung ở giai đoạn tiếp theo.</p>
+    <?php endif; ?>
     <?php if (($user['ten_vai_tro'] ?? '') === 'QUAN_TRI_TAP_DOAN'): ?>
         <div class="hero__actions">
             <a class="btn btn--primary"
