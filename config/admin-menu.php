@@ -13,8 +13,8 @@ return [
         ['label' => 'Loại sân', 'icon' => 'layers', 'route' => '/admin/loai-san', 'template' => 'admin/loai-san'],
         ['label' => 'Cơ sở thể thao', 'icon' => 'location', 'route' => '/admin/co-so', 'template' => 'admin/co-so'],
         ['label' => 'Sân thể thao', 'icon' => 'court', 'route' => '/admin/san', 'template' => 'admin/san'],
-        ['label' => 'Bảng giá', 'icon' => 'price', 'route' => null, 'template' => null],
-        ['label' => 'Dịch vụ', 'icon' => 'service', 'route' => null, 'template' => null],
+        ['label' => 'Bảng giá', 'icon' => 'price', 'route' => '/admin/bang-gia', 'template' => 'admin/bang-gia'],
+        ['label' => 'Dịch vụ', 'icon' => 'service', 'route' => '/admin/dich-vu', 'template' => 'admin/dich-vu'],
     ],
     'VẬN HÀNH VÀ THANH TOÁN' => [
         ['label' => 'Quản lý booking', 'icon' => 'calendar', 'route' => null, 'template' => null],

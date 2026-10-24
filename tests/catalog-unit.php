@@ -131,6 +131,8 @@ try {
         'stats' => ['bo_mon' => 7, 'loai_san' => 12],
         'companies' => [], 'company' => ['ma_cong_ty' => 3, 'ten_cong_ty' => '<Công ty>'],
         'items' => [], 'types' => [], 'sports' => [], 'errors' => [], 'old' => [],
+        'filters' => ['q' => '', 'ma_bo_mon' => '', 'trang_thai' => '', 'per_page' => 10, 'page' => 1],
+        'page' => 1, 'pages' => 1, 'total' => 0,
         'item' => ['ma_bo_mon' => 1, 'ma_loai_san' => 2, 'ten_bo_mon' => 'Bộ môn mẫu',
             'ten_loai_san' => 'Loại sân mẫu', 'trang_thai' => 'NGUNG', 'trang_thai_bo_mon' => 'NGUNG'],
         'related' => ['loai_san' => 0, 'loai_san_dang_dung' => 0, 'san' => 0,

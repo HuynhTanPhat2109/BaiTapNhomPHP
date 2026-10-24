@@ -9,5 +9,8 @@
                href="<?= e(url('/admin/loai-san')) ?>">Quản lý loại sân</a>
         </div>
     <?php endif; ?>
+    <?php if (in_array($user['ten_vai_tro'] ?? '', ['QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO', 'NHAN_VIEN'], true)): ?>
+        <a class="btn btn--primary" href="<?= e(url(App\Services\DichVuService::basePath($user['ten_vai_tro']))) ?>"><?= $user['ten_vai_tro'] === 'NHAN_VIEN' ? 'Xem dịch vụ tại cơ sở' : 'Quản lý dịch vụ' ?></a>
+    <?php endif; ?>
     <a class="btn btn--outline" href="<?= e(url('/account')) ?>"><span aria-hidden="true">←</span> Quay lại tài khoản</a>
 </section>

@@ -5,6 +5,7 @@ namespace App\Controllers\admin;
 use App\Models\CoSo;
 use App\Models\San;
 use App\Services\CoSoService;
+use App\Services\AdminListService;
 use App\Services\ValidationException;
 use Core\Application;
 use Core\Controller;
@@ -21,10 +22,13 @@ final class CoSoController extends Controller
 
     public function index(): void
     {
+        $filters = AdminListService::filters($_GET, ['ma_cong_ty'], ['trang_thai' => ['HOAT_DONG', 'TAM_NGUNG']]);
+        $model = new CoSo($this->app->pdo());
         $notice = $_SESSION['facility_notice'] ?? null;
         unset($_SESSION['facility_notice']);
-        $this->render('admin/co-so/index', [
-            'title' => 'Quản lý cơ sở', 'items' => (new CoSo($this->app->pdo()))->all(), 'notice' => $notice,
+        $this->render('admin/co-so/index', $model->page($filters) + [
+            'title' => 'Quản lý cơ sở', 'filters' => $filters, 'notice' => $notice,
+            'companies' => $model->filterCompanies(),
         ]);
     }
 
