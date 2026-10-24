@@ -4,6 +4,7 @@ use App\Controllers\HomeController;
 use App\Controllers\AccountController;
 use App\Controllers\CompanyController;
 use App\Controllers\ContractController;
+use App\Controllers\EmployeeController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\RoleMiddleware;
 
@@ -11,6 +12,7 @@ $home = new HomeController($app);
 $account = new AccountController($app);
 $company = new CompanyController($app);
 $contract = new ContractController($app);
+$employee = new EmployeeController($app);
 $router->get('/', [$home, 'index']);
 $router->get('/account', [$account, 'show'], [new AuthMiddleware($app)]);
 $router->get('/account/settings', [$account, 'settings'], [new AuthMiddleware($app)]);
@@ -30,6 +32,20 @@ $router->post('/admin/contracts', [$contract, 'store'], [new RoleMiddleware($app
 $router->get('/admin/contracts/edit', [$contract, 'edit'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
 $router->post('/admin/contracts/update', [$contract, 'update'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
 $router->post('/admin/contracts/status', [$contract, 'changeStatus'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+
+$router->get('/admin/employees', [$employee, 'index'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->get('/admin/employees/create', [$employee, 'create'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->post('/admin/employees', [$employee, 'store'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->get('/admin/employees/edit', [$employee, 'edit'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->post('/admin/employees/update', [$employee, 'update'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->post('/admin/employees/status', [$employee, 'changeStatus'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+
+$router->get('/company/employees', [$employee, 'index'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
+$router->get('/company/employees/create', [$employee, 'create'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
+$router->post('/company/employees', [$employee, 'store'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
+$router->get('/company/employees/edit', [$employee, 'edit'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
+$router->post('/company/employees/update', [$employee, 'update'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
+$router->post('/company/employees/status', [$employee, 'changeStatus'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 
 // Auth-only landing pages, not implementations of business modules.
 $areas = [
