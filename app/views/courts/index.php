@@ -45,10 +45,12 @@
         <?php endforeach; ?>
     </div>
     <?php if (!$items): ?><div class="courts-empty"><h2>Chưa tìm thấy cơ sở phù hợp</h2><p>Thử tên khác hoặc bỏ bớt bộ lọc.</p></div><?php endif; ?>
-    <dialog id="detail-drawer" class="court-drawer drawer-left" aria-labelledby="detail-title">
-        <header class="drawer-header"><h2 id="detail-title">Chi tiết cơ sở</h2><button type="button" data-close-drawer aria-label="Đóng chi tiết">×</button></header>
-        <div id="facility-detail-content" class="drawer-body" aria-live="polite"></div>
+    <dialog id="detail-drawer" class="court-drawer drawer-right facility-drawer" aria-label="Chi tiết cơ sở" data-initial-facility="<?= e($openedFacility['ma_co_so'] ?? '') ?>">
+        <button type="button" class="facility-dismiss" data-close-drawer aria-label="Đóng chi tiết cơ sở"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M169.4 297.4C156.9 309.9 156.9 330.2 169.4 342.7L361.4 534.7C373.9 547.2 394.2 547.2 406.7 534.7C419.2 522.2 419.2 501.9 406.7 489.4L237.3 320L406.6 150.6C419.1 138.1 419.1 117.8 406.6 105.3C394.1 92.8 373.8 92.8 361.3 105.3L169.3 297.3z"/></svg></button>
+        <div id="facility-detail-content" aria-live="polite">
+            <?php if (!empty($openedFacility)): $facility = $openedFacility; $courts = $openedCourts; require __DIR__ . '/detail-panel.php'; endif; ?>
+        </div>
     </dialog>
     <?php require __DIR__ . '/booking-modal.php'; ?>
-    <noscript><p>Bật JavaScript để mở bộ lọc và drawer. Bạn vẫn có thể tìm tên và mở trang chi tiết cơ sở.</p></noscript>
+    <noscript><p>Bật JavaScript để sử dụng drawer chi tiết và bộ lọc.</p></noscript>
 </section>

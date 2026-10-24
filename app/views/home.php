@@ -6,12 +6,7 @@
         <h1 id="hero-title">Đặt sân dễ dàng.<br><em>Chơi hết mình.</em></h1>
         <p class="hero__desc">Một điểm hẹn cho người yêu thể thao.<br>Kết nối với hệ thống sân, sẵn sàng cho những trận đấu tiếp theo.</p>
         <div class="hero__actions">
-            <?php if (isset($_SESSION['account_id'])): ?>
-                <a class="btn btn--primary" href="<?= e(url('/account')) ?>">Tài khoản của bạn <span aria-hidden="true">↗</span></a>
-            <?php else: ?>
-                <a class="btn btn--primary" href="<?= e(url('/register')) ?>">Đăng ký ngay <span aria-hidden="true">↗</span></a>
-                <a class="btn btn--outline" href="<?= e(url('/login')) ?>">Đăng nhập</a>
-            <?php endif; ?>
+            <a class="btn btn--primary" href="<?= e(url('/courts')) ?>">Đặt sân ngay <span aria-hidden="true">↗</span></a>
         </div>
     </div>
     <div class="hero-bottom container"><span>RA SÂN. KẾT NỐI. BỨT PHÁ.</span><a href="#about" aria-label="Khám phá STRYKE">Khám phá <span aria-hidden="true">↓</span></a></div>

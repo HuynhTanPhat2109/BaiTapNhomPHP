@@ -19,17 +19,19 @@ final class CourtBrowserController extends Controller
         return trim($value);
     }
     private function model(): CourtBrowser { return new CourtBrowser($this->app->pdo()); }
-    public function index(): void
+    public function index(?array $openedFacility = null): void
     {
         $filters = ['q' => $this->input('q'), 'ma_tinh' => $this->input('ma_tinh'), 'ma_phuong_xa' => $this->input('ma_phuong_xa'), 'ma_bo_mon' => $this->input('ma_bo_mon')];
         if ($filters['ma_bo_mon'] !== '' && !CoSoService::validId($filters['ma_bo_mon'])) throw new HttpException(422, 'Bộ môn không hợp lệ.');
         if ($filters['ma_phuong_xa'] !== '' && $filters['ma_tinh'] === '') throw new HttpException(422, 'Chọn tỉnh trước khi chọn phường/xã.');
+        if ($openedFacility === null && $this->input('facility') !== '') $openedFacility = $this->facility($this->input('facility'));
         $this->render('courts/index', ['title' => 'Tìm sân của bạn', 'filters' => $filters,
+            'openedFacility' => $openedFacility, 'openedCourts' => $openedFacility ? $this->model()->courts((int) $openedFacility['ma_co_so']) : [],
             'provinces' => AdministrativeAddress::provinces(), 'sports' => $this->model()->sports(), 'items' => $this->model()->facilities($filters)]);
     }
-    private function facility(): array
+    private function facility(?string $id = null): array
     {
-        $id = $this->input('id');
+        $id ??= $this->input('id');
         if (!CoSoService::validId($id)) throw new HttpException(404, 'Không tìm thấy cơ sở.');
         $items = $this->model()->facilities(['ma_co_so' => $id]);
         if (!$items) throw new HttpException(404, 'Cơ sở không khả dụng.');
@@ -38,7 +40,7 @@ final class CourtBrowserController extends Controller
     public function show(): void
     {
         $facility = $this->facility();
-        $this->render('courts/show', ['title' => $facility['ten_co_so'], 'facility' => $facility, 'courts' => $this->model()->courts((int) $facility['ma_co_so'])]);
+        $this->index($facility);
     }
 
     public function panel(): void

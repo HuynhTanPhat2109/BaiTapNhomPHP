@@ -1,0 +1,202 @@
+.court-flow-bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:16px 24px;border-bottom:1px solid #304335;background:#122018}
+.court-flow-bar a{text-decoration:none;color:#dfebdc;font-size:14px}
+.court-flow-bar .court-flow-brand{font-size:24px;font-weight:800;letter-spacing:-1px}.court-flow-brand span{color:#c8f36b}
+.court-flow-back {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #dfebdc;
+}
+.court-flow-back svg{
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    fill: #ffffff;}
+.court-flow a:focus-visible{outline:2px solid #c8f36b;outline-offset:4px}
+.facility-detail-page{max-width:1100px;margin:24px auto;padding:0 24px 32px}
+.facility-detail-page>.court-photo{height:clamp(200px,32vw,360px);border-radius:12px;object-fit:cover;width:100%}
+.facility-tablist{display:flex;overflow-x:auto;gap:4px;border-bottom:1px solid #3c5040;scrollbar-width:thin;margin:24px 0 0}
+.facility-tablist a{flex-shrink:0;padding:14px 12px;color:#abbfa9;text-decoration:none;font-size:14px;border-bottom:3px solid transparent}
+.facility-tablist a[aria-selected="true"]{color:#cff88a;border-bottom-color:#b9ed6f;background:#203327}
+.facility-tabs [data-facility-panel]{padding:24px 4px;line-height:1.65;overflow-wrap:anywhere}
+.facility-tabs [data-facility-panel][hidden]{display:none}
+.facility-tabs h3{font-size:18px;margin:0 0 16px}.facility-tab-empty{padding:22px;background:#182a20;border:1px solid #344b3a;border-radius:10px;color:#b8cbb5}
+.facility-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.facility-gallery figure{margin:0}.facility-gallery .court-photo{width:100%;height:auto;max-height:460px;object-fit:contain;border-radius:8px}.facility-gallery figcaption{font-size:13px;color:#acbda8;margin-top:8px}
+@media(prefers-reduced-motion:no-preference){.facility-tablist a{transition:color .15s,background .15s}.facility-tabs [data-facility-panel]:not([hidden]){animation:facility-tab-in .15s ease-out}@keyframes facility-tab-in{from{opacity:.6}to{opacity:1}}}
+@media(max-width:600px){.court-flow-bar{gap:10px;padding:14px 12px}.court-flow-bar a{font-size:12px}.court-flow-bar .court-flow-brand{font-size:21px}.facility-detail-page{padding:0 14px 24px;margin-top:16px}.facility-tablist a{padding:12px 10px;font-size:13px}}
+
+/* Facility detail: shared content inside the existing native dialog. */
+.facility-drawer {
+    left: 0;
+    right: auto;
+    width: min(540px, 100%);
+    border-left: 0;
+    border-right: 1px solid #3b5141;
+    box-shadow: 24px 0 72px #0007;
+}
+.facility-drawer::backdrop{background:#02090699}
+.facility-drawer[open]{animation:facility-slide-in .26s cubic-bezier(.22,.7,.3,1)}
+/* Nút đóng drawer chi tiết cơ sở */
+.facility-dismiss {
+    position: sticky;
+    top: 16px;
+    align-self: flex-start;
+    z-index: 20;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 44px;
+
+    width: 44px;
+    height: 44px;
+    margin: 16px 0 -60px 20px;
+    padding: 0;
+
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 50%;
+
+    background: rgba(12, 28, 20, 0.78);
+    color: #ffffff;
+
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    cursor: pointer;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+/* Mũi tên */
+.facility-dismiss svg {
+    display: block;
+    width: 19px;
+    height: 19px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+/* Hover */
+.facility-dismiss:hover {
+    background: rgba(25, 58, 37, 0.95);
+    border-color: rgba(200, 243, 107, 0.65);
+    color: #c8f36b;
+    transform: translateX(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Khi nhấn */
+.facility-dismiss:active {
+    transform: scale(0.94);
+}
+/* Không hiện vòng focus khi thao tác bằng chuột */
+.facility-dismiss:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Giữ focus rõ ràng khi dùng bàn phím */
+.facility-dismiss:focus-visible {
+    outline: 2px solid #c8f36b;
+    outline-offset: 3px;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    .facility-dismiss {
+        width: 42px;
+        height: 42px;
+        flex-basis: 42px;
+        margin-left: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .facility-dismiss {
+        transition: none;
+    }
+}
+#facility-detail-content{flex:1;min-width:0}
+#facility-detail-content[aria-busy=true]{padding:90px 24px;color:#bfcfb7}
+.facility-cover{height: 185px;position:relative;background:#213b29}
+.facility-cover>.court-photo{width:100%;height:100%;border-radius:0;object-fit:cover}
+.facility-cover::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#03150c55,transparent 50%,#102119ba)}
+.facility-cover-caption{position:absolute;bottom:36px;left:24px;z-index:1;color:#f0f9e7;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.facility-overview{position:relative;margin: -18px 14px 0;padding: 18px;background:#1b3023;border:1px solid #3c5340;border-radius:12px;box-shadow:0 10px 28px #0003}
+.facility-overview .detail-identity{margin:0 0 16px;align-items:center}
+.facility-overview .detail-identity h2{font-size:21px;line-height:1.2;overflow-wrap:anywhere;margin:0}
+.facility-overview .club-logo{flex-shrink:0;width:48px;height:48px;background:#12251a}
+.facility-sports{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.facility-sports span{border:1px solid #60794a;border-radius:30px;padding:3px 10px;font-size:12px;color:#c8ed9f}
+.facility-overview-facts {
+    margin: 0;
+    display: grid;
+    gap: 16px;
+}
+
+.facility-overview-facts > div {
+    display: grid;
+    grid-template-columns: 115px minmax(0, 1fr);
+    align-items: start;
+    column-gap: 20px;
+}
+
+.facility-overview-facts dt {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    align-items: center;
+    column-gap: 8px;
+
+    margin: 0;
+    color: #a5bca5;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.facility-overview-facts dt span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 20px;
+    height: 20px;
+
+    color: #c8f36b;
+    font-size: 17px;
+    line-height: 1;
+}
+
+.facility-overview-facts dd {
+    min-width: 0;
+    margin: 0;
+
+    color: #edf4e9;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 420px) {
+    .facility-overview-facts > div {
+        grid-template-columns: 105px minmax(0, 1fr);
+        column-gap: 12px;
+    }
+}
+.facility-drawer .facility-tabs{padding:0 16px}
+.facility-drawer .facility-tablist{gap:0;margin-top:18px}
+.facility-drawer .facility-tablist a{font-size:12px;padding:14px 9px}
+.facility-drawer .detail-book{position:sticky;bottom:0;z-index:4;display:flex;align-items:center;gap:18px;margin-top:12px;padding:16px 20px calc(16px + env(safe-area-inset-bottom));background:#14271bf5;border-top:1px solid #3b5141;backdrop-filter:blur(8px)}
+.facility-drawer .detail-book span{font-size:12px;color:#adbea6;flex:1}
+.facility-drawer .detail-book a{width:auto;min-width:50px; padding: 0px 15px!important}
+@keyframes facility-slide-in {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(0); }
+}
+@media(max-width:700px){.facility-drawer{width:100%}.facility-cover{height:200px}.facility-overview{margin-left:12px;margin-right:12px;padding:18px}.facility-drawer .facility-tabs{padding:0 16px}.facility-overview-facts>div{grid-template-columns:100px 1fr}.facility-drawer .detail-book{padding-left:16px;padding-right:16px}}
+@media(prefers-reduced-motion:reduce){.facility-drawer[open]{animation:none}}
