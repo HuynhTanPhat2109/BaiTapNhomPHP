@@ -24,7 +24,8 @@ final class View
         $isAdminAccount = $isAccountPage
             && ($data['user']['ten_vai_tro'] ?? null) === 'QUAN_TRI_TAP_DOAN';
         $layout = (str_starts_with($template, 'admin/') || $isAdminAccount) ? 'admin'
-            : (in_array($template, ['auth/login', 'auth/register'], true) ? 'auth' : 'main');
+            : (str_starts_with($template, 'courts/') ? 'courts'
+            : (in_array($template, ['auth/login', 'auth/register'], true) ? 'auth' : 'main'));
         require dirname(__DIR__) . '/app/views/layouts/' . $layout . '.php';
     }
 }

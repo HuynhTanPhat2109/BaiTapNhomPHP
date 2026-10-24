@@ -1,10 +1,49 @@
 'use strict';
 (() => {
+    function initializeTabs(scope) {
+        scope.querySelectorAll('[data-facility-tabs]').forEach(group => {
+            if (group.dataset.tabsReady) return;
+            group.dataset.tabsReady = 'true';
+            const tabs = [...group.querySelectorAll('[data-facility-tab]')];
+            const panels = [...group.querySelectorAll('[data-facility-panel]')];
+            group.querySelector('.facility-tablist').setAttribute('role', 'tablist');
+            function select(tab, focus = false) {
+                tabs.forEach(item => {
+                    item.setAttribute('aria-selected', String(item === tab));
+                    item.tabIndex = item === tab ? 0 : -1;
+                });
+                panels.forEach(panel => { panel.hidden = panel.dataset.facilityPanel !== tab.dataset.facilityTab; });
+                if (focus) tab.focus();
+            }
+            tabs.forEach((tab, index) => {
+                tab.setAttribute('role', 'tab');
+                tab.setAttribute('aria-controls', tab.hash.slice(1));
+                tab.addEventListener('click', event => { event.preventDefault(); select(tab); });
+                tab.addEventListener('keydown', event => {
+                    const next = {ArrowRight: (index + 1) % tabs.length, ArrowLeft: (index + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1}[event.key];
+                    if (next !== undefined) { event.preventDefault(); select(tabs[next], true); }
+                    if (event.key === ' ') { event.preventDefault(); select(tab); }
+                });
+            });
+            panels.forEach(panel => { panel.setAttribute('role', 'tabpanel'); panel.tabIndex = 0; });
+            select(tabs[0]);
+        });
+    }
+    initializeTabs(document);
     const filterDrawer = document.getElementById('filter-drawer');
     const detailDrawer = document.getElementById('detail-drawer');
     let detailRequest;
+    let detailOpener;
+    function detailUrl(id) {
+        const address = new URL(location.href);
+        address.searchParams.set('route', '/courts');
+        address.searchParams.delete('id');
+        if (id) address.searchParams.set('facility', id);
+        else address.searchParams.delete('facility');
+        history.replaceState(history.state, '', address);
+    }
     function openDrawer(dialog) {
-        dialog.showModal();
+        if (!dialog.open) dialog.showModal();
         document.body.classList.add('drawer-open');
     }
     document.querySelectorAll('.court-drawer').forEach(dialog => {
@@ -14,14 +53,20 @@
             if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
         });
         dialog.addEventListener('close', () => {
-            document.body.classList.remove('drawer-open');
-            if (dialog === detailDrawer && detailRequest) detailRequest.abort();
+            if (!document.querySelector('dialog[open]')) document.body.classList.remove('drawer-open');
+            if (dialog === detailDrawer) {
+                detailRequest?.abort();
+                detailUrl(null);
+                (detailOpener || document.getElementById('court-search'))?.focus({preventScroll:true});
+            }
         });
     });
     document.querySelector('[data-open-filter]')?.addEventListener('click', () => openDrawer(filterDrawer));
     document.querySelectorAll('.facility-detail-link').forEach(link => link.addEventListener('click', async event => {
         if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
+        detailOpener = link;
+        detailUrl(new URL(link.href, location.href).searchParams.get('id'));
         if (detailRequest) detailRequest.abort();
         const request = new AbortController();
         detailRequest = request;
@@ -29,11 +74,15 @@
         content.textContent = 'Đang tải thông tin cơ sở…';
         content.setAttribute('aria-busy', 'true');
         openDrawer(detailDrawer);
+        detailDrawer.scrollTop = 0;
         try {
             const response = await fetch(link.dataset.panelUrl, {signal: request.signal, headers: {'Accept': 'text/html'}});
             if (!response.ok) throw new Error('Không tải được cơ sở');
             const html = await response.text();
-            if (!request.signal.aborted) content.innerHTML = html; // Same-origin escaped server template.
+            if (!request.signal.aborted) {
+                content.innerHTML = html; // Same-origin escaped server template.
+                initializeTabs(content);
+            }
         } catch (error) {
             if (error.name !== 'AbortError') {
                 content.textContent = 'Cơ sở không còn khả dụng hoặc kết nối bị gián đoạn. ';
@@ -44,6 +93,10 @@
             }
         } finally { if (!request.signal.aborted) content.removeAttribute('aria-busy'); }
     }));
+    if (detailDrawer?.dataset.initialFacility) {
+        openDrawer(detailDrawer);
+        detailUrl(detailDrawer.dataset.initialFacility);
+    }
     const bookingChoice = document.getElementById('booking-choice');
     let bookingOpener;
     document.addEventListener('click', event => {
