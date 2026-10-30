@@ -161,6 +161,9 @@
 .page-admin .admin-list .list-action--stop:hover { background: #f9e6bc; }
 .page-admin .list-action svg { width: 16px; height: 16px; flex: 0 0 16px; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .page-admin .list-action:focus-visible, .page-admin .list-page:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.page-admin .contract-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.page-admin .contract-actions__select { min-width: 132px; min-height: 34px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-input); color: var(--text); font: inherit; cursor: pointer; }
+.page-admin .contract-actions__select:focus-visible { border-color: var(--primary); outline: 2px solid var(--primary); outline-offset: 2px; }
 .page-admin .list-pagination { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding-top: 16px; }
 .page-admin .list-pagination__summary { color: var(--muted); font-size: 12px; line-height: 1.8; }
 .page-admin .list-pagination__summary span { white-space: nowrap; }
