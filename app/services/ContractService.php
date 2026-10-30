@@ -23,6 +23,11 @@ final class ContractService
         return $this->contracts->all();
     }
 
+    public function byCompany(int $companyId): array
+    {
+        return $this->contracts->byCompany($companyId);
+    }
+
     public function find(int $id): ?array
     {
         return $this->contracts->find($id);
