@@ -1,4 +1,4 @@
-<?php
+<?php $bodyClass = 'page-catalog';
 $errors = $errors ?? [];
 $old = $old ?? [];
 $companies = $companies ?? [];
@@ -15,12 +15,12 @@ $value = static function (array $data, array $fallback, string $field, string $d
 $status = $value($old, $contract, 'trang_thai');
 $id = $contract['ma_hop_dong'] ?? '';
 ?>
-<section class="container account-page">
-    <div class="account-page__intro">
+<section class="container account-page catalog-page">
+    <header class="account-page__intro catalog-heading">
         <p class="eyebrow">Quản trị tập đoàn / Hợp đồng nhượng quyền</p>
         <h1 class="account-h1">Sửa hợp đồng</h1>
-    </div>
-    <form method="post" action="<?= e(url('/admin/contracts/update') . '&id=' . rawurlencode((string) $id)) ?>">
+    </header>
+    <form class="catalog-form" method="post" action="<?= e(url('/admin/contracts/update') . '&id=' . rawurlencode((string) $id)) ?>">
         <?= csrf_field() ?>
         <div class="form-group">
             <label for="ma_cong_ty">Công ty</label>
@@ -77,7 +77,7 @@ $id = $contract['ma_hop_dong'] ?? '';
             </select>
             <?= field_error('trang_thai', $errors) ?>
         </div>
-        <button class="btn btn--primary" type="submit">Lưu thay đổi</button>
-        <a class="btn btn--small" href="<?= e(url('/admin/contracts')) ?>">Quay lại</a>
+        <div class="catalog-actions"><button class="btn btn--primary" type="submit">Lưu thay đổi</button>
+        <a class="btn btn--outline" href="<?= e(url('/admin/contracts')) ?>">Quay lại</a></div>
     </form>
 </section>

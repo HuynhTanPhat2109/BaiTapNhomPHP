@@ -49,10 +49,10 @@ $router->post('/company/employees/status', [$employee, 'changeStatus'], [new Rol
 
 // Auth-only landing pages, not implementations of business modules.
 $areas = [
-    '/company' => ['Quản lý công ty', ['QUAN_LY_CONG_TY']],
     '/facility' => ['Quản lý cơ sở', ['QUAN_LY_CO_SO']],
     '/staff' => ['Nhân viên', ['NHAN_VIEN']],
 ];
+$router->get('/company', [$company, 'dashboard'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 foreach ($areas as $path => [$title, $roles]) {
     $router->get($path, static function () use ($home, $title): void {
         $home->rolePage($title);

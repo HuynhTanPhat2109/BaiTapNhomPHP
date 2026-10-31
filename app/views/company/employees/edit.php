@@ -1,4 +1,4 @@
-<?php
+<?php $bodyClass = 'page-catalog';
 $errors = $errors ?? [];
 $old = $old ?? [];
 $options = $options ?? [];
@@ -13,9 +13,9 @@ $status = $value($old, $employee, 'trang_thai', 'DANG_LAM');
 $selectedFacility = $value($old, $employee, 'ma_co_so');
 $id = $employee['ma_nhan_vien'] ?? '';
 ?>
-<section class="container account-page">
-    <div class="account-page__intro"><p class="eyebrow">Công ty / Nhân viên</p><h1 class="account-h1">Sửa nhân viên</h1></div>
-    <form method="post" action="<?= e(url('/company/employees/update')) ?>">
+<section class="container account-page catalog-page">
+    <header class="account-page__intro catalog-heading"><div><p class="eyebrow">Công ty / Nhân viên</p><h1 class="account-h1">Sửa nhân viên</h1></div></header>
+    <form class="catalog-form" method="post" action="<?= e(url('/company/employees/update')) ?>">
         <?= csrf_field() ?><input type="hidden" name="id" value="<?= e($id) ?>">
         <div class="form-group"><label for="ho_ten">Họ tên</label><input class="form-control" id="ho_ten" name="ho_ten" required maxlength="150" value="<?= e($value($old, $employee, 'ho_ten')) ?>"<?= field_error_attributes('ho_ten', $errors) ?>><?= field_error('ho_ten', $errors) ?></div>
         <div class="form-group"><label for="ngay_sinh">Ngày sinh</label><input class="form-control" id="ngay_sinh" name="ngay_sinh" type="date" value="<?= e($value($old, $employee, 'ngay_sinh')) ?>"<?= field_error_attributes('ngay_sinh', $errors) ?>><?= field_error('ngay_sinh', $errors) ?></div>
@@ -27,6 +27,6 @@ $id = $employee['ma_nhan_vien'] ?? '';
         <div class="form-group"><label for="chuc_vu">Chức vụ</label><input class="form-control" id="chuc_vu" name="chuc_vu" maxlength="100" value="<?= e($value($old, $employee, 'chuc_vu')) ?>"<?= field_error_attributes('chuc_vu', $errors) ?>><?= field_error('chuc_vu', $errors) ?></div>
         <div class="form-group"><label for="ngay_vao_lam">Ngày vào làm</label><input class="form-control" id="ngay_vao_lam" name="ngay_vao_lam" type="date" value="<?= e($value($old, $employee, 'ngay_vao_lam')) ?>"<?= field_error_attributes('ngay_vao_lam', $errors) ?>><?= field_error('ngay_vao_lam', $errors) ?></div>
         <div class="form-group"><label for="trang_thai">Trạng thái</label><select class="form-control" id="trang_thai" name="trang_thai" required<?= field_error_attributes('trang_thai', $errors) ?>><option value="DANG_LAM" <?= $status === 'DANG_LAM' ? 'selected' : '' ?>>Đang làm</option><option value="DA_NGHI" <?= $status === 'DA_NGHI' ? 'selected' : '' ?>>Đã nghỉ</option></select><?= field_error('trang_thai', $errors) ?></div>
-        <button class="btn btn--primary" type="submit">Lưu thay đổi</button><a class="btn btn--small" href="<?= e(url('/company/employees')) ?>">Quay lại</a>
+        <div class="catalog-actions"><button class="btn btn--primary" type="submit">Lưu thay đổi</button><a class="btn btn--outline" href="<?= e(url('/company/employees')) ?>">Quay lại</a></div>
     </form>
 </section>

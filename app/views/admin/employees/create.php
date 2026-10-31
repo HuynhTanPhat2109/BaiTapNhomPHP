@@ -1,4 +1,4 @@
-<?php
+<?php $bodyClass = 'page-catalog';
 $errors = $errors ?? [];
 $old = $old ?? [];
 $options = $options ?? [];
@@ -10,9 +10,9 @@ $value = static function (array $data, string $field, string $default = ''): str
 $status = $value($old, 'trang_thai', 'DANG_LAM');
 $gender = $value($old, 'gioi_tinh');
 ?>
-<section class="container account-page">
-    <div class="account-page__intro"><p class="eyebrow">Quản trị tập đoàn / Nhân viên</p><h1 class="account-h1">Onboard quản lý công ty</h1></div>
-    <form method="post" action="<?= e(url('/admin/employees')) ?>">
+<section class="container account-page catalog-page">
+    <header class="account-page__intro catalog-heading"><div><p class="eyebrow">Quản trị tập đoàn / Nhân viên</p><h1 class="account-h1">Onboard quản lý công ty</h1></div></header>
+    <form class="catalog-form" method="post" action="<?= e(url('/admin/employees')) ?>">
         <?= csrf_field() ?>
         <div class="form-group">
             <label for="ma_cong_ty">Công ty</label>
@@ -38,7 +38,7 @@ $gender = $value($old, 'gioi_tinh');
         <div class="form-group"><label for="password">Mật khẩu</label><input class="form-control" id="password" name="password" type="password" value="" required<?= field_error_attributes('password', $errors) ?>><?= field_error('password', $errors) ?></div>
         <p>Vai trò tài khoản: <strong>Quản lý công ty</strong></p>
         <?= field_error('account', $errors) ?>
-        <button class="btn btn--primary" type="submit">Tạo quản lý công ty</button>
-        <a class="btn btn--small" href="<?= e(url('/admin/employees')) ?>">Quay lại</a>
+        <div class="catalog-actions"><button class="btn btn--primary" type="submit">Tạo quản lý công ty</button>
+        <a class="btn btn--outline" href="<?= e(url('/admin/employees')) ?>">Quay lại</a></div>
     </form>
 </section>

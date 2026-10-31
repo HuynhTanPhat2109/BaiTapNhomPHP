@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Services\CompanyService;
+use App\Models\CoSo;
+use App\Services\ContractService;
 use App\Services\ValidationException;
 use Core\Application;
 use Core\Controller;
@@ -24,6 +26,31 @@ final class CompanyController extends Controller
         $this->render('admin/companies/index', [
             'title' => 'Quản lý công ty nhượng quyền',
             'companies' => $this->companies->all(),
+        ]);
+    }
+
+    public function dashboard(): void
+    {
+        $user = $this->app->auth()->user();
+        $companyValue = $user['ma_cong_ty'] ?? null;
+        if (!is_int($companyValue) && !(is_string($companyValue) && preg_match('/\\A[1-9][0-9]*\\z/', $companyValue))) {
+            throw new HttpException(403, 'Tài khoản không được gắn với công ty hợp lệ.');
+        }
+        $companyId = filter_var((string) $companyValue, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($companyId === false) {
+            throw new HttpException(403, 'Tài khoản không được gắn với công ty hợp lệ.');
+        }
+
+        $company = $this->companies->find($companyId);
+        if ($company === null) {
+            throw new HttpException(404, 'Không tìm thấy công ty.');
+        }
+
+        $this->render('company/index', [
+            'title' => $company['ten_cong_ty'],
+            'company' => $company,
+            'facilities' => (new CoSo($this->app->pdo()))->byCompany($companyId),
+            'contracts' => (new ContractService($this->app->pdo()))->byCompany($companyId),
         ]);
     }
 
