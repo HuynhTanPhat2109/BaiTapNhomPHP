@@ -358,6 +358,9 @@ CREATE TABLE bang_gia (
 
 CREATE TABLE dat_san (
     ma_dat_san INT AUTO_INCREMENT PRIMARY KEY,
+    khoa_yeu_cau CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    dau_van_tay_yeu_cau CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    UNIQUE KEY uq_datsan_khoa_yeu_cau (khoa_yeu_cau),
     ma_co_so INT NOT NULL,
     ma_khach_hang INT NOT NULL,
     ma_nhan_vien INT NULL,

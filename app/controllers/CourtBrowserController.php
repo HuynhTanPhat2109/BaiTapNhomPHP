@@ -52,12 +52,26 @@ final class CourtBrowserController extends Controller
     }
     public function schedule(): void
     {
+        header('Cache-Control: no-store');
         $facility = $this->facility();
         $now = CourtScheduleService::now();
         $date = $this->input('date', $now->format('Y-m-d'));
         CourtScheduleService::validateDate($date, $now);
         $model = $this->model();
-        $schedule = CourtScheduleService::build($facility, $model->courts((int) $facility['ma_co_so']), $model->intervals((int) $facility['ma_co_so'], $date), $date, $now);
+        $courts = $model->courts((int) $facility['ma_co_so']);
+        $intervals = $model->intervals((int) $facility['ma_co_so'], $date);
+        $now = CourtScheduleService::now();
+        $schedule = CourtScheduleService::build($facility, $courts, $intervals, $date, $now);
+        if ($this->input('status') === '1') {
+            header('Content-Type: application/json; charset=UTF-8');
+            // Only public slot states. Never include booking IDs, customers, prices or payment data.
+            echo json_encode([
+                'facility' => (int)$facility['ma_co_so'], 'date' => $date, 'now' => $now->format(DATE_ATOM),
+                'slots' => array_map(static fn($slot) => [substr($slot['start'],0,5), substr($slot['end'],0,5)], $schedule['slots']),
+                'courts' => array_map(static fn($row) => ['id' => (int)$row['court']['ma_san'], 'states' => array_column($row['cells'],'state')], $schedule['rows']),
+            ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            return;
+        }
         $selection = null; $error = null;
         if (isset($_GET['court'], $_GET['start'], $_GET['end'])) {
             try { $selection = CourtScheduleService::selection($schedule, $this->input('court'), $this->input('start'), $this->input('end')); }
@@ -69,6 +83,8 @@ final class CourtBrowserController extends Controller
             echo json_encode(['selection' => $selection, 'date' => $date, 'error' => $error], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
             return;
         }
-        $this->render('courts/schedule', compact('facility', 'date', 'now', 'schedule', 'selection', 'error') + ['title' => 'Lịch sân'], $error ? 422 : 200);
+        $bookingNotice = $_SESSION['booking_notice'] ?? null;
+        unset($_SESSION['booking_notice']);
+        $this->render('courts/schedule', compact('facility', 'date', 'now', 'schedule', 'selection', 'error', 'bookingNotice') + ['title' => 'Lịch sân'], $error ? 422 : 200);
     }
 }
