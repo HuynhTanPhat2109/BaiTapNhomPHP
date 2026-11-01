@@ -19,18 +19,21 @@
             if (history.state?.[marker] === pageUrl && history.state?.step === 'guard') {
                 // Consume our own guard only; the route from PHP determines the destination.
                 history.go(-1);
+                setTimeout(() => { if (destination) location.replace(destination); }, 350);
             } else location.replace(destination);
         }
         async function leave() {
             if (leaving) return;
             if (!cancelForm) { goToSchedule(navigation.dataset.backUrl); return; }
             leaving = true;
-            cancelButton.disabled = true;
-            cancelButton.setAttribute('aria-busy', 'true');
-            cancelError.hidden = true;
             const request = new AbortController();
             const timeout = setTimeout(() => request.abort(), 12000);
             try {
+                if (cancelButton) {
+                    cancelButton.disabled = true;
+                    cancelButton.setAttribute('aria-busy', 'true');
+                }
+                if (cancelError) cancelError.hidden = true;
                 const response = await fetch(cancelForm.action, {
                     method:'POST', body:new FormData(cancelForm),
                     headers:{Accept:'application/json'}, signal:request.signal
@@ -39,16 +42,23 @@
                 if (!response.ok || !result.redirect) throw new Error(result.error || 'Chưa xác nhận được việc hủy. Vui lòng thử lại; nếu phiên đã hết hạn, tải lại trang và đăng nhập.');
                 goToSchedule(result.redirect);
             } catch (error) {
-                cancelError.hidden = false;
-                cancelError.querySelector('[data-cancel-message]').textContent = error.name === 'AbortError'
-                    ? 'Chưa nhận được kết quả hủy. Vui lòng thử lại; yêu cầu lặp không hủy hoặc hoàn tồn hai lần.' : error.message;
-                cancelError.querySelector('button').focus();
+                if (cancelError) {
+                    cancelError.hidden = false;
+                    const messageEl = cancelError.querySelector('[data-cancel-message]');
+                    if (messageEl) {
+                        messageEl.textContent = error.name === 'AbortError'
+                            ? 'Chưa nhận được kết quả hủy. Vui lòng thử lại; yêu cầu lặp không hủy hoặc hoàn tồn hai lần.' : error.message;
+                    }
+                    cancelError.querySelector('button')?.focus();
+                }
                 armBack();
             } finally {
                 clearTimeout(timeout);
                 leaving = false;
-                cancelButton.disabled = false;
-                cancelButton.removeAttribute('aria-busy');
+                if (cancelButton) {
+                    cancelButton.disabled = false;
+                    cancelButton.removeAttribute('aria-busy');
+                }
             }
         }
         armBack();
@@ -148,26 +158,124 @@
     const counter=waiting.querySelector('[data-countdown]'), message=waiting.querySelector('[data-wait-message]');
     const labels = {CHO_THANH_TOAN:'Sân đang được tạm giữ', DA_HUY:'Đã hủy giữ sân', HET_HAN:'Đã hết thời gian giữ sân', DA_XAC_NHAN:'Booking đã được xác nhận', HOAN_THANH:'Booking đã hoàn thành', CHO_XAC_NHAN:'Booking chưa được giữ sân'};
     let checking=false;
+    let pollTimer=null, tickTimer=null;
+
+    const TERMINAL_STATES=['DA_HUY','HET_HAN','DA_XAC_NHAN','HOAN_THANH'];
+    function isTerminal(s) {
+        return TERMINAL_STATES.includes(s);
+    }
+
+    function stopPolling() {
+        if (pollTimer !== null) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+    }
+
+    function stopAllTimers() {
+        stopPolling();
+        if (tickTimer !== null) {
+            clearInterval(tickTimer);
+            tickTimer = null;
+        }
+    }
+
     async function refresh() {
-        if(checking) return; checking=true;
+        if(checking || isTerminal(state)) {
+            stopPolling();
+            return;
+        }
+        checking=true;
         try {
             const response=await fetch(waiting.dataset.statusUrl,{headers:{Accept:'application/json'},cache:'no-store'});
             if(!response.ok) throw new Error();
-            const data=await response.json(); epoch=Date.parse(data.now);start=performance.now();state=data.state;
+            const data=await response.json();
+            if (data.now) epoch=Date.parse(data.now);
+            start=performance.now();
+            if (data.state) state=data.state;
+            if (data.payment_status==='THANH_CONG' && state==='CHO_THANH_TOAN') {
+                state='DA_XAC_NHAN';
+            }
             tick();
-        } catch { message.textContent='Chưa cập nhật được trạng thái. Thời hạn giữ sân không được gia hạn.'; }
-        finally { checking=false; }
+            if (isTerminal(state)) {
+                stopAllTimers();
+            }
+        } catch {
+            if (message && !isTerminal(state)) {
+                message.textContent='Chưa cập nhật được trạng thái. Thời hạn giữ sân không được gia hạn.';
+            }
+        } finally {
+            checking=false;
+        }
     }
+
     function tick() {
         const seconds=Number.isFinite(deadline)?Math.max(0,Math.ceil((deadline-epoch-(performance.now()-start))/1000)):0;
-        counter.textContent=state==='CHO_THANH_TOAN' ? String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0') : '00:00';
-        message.textContent=state==='CHO_THANH_TOAN' && seconds===0 ? 'Thời gian giữ sân đã hết. Đang cập nhật trạng thái…' : (labels[state] || 'Trạng thái booking đã thay đổi');
-        waiting.querySelector('[data-payment-pending]').hidden=state!=='CHO_THANH_TOAN' || seconds===0;
-        if (cancelButtonForState()) cancelButtonForState().setAttribute('aria-label', state==='CHO_THANH_TOAN' && seconds>0 ? 'Hủy giữ sân và về lịch sân' : 'Về lịch sân');
+        const isConfirmed=(state==='DA_XAC_NHAN' || state==='HOAN_THANH');
+        const isEnded=(state==='DA_HUY' || state==='HET_HAN');
+        const isWaiting=(state==='CHO_THANH_TOAN' && seconds>0);
+
+        if (counter) {
+            counter.textContent = isWaiting
+                ? String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')
+                : '00:00';
+        }
+
+        if (message) {
+            if (isConfirmed) {
+                message.textContent=labels[state] || 'Booking đã được xác nhận';
+            } else if (isEnded) {
+                message.textContent=labels[state] || 'Đã hết thời gian giữ sân';
+            } else if (seconds===0) {
+                message.textContent='Thời gian giữ sân đã hết. Đang cập nhật trạng thái…';
+            } else {
+                message.textContent=labels[state] || 'Sân đang được tạm giữ';
+            }
+        }
+
+        // Cập nhật hiển thị giao diện: ẩn/hiện pending, success, expired
+        const pendingEls=waiting.querySelectorAll('[data-payment-pending]');
+        pendingEls.forEach(el => { el.hidden = !isWaiting; });
+
+        const bottomBar=waiting.querySelector('.stryke-bottom-bar') || document.querySelector('.stryke-bottom-bar');
+        if (bottomBar) bottomBar.hidden = !isWaiting;
+
+        const successEl=waiting.querySelector('[data-payment-success]');
+        if (successEl) successEl.hidden = !isConfirmed;
+
+        const expiredEl=waiting.querySelector('[data-payment-expired]');
+        if (expiredEl) {
+            expiredEl.hidden = !(isEnded || (!isConfirmed && seconds===0));
+        }
+
+        if (cancelButtonForState()) {
+            cancelButtonForState().setAttribute('aria-label', isWaiting ? 'Hủy giữ sân và về lịch sân' : 'Về lịch sân');
+            if (isConfirmed) {
+                cancelButtonForState().disabled = true;
+            }
+        }
+
+        if (isTerminal(state)) {
+            stopAllTimers();
+        } else if (seconds===0) {
+            if (tickTimer !== null) {
+                clearInterval(tickTimer);
+                tickTimer = null;
+            }
+            refresh();
+        }
     }
+
     function cancelButtonForState() { return cancelForm?.querySelector('button'); }
-    tick(); setInterval(tick,1000); setInterval(refresh,5000);
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden) refresh();});
+
+    tick();
+    if (!isTerminal(state)) {
+        tickTimer=setInterval(tick,1000);
+        pollTimer=setInterval(refresh,5000);
+    }
+    document.addEventListener('visibilitychange',()=>{
+        if(!document.hidden && !isTerminal(state)) refresh();
+    });
 })();
 
 

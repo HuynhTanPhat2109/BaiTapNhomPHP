@@ -1,0 +1,995 @@
+/* =========================================================
+   STRYKE - PAYMENT CHECKOUT UI
+   Tuân thủ nghiêm ngặt hệ thống màu sắc chủ đạo STRYKE (Dark Mode):
+   --bk-bg: #122018 | --bk-surface: #1a2b20 | --bk-line: #34483a
+   --bk-text: #edf3e9 | --bk-muted: #a8b9a9 | --bk-accent: #c8f36b
+   Không ghi đè hoặc can thiệp Header chung của hệ thống.
+   Tuân thủ nghiêm ngặt Content Security Policy (style-src 'self').
+========================================================= */
+
+/* Khung trang thanh toán - Rộng 1680px đồng bộ chuẩn hệ thống visual booking của STRYKE */
+.booking-page.booking-wait {
+    max-width: 1680px;
+    width: 100%;
+    margin: 28px auto 140px;
+    padding: 0 32px;
+    color: var(--bk-text, #edf3e9);
+}
+
+/* Ẩn các khối cũ không cần thiết nhưng vẫn giữ nguyên .booking-heading nguyên bản */
+.booking-wait .booking-hold-status,
+.booking-wait .booking-wait-details,
+.booking-wait .booking-wait-total,
+.booking-wait .booking-wait-note {
+    display: none !important;
+}
+
+/* Tiêu đề trang chuẩn STRYKE */
+.booking-heading {
+    margin-bottom: 24px;
+}
+
+.booking-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--bk-accent, #c8f36b);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.booking-heading h1 {
+    font-size: clamp(24px, 3vw, 30px);
+    font-weight: 600;
+    color: var(--bk-text, #edf3e9);
+    margin: 0 0 6px;
+}
+
+.booking-subtle {
+    font-size: 13px;
+    color: var(--bk-muted, #a8b9a9);
+    margin: 0;
+}
+
+/* 1. THANH ĐẾM NGƯỢC GIỮ CHỖ (DARK MODE COUNTDOWN) */
+.stryke-countdown-banner {
+    background: var(--bk-surface, #1a2b20);
+    border: 1px solid var(--bk-line, #34483a);
+    padding: 14px 20px;
+    text-align: center;
+    border-radius: 12px;
+    margin-bottom: 28px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.stryke-countdown-label {
+    margin: 0 0 4px;
+    font-size: 13px;
+    color: var(--bk-muted, #a8b9a9);
+    font-weight: 500;
+}
+
+.stryke-countdown-time {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--bk-accent, #c8f36b);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    letter-spacing: 1.5px;
+}
+
+/* 2. KHUNG LƯỚI 2 CỘT CHÍNH (MAIN GRID) */
+.stryke-checkout-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.85fr) minmax(360px, 1.15fr);
+    gap: 32px;
+    align-items: start;
+}
+
+.stryke-section-heading {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--bk-text, #edf3e9);
+    margin: 0 0 16px;
+}
+
+/* 3. CARD TÀI KHOẢN NGÂN HÀNG & QR */
+.stryke-bank-card {
+    background: var(--bk-surface, #1a2b20);
+    border: 1px solid var(--bk-line, #34483a);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    margin-bottom: 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.stryke-bank-card:hover {
+    border-color: rgba(200, 243, 107, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.stryke-bank-qr-thumb {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    flex-shrink: 0;
+    border: 1px solid var(--bk-line, #34483a);
+    border-radius: 8px;
+    padding: 4px;
+    background: #ffffff;
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.15s ease;
+}
+
+.stryke-bank-qr-thumb:hover {
+    transform: scale(1.04);
+}
+
+.stryke-bank-qr-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.stryke-qr-zoom-badge {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    right: 2px;
+    font-size: 9px;
+    font-weight: 600;
+    background: rgba(18, 32, 24, 0.85);
+    color: var(--bk-accent, #c8f36b);
+    border-radius: 4px;
+    padding: 1px 2px;
+    text-align: center;
+    pointer-events: none;
+}
+
+.stryke-bank-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.stryke-bank-acc-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--bk-text, #edf3e9);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stryke-bank-acc-num {
+    font-size: 13px;
+    color: var(--bk-muted, #a8b9a9);
+    margin-bottom: 2px;
+}
+
+.stryke-bank-acc-num span {
+    font-weight: 700;
+    color: var(--bk-accent, #c8f36b);
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 14px;
+}
+
+.stryke-bank-name {
+    font-size: 12px;
+    color: var(--bk-muted, #a8b9a9);
+}
+
+.stryke-bank-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.stryke-action-btn {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--bk-line, #34483a);
+    background: rgba(18, 32, 24, 0.8);
+    border-radius: 8px;
+    color: var(--bk-text, #edf3e9);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.stryke-action-btn:hover {
+    background: var(--bk-surface, #1a2b20);
+    color: var(--bk-accent, #c8f36b);
+    border-color: var(--bk-accent, #c8f36b);
+}
+
+.stryke-action-btn.copied {
+    background: rgba(200, 243, 107, 0.2);
+    color: var(--bk-accent, #c8f36b);
+    border-color: var(--bk-accent, #c8f36b);
+}
+
+/* 4. HỘP CẢNH BÁO CHUYỂN KHOẢN (WARNING NOTICE) */
+.stryke-alert-notice {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.stryke-alert-icon {
+    font-size: 18px;
+    line-height: 1.2;
+    flex-shrink: 0;
+}
+
+.stryke-alert-text {
+    font-size: 13px;
+    color: #fde68a;
+    line-height: 1.6;
+}
+
+.stryke-alert-text strong {
+    color: var(--bk-accent, #c8f36b);
+    font-weight: 700;
+}
+
+.stryke-alert-memo {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #fef3c7;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.stryke-memo-code {
+    background: rgba(18, 32, 24, 0.8);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 13px;
+    color: var(--bk-accent, #c8f36b);
+    border: 1px dashed rgba(200, 243, 107, 0.5);
+    letter-spacing: 0.5px;
+}
+
+.stryke-btn-copy-memo {
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #0f1c13;
+    background: var(--bk-accent, #c8f36b);
+    border: 1px solid var(--bk-accent, #c8f36b);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.stryke-btn-copy-memo:hover {
+    opacity: 0.9;
+}
+
+/* 5. KHU VỰC TẢI ẢNH CHUYỂN KHOẢN (UPLOAD DROPZONE) */
+.stryke-upload-group {
+    margin-bottom: 32px;
+}
+
+.stryke-upload-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bk-text, #edf3e9);
+    margin-bottom: 8px;
+}
+
+.stryke-required {
+    color: #f87171;
+}
+
+.stryke-upload-dropzone {
+    position: relative;
+    border: 2px dashed var(--bk-line, #34483a);
+    border-radius: 12px;
+    background: rgba(26, 43, 32, 0.4);
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.stryke-upload-dropzone:hover,
+.stryke-upload-dropzone.dragover {
+    border-color: var(--bk-accent, #c8f36b);
+    background: rgba(26, 43, 32, 0.8);
+}
+
+.stryke-file-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.stryke-upload-placeholder {
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stryke-upload-icon-wrap {
+    margin-bottom: 12px;
+}
+
+.stryke-upload-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bk-accent, #c8f36b);
+    margin-bottom: 4px;
+}
+
+.stryke-upload-hint {
+    font-size: 12px;
+    color: var(--bk-muted, #a8b9a9);
+}
+
+/* Xem trước ảnh (Preview) */
+.stryke-upload-preview {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.stryke-preview-img {
+    max-width: 220px;
+    max-height: 160px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--bk-line, #34483a);
+    object-fit: cover;
+}
+
+.stryke-preview-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.stryke-preview-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bk-text, #edf3e9);
+}
+
+.stryke-preview-size {
+    font-size: 12px;
+    color: var(--bk-muted, #a8b9a9);
+}
+
+.stryke-btn-remove-file {
+    margin-top: 6px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.stryke-btn-remove-file:hover {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+}
+
+/* 6. CỘT PHẢI: THÔNG TIN LỊCH ĐẶT (ORDER SUMMARY CARD) */
+.stryke-order-summary-card {
+    background: var(--bk-surface, #1a2b20);
+    border: 1px solid var(--bk-line, #34483a);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.stryke-summary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--bk-line, #34483a);
+    cursor: pointer;
+    user-select: none;
+}
+
+.stryke-summary-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--bk-text, #edf3e9);
+}
+
+.stryke-chevron {
+    font-size: 12px;
+    color: var(--bk-muted, #a8b9a9);
+    transition: transform 0.2s ease;
+}
+
+.stryke-order-summary-card.collapsed .stryke-chevron {
+    transform: rotate(180deg);
+}
+
+.stryke-order-summary-card.collapsed .stryke-summary-content {
+    display: none;
+}
+
+.stryke-summary-content {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.stryke-summary-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.stryke-row-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: rgba(200, 243, 107, 0.12);
+    border: 1px solid rgba(200, 243, 107, 0.25);
+    color: var(--bk-accent, #c8f36b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+}
+
+.stryke-row-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stryke-row-label {
+    font-size: 11px;
+    color: var(--bk-muted, #a8b9a9);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.stryke-row-val {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bk-text, #edf3e9);
+}
+
+.stryke-row-val.green {
+    color: var(--bk-accent, #c8f36b);
+    font-size: 16px;
+}
+
+.stryke-row-sub {
+    font-size: 12px;
+    color: var(--bk-muted, #a8b9a9);
+    line-height: 1.4;
+}
+
+/* 7. THANH STICKY BOTTOM BAR CỐ ĐỊNH Ở ĐÁY TRANG */
+.stryke-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(18, 32, 24, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--bk-line, #34483a);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.35);
+    padding: 12px 32px max(14px, env(safe-area-inset-bottom));
+    z-index: 100;
+}
+
+.stryke-bottom-inner {
+    max-width: 1680px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.stryke-bottom-total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stryke-bottom-label {
+    font-size: 13px;
+    color: var(--bk-muted, #a8b9a9);
+}
+
+.stryke-bottom-desc {
+    color: var(--bk-text, #edf3e9);
+    font-weight: 600;
+}
+
+.stryke-bottom-amount {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.stryke-total-label {
+    font-size: 13px;
+    color: var(--bk-muted, #a8b9a9);
+}
+
+.stryke-total-val {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--bk-accent, #c8f36b);
+}
+
+.stryke-btn-continue {
+    width: 100%;
+    padding: 14px 24px;
+    background: var(--bk-accent, #c8f36b);
+    color: #0f1c13;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+}
+
+.stryke-btn-continue:hover {
+    opacity: 0.92;
+    box-shadow: 0 0 16px rgba(200, 243, 107, 0.35);
+}
+
+.stryke-btn-continue:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 8. MODAL PHÓNG TO MÃ VIETQR (LIGHTBOX) */
+.stryke-qr-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.stryke-qr-modal[hidden] {
+    display: none !important;
+}
+
+.stryke-qr-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+}
+
+.stryke-qr-modal-dialog {
+    position: relative;
+    z-index: 2;
+    background: var(--bk-surface, #1a2b20);
+    border: 1px solid var(--bk-line, #34483a);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    color: var(--bk-text, #edf3e9);
+}
+
+.stryke-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--bk-line, #34483a);
+    background: rgba(18, 32, 24, 0.8);
+    color: var(--bk-muted, #a8b9a9);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.stryke-modal-close:hover {
+    background: var(--bk-surface, #1a2b20);
+    color: var(--bk-accent, #c8f36b);
+    border-color: var(--bk-accent, #c8f36b);
+}
+
+.stryke-qr-modal-dialog h3 {
+    margin: 0 0 6px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--bk-text, #edf3e9);
+}
+
+.stryke-qr-modal-dialog p {
+    margin: 0 0 16px;
+    font-size: 13px;
+    color: var(--bk-muted, #a8b9a9);
+}
+
+.stryke-modal-qr-frame {
+    background: #ffffff;
+    padding: 10px;
+    border: 1px solid var(--bk-line, #34483a);
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.stryke-modal-qr-frame img {
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.stryke-modal-account-info {
+    font-size: 13px;
+    color: var(--bk-text, #edf3e9);
+}
+
+.stryke-modal-memo {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--bk-muted, #a8b9a9);
+}
+
+.stryke-modal-memo code {
+    background: rgba(18, 32, 24, 0.9);
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: var(--bk-accent, #c8f36b);
+    font-weight: 700;
+    border: 1px dashed rgba(200, 243, 107, 0.4);
+}
+
+/* 9. TOAST THÔNG BÁO */
+.stryke-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bk-surface, #1a2b20);
+    border: 1px solid var(--bk-accent, #c8f36b);
+    color: var(--bk-accent, #c8f36b);
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeInDown 0.3s ease;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translate(-50%, -10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* 9.1 THÔNG BÁO XÁC NHẬN THÀNH CÔNG */
+.stryke-success-banner {
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    border-radius: 12px;
+    padding: 32px 20px;
+    text-align: center;
+    margin: 32px 0;
+}
+
+.stryke-success-icon {
+    width: 54px;
+    height: 54px;
+    background: var(--bk-accent, #c8f36b);
+    color: #0f1c13;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 auto 12px;
+}
+
+.stryke-success-banner h3 {
+    color: var(--bk-accent, #c8f36b);
+    margin: 0 0 8px;
+    font-size: 18px;
+}
+
+.stryke-success-banner p {
+    color: var(--bk-muted, #a8b9a9);
+    margin: 0 0 20px;
+    font-size: 14px;
+}
+
+.stryke-btn-view-acc {
+    display: inline-block;
+    padding: 12px 24px;
+    background: var(--bk-accent, #c8f36b);
+    color: #0f1c13;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 700;
+    transition: opacity 0.15s;
+}
+
+.stryke-btn-view-acc:hover {
+    opacity: 0.9;
+}
+
+/* 9.2 KHỐI HIỂN THỊ KHI HẾT GIỜ (CHÍNH GIỮA TRANG) */
+.stryke-expired-center-box {
+    max-width: 560px;
+    margin: 32px auto 60px;
+    background: var(--bk-surface, #1a2b20);
+    border: 1px solid var(--bk-line, #34483a);
+    border-radius: 16px;
+    padding: 40px 24px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    animation: fadeInCenter 0.3s ease;
+}
+
+@keyframes fadeInCenter {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.stryke-expired-center-box[hidden] {
+    display: none !important;
+}
+
+.stryke-expired-icon-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #f87171;
+    font-size: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.stryke-expired-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--bk-text, #edf3e9);
+    margin: 0 0 10px;
+}
+
+.stryke-expired-desc {
+    font-size: 14px;
+    color: var(--bk-muted, #a8b9a9);
+    line-height: 1.6;
+    margin: 0 0 28px;
+}
+
+.stryke-expired-btns {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.stryke-btn-go-home {
+    padding: 13px 28px;
+    background: var(--bk-accent, #c8f36b);
+    color: #0f1c13;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: opacity 0.15s, transform 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.stryke-btn-go-home:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+}
+
+.stryke-btn-reselect {
+    padding: 13px 22px;
+    background: #24382c;
+    border: 1px solid var(--bk-line, #34483a);
+    color: var(--bk-text, #edf3e9);
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.stryke-btn-reselect:hover {
+    background: var(--bk-surface, #1a2b20);
+    border-color: var(--bk-accent, #c8f36b);
+    color: var(--bk-accent, #c8f36b);
+}
+
+/* =========================================================
+   10. RESPONSIVE ĐA KÍCH THƯỚC MÀN HÌNH
+========================================================= */
+
+/* Tablet (dưới 1024px) */
+@media (max-width: 1024px) {
+    .booking-page.booking-wait {
+        padding: 0 24px;
+    }
+
+    .stryke-bottom-bar {
+        padding: 10px 24px max(12px, env(safe-area-inset-bottom));
+    }
+
+    .stryke-checkout-grid {
+        grid-template-columns: 1.4fr 1fr;
+        gap: 24px;
+    }
+}
+
+/* Mobile & Tablet nhỏ (dưới 768px) */
+@media (max-width: 768px) {
+    .booking-page.booking-wait {
+        margin-top: 16px;
+        padding: 0 14px 150px;
+    }
+
+    .stryke-checkout-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    /* Đưa cột tóm tắt lên trước trên mobile để người dùng dễ kiểm tra */
+    .stryke-col-right {
+        order: -1;
+    }
+
+    .stryke-bank-card {
+        padding: 14px 16px;
+        gap: 12px;
+    }
+
+    .stryke-bank-qr-thumb {
+        width: 58px;
+        height: 58px;
+    }
+
+    .stryke-bank-acc-name {
+        font-size: 14px;
+    }
+
+    .stryke-countdown-time {
+        font-size: 24px;
+    }
+
+    .stryke-bottom-bar {
+        padding: 10px 16px max(12px, env(safe-area-inset-bottom));
+    }
+
+    .stryke-btn-continue {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+}
+
+/* Mobile siêu nhỏ (dưới 380px) */
+@media (max-width: 380px) {
+    .stryke-bank-actions {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .stryke-action-btn {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+/* =========================================================
+   11. NAVIGATION ERROR ROLE="ALERT"
+========================================================= */
+.booking-navigation-error {
+    margin: 16px 0 20px;
+    padding: 14px 18px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 8px;
+    color: #fca5a5;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.booking-navigation-error[hidden] {
+    display: none !important;
+}
+
+.booking-navigation-error p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.booking-navigation-error .booking-text-button {
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.6);
+    color: #fca5a5;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+
+.booking-navigation-error .booking-text-button:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ffffff;
+}
