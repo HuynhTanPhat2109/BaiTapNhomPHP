@@ -22,6 +22,15 @@ final class CoSo
         )->fetchAll();
     }
 
+    public function byCompany(int $companyId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT * FROM co_so WHERE ma_cong_ty = :company ORDER BY ma_co_so DESC'
+        );
+        $stmt->execute(['company' => $companyId]);
+        return $stmt->fetchAll();
+    }
+
     public function page(array $filters): array
     {
         return AdminList::page($this->pdo, ' FROM co_so f JOIN cong_ty_nhuong_quyen c ON c.ma_cong_ty = f.ma_cong_ty',

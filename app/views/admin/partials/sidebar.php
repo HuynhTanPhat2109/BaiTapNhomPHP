@@ -1,5 +1,7 @@
 <?php
-$menu = require dirname(__DIR__, 4) . '/config/admin-menu.php';
+$allMenus = require dirname(__DIR__, 4) . '/config/admin-menu.php';
+$role = $currentUser['ten_vai_tro'] ?? null;
+$menu = $allMenus[$role] ?? [];
 $icons = [
     'overview' => 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
     'company' => 'M4 21V5l8-3v19M12 9h8v12M2 21h20M7 7h2M7 11h2M7 15h2M15 12h2M15 16h2',

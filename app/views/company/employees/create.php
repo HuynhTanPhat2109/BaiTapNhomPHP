@@ -1,4 +1,4 @@
-<?php
+<?php $bodyClass = 'page-catalog';
 $errors = $errors ?? [];
 $old = $old ?? [];
 $options = $options ?? [];
@@ -11,9 +11,9 @@ $status = $value($old, 'trang_thai', 'DANG_LAM');
 $gender = $value($old, 'gioi_tinh');
 $accountChecked = !empty($old['cap_tai_khoan']);
 ?>
-<section class="container account-page">
-    <div class="account-page__intro"><p class="eyebrow">Công ty / Nhân viên</p><h1 class="account-h1">Thêm nhân viên</h1></div>
-    <form method="post" action="<?= e(url('/company/employees')) ?>">
+<section class="container account-page catalog-page">
+    <header class="account-page__intro catalog-heading"><div><p class="eyebrow">Công ty / Nhân viên</p><h1 class="account-h1">Thêm nhân viên</h1></div></header>
+    <form class="catalog-form" method="post" action="<?= e(url('/company/employees')) ?>">
         <?= csrf_field() ?>
         <div class="form-group"><label for="ho_ten">Họ tên</label><input class="form-control" id="ho_ten" name="ho_ten" required maxlength="150" value="<?= e($value($old, 'ho_ten')) ?>"<?= field_error_attributes('ho_ten', $errors) ?>><?= field_error('ho_ten', $errors) ?></div>
         <div class="form-group"><label for="ngay_sinh">Ngày sinh</label><input class="form-control" id="ngay_sinh" name="ngay_sinh" type="date" value="<?= e($value($old, 'ngay_sinh')) ?>"<?= field_error_attributes('ngay_sinh', $errors) ?>><?= field_error('ngay_sinh', $errors) ?></div>
@@ -31,6 +31,6 @@ $accountChecked = !empty($old['cap_tai_khoan']);
         <div class="form-group"><label for="username">Tên đăng nhập</label><input class="form-control" id="username" name="username" maxlength="15" value="<?= e($value($old, 'username')) ?>"<?= field_error_attributes('username', $errors) ?>><?= field_error('username', $errors) ?></div>
         <div class="form-group"><label for="password">Mật khẩu</label><input class="form-control" id="password" name="password" type="password" value=""<?= field_error_attributes('password', $errors) ?>><?= field_error('password', $errors) ?></div>
         <div class="form-group"><label for="role">Vai trò tài khoản</label><select class="form-control" id="role" name="role"<?= field_error_attributes('role', $errors) ?>><option value="">Chọn vai trò</option><?php foreach (['QUAN_LY_CO_SO' => 'Quản lý cơ sở', 'NHAN_VIEN' => 'Nhân viên'] as $key => $label): ?><option value="<?= e($key) ?>" <?= $value($old, 'role') === $key ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select><?= field_error('role', $errors) ?></div>
-        <button class="btn btn--primary" type="submit">Lưu nhân viên</button><a class="btn btn--small" href="<?= e(url('/company/employees')) ?>">Quay lại</a>
+        <div class="catalog-actions"><button class="btn btn--primary" type="submit">Lưu nhân viên</button><a class="btn btn--outline" href="<?= e(url('/company/employees')) ?>">Quay lại</a></div>
     </form>
 </section>

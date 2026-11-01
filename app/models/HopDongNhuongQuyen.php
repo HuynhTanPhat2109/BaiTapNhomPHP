@@ -26,6 +26,19 @@ class HopDongNhuongQuyen
         return $stmt->fetchAll();
     }
 
+    public function byCompany(int $companyId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT hd.*, ct.ten_cong_ty
+             FROM hop_dong_nhuong_quyen hd
+             INNER JOIN cong_ty_nhuong_quyen ct ON ct.ma_cong_ty = hd.ma_cong_ty
+             WHERE hd.ma_cong_ty = :company
+             ORDER BY hd.ma_hop_dong DESC'
+        );
+        $stmt->execute(['company' => $companyId]);
+        return $stmt->fetchAll();
+    }
+
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
