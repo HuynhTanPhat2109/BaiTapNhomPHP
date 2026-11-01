@@ -77,7 +77,6 @@ $labels = [
         </div>
 
     <?php else: ?>
-
         <!-- LƯỚI SÂN -->
         <div
             class="booking-grid-scroll"
@@ -85,22 +84,18 @@ $labels = [
             role="region"
             aria-label="Lịch sân"
         >
-
             <table class="booking-grid">
-
                 <colgroup>
                     <col class="court-column">
-
                     <?php foreach ($schedule['slots'] as $_): ?>
                         <col class="slot-column">
                     <?php endforeach; ?>
+                    <!-- Cột đệm cuối timeline -->
+                    <col class="timeline-spacer-column">
                 </colgroup>
-
-                
-
                 <thead>
                     <tr>
-                        <th class="court-name-head" scope="col">Sân / Khung giờ</th>
+                        <th class="court-name-head" scope="col"></th>
 
                         <?php foreach ($schedule['slots'] as $slotIndex => $slot): ?>
                             <th
@@ -115,7 +110,6 @@ $labels = [
                                 <span class="timeline-start">
                                     <?= e(substr($slot['start'], 0, 5)) ?>
                                 </span>
-
                                 <?php if ($slotIndex === count($schedule['slots']) - 1): ?>
                                     <span class="timeline-end-label">
                                         <?= e(substr($slot['end'], 0, 5)) ?>
@@ -123,11 +117,11 @@ $labels = [
                                 <?php endif; ?>
                             </th>
                         <?php endforeach; ?>
+                        <!-- Cột đệm cuối timeline -->
+                        <th class="timeline-spacer timeline-spacer--last" aria-hidden="true"></th>
                     </tr>
                 </thead>
-
-
-
+                
                 <tbody>
 
                     <?php foreach ($schedule['rows'] as $row): ?>
@@ -182,9 +176,10 @@ $labels = [
                                 </td>
 
                             <?php endforeach; ?>
-
+                            <!-- Ô đệm cuối -->
+                            <td class="timeline-spacer-cell" aria-hidden="true"></td>
                         </tr>
-
+                            
                     <?php endforeach; ?>
 
                 </tbody>

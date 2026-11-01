@@ -23,8 +23,20 @@ final class View
         $isAccountPage = in_array($template, ['auth/account', 'auth/settings'], true);
         $isAdminAccount = $isAccountPage
             && ($data['user']['ten_vai_tro'] ?? null) === 'QUAN_TRI_TAP_DOAN';
-        $layout = (str_starts_with($template, 'admin/') || $isAdminAccount) ? 'admin'
-            : (in_array($template, ['auth/login', 'auth/register'], true) ? 'auth' : 'main');
+        global $app;
+        $currentUser = $data['user'] ?? null;
+        if ($currentUser === null
+            && (str_starts_with($template, 'admin/') || str_starts_with($template, 'company/'))
+            && isset($app) && $app instanceof Application) {
+            $currentUser = $app->auth()->user();
+        }
+        $role = $currentUser['ten_vai_tro'] ?? null;
+        $isCompanyManagement = $role === 'QUAN_LY_CONG_TY'
+            && (str_starts_with($template, 'company/')
+                || ($template === 'services/page' && ($data['listPath'] ?? null) === '/company/dich-vu'));
+        $layout = (str_starts_with($template, 'admin/') || $isAdminAccount || $isCompanyManagement) ? 'admin'
+            : (str_starts_with($template, 'courts/') ? 'courts'
+            : (in_array($template, ['auth/login', 'auth/register'], true) ? 'auth' : 'main'));
         require dirname(__DIR__) . '/app/views/layouts/' . $layout . '.php';
     }
 }
