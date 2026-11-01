@@ -2,7 +2,7 @@
 $bodyClass = 'page-catalog';
 $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
 ?>
-<section class="container catalog-page service-module">
+<section class="container catalog-page catalog-workspace service-module">
     <p class="service-breadcrumb"><a class="admin-table-link" href="<?= e(url($listPath)) ?>">Dịch vụ</a> / <?= $item ? 'Chỉnh sửa' : 'Thêm mới' ?></p>
     <header class="catalog-heading"><div><p class="eyebrow">STRYKE / Dịch vụ</p><h1><?= e($title) ?></h1></div></header>
     <?php if ($formError): ?><div class="alert alert--danger" role="alert"><p><?= e($formError) ?></p><p>Dữ liệu bạn nhập vẫn ở bên dưới. <a href="<?= e(url($listPath . '/edit') . '&id=' . ($item['ma_dich_vu'] ?? '')) ?>">Tải lại dữ liệu mới nhất</a> trước khi sửa tiếp.</p></div><?php endif; ?>
@@ -10,6 +10,7 @@ $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
     <form class="catalog-form service-form" method="post" action="<?= e(url($listPath . ($item ? '/update' : '/store'))) ?>" novalidate>
         <?= csrf_field() ?>
         <?php if ($item): ?><input type="hidden" name="id" value="<?= e($item['ma_dich_vu']) ?>"><input type="hidden" name="version" value="<?= e($old['version'] ?? '') ?>"><?php endif; ?>
+        <h2 class="admin-form-heading">Thông tin dịch vụ</h2>
         <div class="form-group">
             <label for="ma_co_so">Cơ sở *</label>
             <select class="form-control" id="ma_co_so" name="ma_co_so" required<?= field_error_attributes('ma_co_so', $errors) ?>>
@@ -18,6 +19,7 @@ $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
             </select><?= field_error('ma_co_so', $errors) ?>
         </div>
         <div class="form-group"><label for="ten_dich_vu">Tên dịch vụ *</label><input class="form-control" id="ten_dich_vu" name="ten_dich_vu" maxlength="150" required value="<?= e($old['ten_dich_vu'] ?? '') ?>"<?= field_error_attributes('ten_dich_vu', $errors) ?>><?= field_error('ten_dich_vu', $errors) ?></div>
+        <h2 class="admin-form-heading">Phân loại, giá &amp; tồn kho</h2>
         <div class="account-form-grid">
             <div class="form-group"><label for="loai_dich_vu">Loại dịch vụ *</label><select class="form-control" id="loai_dich_vu" name="loai_dich_vu" required<?= field_error_attributes('loai_dich_vu', $errors) ?>><option value="">Chọn loại</option><?php foreach (App\Services\DichVuService::TYPES as $value => $label): ?><option value="<?= e($value) ?>" <?= ($old['loai_dich_vu'] ?? '') === $value ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select><?= field_error('loai_dich_vu', $errors) ?></div>
             <div class="form-group"><label for="don_vi_tinh">Đơn vị tính *</label><input class="form-control" id="don_vi_tinh" name="don_vi_tinh" list="service-units" maxlength="30" required value="<?= e($old['don_vi_tinh'] ?? '') ?>"<?= field_error_attributes('don_vi_tinh', $errors) ?>><datalist id="service-units"><?php foreach (['chai', 'lon', 'cái', 'cây', 'bộ', 'buổi', 'lượt'] as $unit): ?><option value="<?= e($unit) ?>"><?php endforeach; ?></datalist><?= field_error('don_vi_tinh', $errors) ?></div>

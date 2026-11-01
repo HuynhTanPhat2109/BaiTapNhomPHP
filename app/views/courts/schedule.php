@@ -9,6 +9,7 @@ $labels = [
 
 <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/schedule.css') ?>">
 <script src="<?= e(base_path() . '/assets/js/schedule.js') ?>" defer></script>
+<link rel="stylesheet" href="<?= e(base_path() . '/assets/css/booking.css') ?>">
 
 <section
     class="booking-schedule"
@@ -19,6 +20,7 @@ $labels = [
     data-endpoint="<?= e(url('/courts/schedule') . '&id=' . $facility['ma_co_so']) ?>"
 >
     <!-- Thanh điều khiển -->
+    <?php if (!empty($bookingNotice)): ?><p class="booking-notice" role="status"><?= e($bookingNotice) ?></p><?php endif; ?>
     <header class="booking-toolbar">
 
         <div class="booking-legend">
@@ -245,11 +247,12 @@ $labels = [
             <div>
                 <span>Tạm tính</span>
                 <strong id="selection-price">—</strong>
-                <small>Chờ dữ liệu bảng giá</small>
             </div>
 
         </div>
-
     </section>
-
+    <form id="booking-next" method="post" action="<?= e(url('/booking/start')) ?>" data-quote-url="<?= e(url('/booking/quote')) ?>" data-facility="<?= e($facility['ma_co_so']) ?>">
+        <?= csrf_field() ?><input type="hidden" name="selection" value="">
+        <button class="btn btn--primary" type="submit" disabled>Tiếp theo</button>
+    </form>
 </section>

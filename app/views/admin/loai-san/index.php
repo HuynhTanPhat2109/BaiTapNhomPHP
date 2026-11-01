@@ -9,7 +9,7 @@ $filterFields = [
     'trang_thai' => ['label' => 'Trạng thái', 'options' => $statusLabels],
 ];
 ?>
-<section class="container catalog-page admin-list">
+<section class="container catalog-page catalog-workspace admin-list">
     <nav class="catalog-nav" aria-label="Quản lý danh mục">
         <a href="<?= e(url('/admin')) ?>">Quản trị</a>
         <a href="<?= e(url('/admin/bo-mon')) ?>">Bộ môn</a>

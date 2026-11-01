@@ -164,6 +164,11 @@ final class DichVuService
             }
             if ($current) {
                 $references = $this->services->references($id, true);
+                $reserved = (new \App\Models\Booking($this->pdo))->reserved($id, CourtScheduleService::now()->format('Y-m-d H:i:s'), true);
+                if ($reserved > 0 && (($current['so_luong_ton'] === null) !== ($data['so_luong_ton'] === null)
+                    || ($data['so_luong_ton'] !== null && $data['so_luong_ton'] < $reserved))) {
+                    throw new ValidationException(['so_luong_ton' => 'Có booking đang giữ dịch vụ. Không đổi chế độ theo dõi tồn hoặc giảm tồn dưới ' . $reserved . '.']);
+                }
                 if ($moved && $references['total']) throw new ValidationException(['ma_co_so' => 'Không thể chuyển cơ sở vì dịch vụ đã có dữ liệu tham chiếu.']);
                 if ($current['don_vi_tinh'] !== $data['don_vi_tinh'] && ($current['so_luong_ton'] > 0 || $references['unfinished'])) throw new ValidationException(['don_vi_tinh' => 'Chưa thể đổi đơn vị: tồn hiện tại phải bằng 0/không theo dõi và không có booking chưa hoàn tất.']);
                 if ($current['loai_dich_vu'] !== $data['loai_dich_vu'] && $references['unfinished']) throw new ValidationException(['loai_dich_vu' => 'Không thể đổi loại khi có booking chưa hoàn tất.']);

@@ -13,7 +13,7 @@ $filterFields = [
     'trang_thai' => ['label' => 'Trạng thái', 'options' => $statusLabels],
 ];
 ?>
-<section class="container catalog-page admin-list pricing-list">
+<section class="container catalog-page catalog-workspace admin-list pricing-list">
     <header class="catalog-heading">
         <div><p class="eyebrow">STRYKE / Giá sân thể thao</p><h1>Quản lý bảng giá</h1></div>
         <a class="btn btn--primary" href="<?= e(url('/admin/bang-gia/create')) ?>">Thêm bảng giá</a>

@@ -12,7 +12,7 @@ $adminUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'
     <?php if (($bodyClass ?? '') === 'page-catalog'): ?>
         <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/catalog.css') ?>">
     <?php endif; ?>
-    <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin.css') ?>">
+    <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/admin.css')) ?>">
     <script src="<?= e(base_path() . '/assets/js/app.js') ?>" defer></script>
     <script src="<?= e(base_path() . '/assets/js/admin.js') ?>" defer></script>
 </head>

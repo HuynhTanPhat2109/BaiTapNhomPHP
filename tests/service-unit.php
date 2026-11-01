@@ -8,7 +8,7 @@ use Core\{Application, Csrf, HttpException, Router, Session};
 
 final class ServiceMemoryPDO extends PDO
 {
-    public array $services = [], $calls = [], $refs = [];
+    public array $services = [], $calls = [], $refs = [], $reservations = [];
     public array $companies = [1 => ['ma_cong_ty' => 1, 'ten_cong_ty' => 'Công ty 1', 'trang_thai' => 'HOAT_DONG'], 2 => ['ma_cong_ty' => 2, 'ten_cong_ty' => 'Công ty 2', 'trang_thai' => 'HOAT_DONG']];
     public array $facilities = [
         1 => ['ma_co_so' => 1, 'ma_cong_ty' => 1, 'ten_co_so' => 'Cơ sở Nguyễn Văn Linh', 'trang_thai' => 'HOAT_DONG'],
@@ -65,6 +65,8 @@ final class ServiceMemoryStatement extends PDOStatement
             if (str_starts_with($sql, 'SELECT COUNT(*)')) $this->rows = [[count($rows)]];
             elseif (str_starts_with($sql, 'SELECT DISTINCT')) { $units = array_unique(array_column($rows, 'don_vi_tinh')); sort($units); $this->rows = array_map(fn($u) => [$u], $units); }
             else { usort($rows, fn($a, $b) => $b['ma_dich_vu'] <=> $a['ma_dich_vu']); $rows = array_slice($rows, $p['offset'] ?? 0, $p['limit'] ?? count($rows)); $this->rows = array_map(fn($r) => str_starts_with($sql, 'SELECT d.* FROM') ? $r : $this->db->joined($r), $rows); }
+        } elseif (str_starts_with($sql, 'SELECT c.so_luong FROM chi_tiet_dich_vu_dat c')) {
+            $this->rows = $this->db->reservations[$p[0]] ?? [];
         } elseif (str_contains($sql, ' FROM chi_tiet_dich_vu_dat ct')) {
             foreach ($this->db->refs[$p['id']] ?? [] as $i => $state) $this->rows[] = ['ma_chi_tiet_dv' => $i + 1, 'trang_thai_dat_san' => $state];
         } elseif (str_contains($sql, 'FROM cong_ty_nhuong_quyen WHERE')) {
