@@ -10,7 +10,7 @@ $value = static function (array $data, string $field, string $default = ''): str
 };
 $status = $value($old, 'trang_thai', 'HIEU_LUC');
 ?>
-<section class="container account-page">
+<section class="container account-page catalog-workspace">
     <div class="account-page__intro">
         <p class="eyebrow">Quản trị tập đoàn / Hợp đồng nhượng quyền</p>
         <h1 class="account-h1">Thêm hợp đồng</h1>
@@ -73,6 +73,6 @@ $status = $value($old, 'trang_thai', 'HIEU_LUC');
             <?= field_error('trang_thai', $errors) ?>
         </div>
         <button class="btn btn--primary" type="submit">Lưu hợp đồng</button>
-        <a class="btn btn--small" href="<?= e(url('/admin/contracts')) ?>">Quay lại</a>
+        <a class="btn btn--outline btn--small" href="<?= e(url('/admin/contracts')) ?>">Quay lại</a>
     </form>
 </section>

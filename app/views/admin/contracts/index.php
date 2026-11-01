@@ -1,5 +1,5 @@
 <?php $contracts = $contracts ?? []; ?>
-<section class="container account-page">
+<section class="container account-page catalog-workspace">
     <div class="account-page__intro">
         <p class="eyebrow">Quản trị tập đoàn / Hợp đồng nhượng quyền</p>
         <h1 class="account-h1">Quản lý hợp đồng nhượng quyền</h1>
@@ -32,14 +32,14 @@
                         $status = $contract['trang_thai'] ?? '';
                         ?>
                         <tr>
-                            <td><?= e($contract['so_hop_dong'] ?? '') ?></td>
-                            <td><?= e($contract['ten_cong_ty'] ?? '') ?></td>
-                            <td><?= e($contract['ngay_ky'] ?? '') ?></td>
-                            <td><?= e($contract['ngay_bat_dau'] ?? '') ?></td>
-                            <td><?= e($contract['ngay_ket_thuc'] ?? '') ?></td>
-                            <td><?= e($contract['phi_nhuong_quyen'] ?? '') ?></td>
-                            <td><?= e($contract['ty_le_phi'] ?? '') ?>%</td>
-                            <td><?php
+                            <td class="list-nowrap"><?= e($contract['so_hop_dong'] ?? '') ?></td>
+                            <td class="admin-table-name"><?= e($contract['ten_cong_ty'] ?? '') ?></td>
+                            <td class="list-nowrap"><?= e($contract['ngay_ky'] ?? '') ?></td>
+                            <td class="list-nowrap"><?= e($contract['ngay_bat_dau'] ?? '') ?></td>
+                            <td class="list-nowrap"><?= e($contract['ngay_ket_thuc'] ?? '') ?></td>
+                            <td class="list-nowrap"><?= e($contract['phi_nhuong_quyen'] ?? '') ?></td>
+                            <td class="list-nowrap"><?= e($contract['ty_le_phi'] ?? '') ?>%</td>
+                            <td><span class="catalog-status" data-status="<?= e($status) ?>"><?php
                                 if ($status === 'HIEU_LUC') {
                                     echo 'Hiệu lực';
                                 } elseif ($status === 'HET_HAN') {
@@ -49,19 +49,21 @@
                                 } else {
                                     echo 'Không xác định';
                                 }
-                            ?></td>
+                            ?></span></td>
                             <td>
-                                <a class="btn btn--small" href="<?= e(url('/admin/contracts/edit') . '&id=' . rawurlencode((string) $id)) ?>">Sửa</a>
-                                <form method="post" action="<?= e(url('/admin/contracts/status') . '&id=' . rawurlencode((string) $id)) ?>">
-                                    <?= csrf_field() ?>
-                                    <label for="trang_thai_<?= e((string) $id) ?>">Trạng thái</label>
-                                    <select id="trang_thai_<?= e((string) $id) ?>" name="trang_thai" required>
-                                        <option value="HIEU_LUC" <?= $status === 'HIEU_LUC' ? 'selected' : '' ?>>Hiệu lực</option>
-                                        <option value="HET_HAN" <?= $status === 'HET_HAN' ? 'selected' : '' ?>>Hết hạn</option>
-                                        <option value="CHAM_DUT" <?= $status === 'CHAM_DUT' ? 'selected' : '' ?>>Chấm dứt</option>
-                                    </select>
-                                    <button class="btn btn--small" type="submit">Đổi trạng thái</button>
-                                </form>
+                                <div class="admin-table-actions">
+                                    <a class="btn btn--small" href="<?= e(url('/admin/contracts/edit') . '&id=' . rawurlencode((string) $id)) ?>">Sửa</a>
+                                    <form method="post" action="<?= e(url('/admin/contracts/status') . '&id=' . rawurlencode((string) $id)) ?>">
+                                        <?= csrf_field() ?>
+                                        <label for="trang_thai_<?= e((string) $id) ?>">Trạng thái</label>
+                                        <select class="form-control" id="trang_thai_<?= e((string) $id) ?>" name="trang_thai" required>
+                                            <option value="HIEU_LUC" <?= $status === 'HIEU_LUC' ? 'selected' : '' ?>>Hiệu lực</option>
+                                            <option value="HET_HAN" <?= $status === 'HET_HAN' ? 'selected' : '' ?>>Hết hạn</option>
+                                            <option value="CHAM_DUT" <?= $status === 'CHAM_DUT' ? 'selected' : '' ?>>Chấm dứt</option>
+                                        </select>
+                                        <button class="btn btn--small" type="submit">Đổi trạng thái</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

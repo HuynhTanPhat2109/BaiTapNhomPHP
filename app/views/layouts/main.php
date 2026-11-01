@@ -26,7 +26,7 @@ if (in_array($template, ['auth/account', 'auth/settings', 'services/page'], true
               href="<?= e(base_path() . '/assets/css/catalog.css') ?>">
     <?php endif; ?>
     <script src="<?= e(base_path() . '/assets/js/app.js') ?>" defer></script>
-    <?php if ($template === 'services/page'): ?><link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin.css') ?>"><?php endif; ?>
+    <?php if ($template === 'services/page'): ?><link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/admin.css')) ?>"><?php endif; ?>
     <?php if (str_starts_with($template, 'courts/')): ?>
         <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/courts.css') ?>">
         <script src="<?= e(base_path() . '/assets/js/courts.js') ?>" defer></script>

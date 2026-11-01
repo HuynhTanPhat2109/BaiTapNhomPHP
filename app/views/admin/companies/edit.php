@@ -10,7 +10,7 @@ $value = static function (array $data, array $fallback, string $field): string {
 $status = $value($old, $company, 'trang_thai');
 $id = $company['ma_cong_ty'] ?? '';
 ?>
-<section class="container account-page">
+<section class="container account-page catalog-workspace">
     <div class="account-page__intro">
         <p class="eyebrow">Quản trị tập đoàn / Công ty nhượng quyền</p>
         <h1 class="account-h1">Chỉnh sửa công ty</h1>
@@ -62,6 +62,6 @@ $id = $company['ma_cong_ty'] ?? '';
             <?= field_error('trang_thai', $errors) ?>
         </div>
         <button class="btn btn--primary" type="submit">Lưu thay đổi</button>
-        <a class="btn btn--small" href="<?= e(url('/admin/companies')) ?>">Quay lại</a>
+        <a class="btn btn--outline btn--small" href="<?= e(url('/admin/companies')) ?>">Quay lại</a>
     </form>
 </section>

@@ -1,11 +1,12 @@
 <?php $bodyClass = 'page-catalog'; $formatPrice = require __DIR__ . '/format-price.php'; ?>
-<section class="container catalog-page">
+<section class="container catalog-page catalog-workspace">
     <header class="catalog-heading"><div><p class="eyebrow">STRYKE / Bảng giá</p><h1><?= e($title) ?></h1></div></header>
     <?php if (!$facilities || !$types): ?><p class="alert alert--danger" role="alert">Cần có Cơ sở/Công ty và Loại sân/Bộ môn hoạt động để thêm bảng giá. Không yêu cầu đã có Sân tương ứng.</p><?php endif; ?>
     <?php if ($item && ($item['trang_thai_co_so'] !== 'HOAT_DONG' || $item['trang_thai_cong_ty'] !== 'HOAT_DONG' || $item['trang_thai_loai_san'] !== 'HOAT_DONG' || $item['trang_thai_bo_mon'] !== 'HOAT_DONG')): ?><p class="alert" role="status">Dữ liệu cha đã ngừng. Không thể kích hoạt giá; có thể ngừng áp dụng tại trang chi tiết hoặc chọn lại liên kết hoạt động khi sửa.</p><?php endif; ?>
     <form class="catalog-form" method="post" action="<?= e(url('/admin/bang-gia/' . ($item ? 'update' : 'store'))) ?>" novalidate>
         <?= csrf_field() ?>
         <?php if ($item): ?><input type="hidden" name="id" value="<?= e($item['ma_bang_gia']) ?>"><?php endif; ?>
+        <h2 class="admin-form-heading">Phạm vi áp dụng</h2>
         <div class="form-group">
             <label for="ten_bang_gia">Tên bảng giá</label>
             <input class="form-control" id="ten_bang_gia" name="ten_bang_gia" maxlength="150" required<?= field_error_attributes('ten_bang_gia', $errors) ?> value="<?= e($old['ten_bang_gia'] ?? '') ?>">
@@ -27,6 +28,7 @@
             </select>
             <?= field_error('ma_loai_san', $errors) ?>
         </div>
+        <h2 class="admin-form-heading">Giá &amp; thời gian áp dụng</h2>
         <div class="account-form-grid">
             <div class="form-group">
                 <label for="loai_ngay">Loại ngày</label>

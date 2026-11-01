@@ -15,7 +15,7 @@ $value = static function (array $data, array $fallback, string $field, string $d
 $status = $value($old, $contract, 'trang_thai');
 $id = $contract['ma_hop_dong'] ?? '';
 ?>
-<section class="container account-page">
+<section class="container account-page catalog-workspace">
     <div class="account-page__intro">
         <p class="eyebrow">Quản trị tập đoàn / Hợp đồng nhượng quyền</p>
         <h1 class="account-h1">Sửa hợp đồng</h1>
@@ -78,6 +78,6 @@ $id = $contract['ma_hop_dong'] ?? '';
             <?= field_error('trang_thai', $errors) ?>
         </div>
         <button class="btn btn--primary" type="submit">Lưu thay đổi</button>
-        <a class="btn btn--small" href="<?= e(url('/admin/contracts')) ?>">Quay lại</a>
+        <a class="btn btn--outline btn--small" href="<?= e(url('/admin/contracts')) ?>">Quay lại</a>
     </form>
 </section>

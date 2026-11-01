@@ -10,7 +10,7 @@ $filterFields = [
     'trang_thai' => ['label' => 'Trạng thái', 'options' => $statusLabels],
 ];
 ?>
-<section class="container catalog-page admin-list">
+<section class="container catalog-page catalog-workspace admin-list">
     <header class="catalog-heading">
         <div><p class="eyebrow">STRYKE / Sân thể thao</p><h1>Quản lý sân</h1></div>
         <a class="btn btn--primary" href="<?= e(url('/admin/san/create')) ?>">Thêm sân</a>
