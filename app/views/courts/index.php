@@ -1,3 +1,4 @@
+<script src="<?= e(base_path() . '/assets/js/courts-search.js') ?>" defer></script>
 <section class="courts-page courts-directory">
     <form method="get" action="<?= e(base_path() . '/index.php') ?>" id="court-filters" class="directory-search">
         <input type="hidden" name="route" value="/courts">
@@ -54,3 +55,6 @@
     <?php require __DIR__ . '/booking-modal.php'; ?>
     <noscript><p>Bật JavaScript để sử dụng drawer chi tiết và bộ lọc.</p></noscript>
 </section>
+
+
+

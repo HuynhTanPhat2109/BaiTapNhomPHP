@@ -28,13 +28,66 @@
     /* -------------------------------------------------------
        Monotonic clock synced with server time
     ------------------------------------------------------- */
-    const epoch   = Date.parse(root.dataset.now);
-    const started = performance.now();
+    let epoch   = Date.parse(root.dataset.now);
+    let started = performance.now();
+    let lastSync = started, synchronized = true;
+    const stateLabels = {free:'Trống', booked:'Đã đặt', held:'Đang giữ', unavailable:'Khóa'};
+    const cellStates = new Map(cells.map(cell => [cell,
+        Object.keys(stateLabels).find(state => cell.classList.contains('is-'+state)) || 'unavailable']));
+    function fresh() { return synchronized && performance.now()-lastSync < 15000; }
+    function setState(cell, state) {
+        const changed = cellStates.get(cell) !== state;
+        cellStates.set(cell, state);
+        if (changed) {
+            Object.keys(stateLabels).forEach(value => cell.classList.toggle('is-'+value, value===state));
+        }
+        cell.disabled = state !== 'free';
+        const label = (cell.dataset.courtName || cell.closest('tr').dataset.name) + ' · '
+            + cell.dataset.start + '–' + cell.dataset.end + ' · ' + stateLabels[state];
+        cell.title = label;
+        cell.setAttribute('aria-label', label);
+        return changed;
+    }
 
     /* -------------------------------------------------------
        Selection state: Map<string, ItemObject>
     ------------------------------------------------------- */
     const selected = new Map();
+    const nextForm = document.getElementById('booking-next');
+    let quoteTimer, quoteRequest, quoteRevision = 0;
+    function updateQuote(items) {
+        if (!nextForm) return;
+        clearTimeout(quoteTimer);
+        quoteRequest?.abort();
+        const revision = ++quoteRevision;
+        const button = nextForm.querySelector('button');
+        const price = document.getElementById('selection-price');
+        button.disabled = true;
+        const selection = JSON.stringify({facility:nextForm.dataset.facility,date:root.dataset.date,
+            slots:items.map(item => ({court:item.courtId,start:item.start,end:item.end}))});
+        nextForm.elements.selection.value = selection;
+        price.textContent = '—';
+        if (!items.length) return;
+        quoteTimer = setTimeout(async () => {
+            const controller = new AbortController(); quoteRequest = controller;
+            try {
+                const response = await fetch(nextForm.dataset.quoteUrl, {method:'POST',body:new FormData(nextForm),signal:controller.signal,headers:{Accept:'application/json'}});
+                const data = await response.json();
+                if (revision !== quoteRevision) return;
+                if (!response.ok) throw new Error(data.error || 'Không thể tính giá. Vui lòng tải lại lịch.');
+                price.textContent = Number(data.total).toLocaleString('vi-VN',{maximumFractionDigits:2}) + ' ₫';
+                button.disabled = !fresh();
+            } catch (error) {
+                if (error.name !== 'AbortError' && revision === quoteRevision && feedbackEl) feedbackEl.textContent = error.message || 'Chưa kết nối được máy chủ.';
+            }
+        },250);
+    }
+    nextForm?.addEventListener('submit', event => {
+        expire();
+        const button = nextForm.querySelector('button');
+        if (button.disabled || !fresh()) { event.preventDefault(); syncSchedule(); return; }
+        button.disabled = true; button.textContent = 'Đang kiểm tra…';
+    });
 
     /** Stable key: courtId|date|start|end */
     function keyOf(cell) {
@@ -76,6 +129,7 @@
         var items = Array.from(selected.values()).sort(function (a, b) {
             return a.courtId.localeCompare(b.courtId) || a.start.localeCompare(b.start);
         });
+        updateQuote(items);
 
         // 3. Clear button
         clearBtn.disabled = !items.length;
@@ -169,7 +223,7 @@
         });
 
         // 10. Feedback status
-        feedbackEl.textContent = items.length
+        if (feedbackEl) feedbackEl.textContent = items.length
             ? items.length + ' ô đang xem trước \u00b7 Chưa giữ sân'
             : 'Chưa giữ sân';
     }
@@ -182,19 +236,11 @@
         var changed = false;
 
         cells.forEach(function (cell) {
-            if (cell.disabled) return;
             var cellTime = Date.parse(
                 root.dataset.date + 'T' + cell.dataset.start + ':00+07:00'
             );
             if (cellTime <= now) {
-                cell.disabled = true;
-                cell.classList.remove('is-free', 'is-selected');
-                cell.classList.add('is-unavailable');
-                var span = cell.querySelector('span');
-                if (span) span.textContent = 'Locked';
-                cell.title = cell.dataset.start + '\u2013' + cell.dataset.end + ' \u00b7 Khóa, đã bắt đầu';
-                cell.setAttribute('aria-label', cell.title);
-                changed = true;
+                changed = setState(cell, 'unavailable') || changed;
             }
         });
 
@@ -207,6 +253,66 @@
         });
 
         if (changed) paint();
+        if (!fresh() && nextForm) nextForm.querySelector('button').disabled = true;
+    }
+
+    /* One in-flight request, pause in background, no HTML replacement or selection reset. */
+    let syncTimer, syncRequest, syncRevision = 0, retryDelay = 5000;
+    async function syncSchedule() {
+        if (!root.dataset.endpoint || document.hidden || syncRequest) return;
+        clearTimeout(syncTimer);
+        const revision = ++syncRevision;
+        const controller = new AbortController();
+        syncRequest = controller;
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        try {
+            const response = await fetch(root.dataset.endpoint + '&date=' + encodeURIComponent(root.dataset.date) + '&status=1', {
+                headers:{Accept:'application/json'}, cache:'no-store', signal:controller.signal
+            });
+            const data = await response.json();
+            if (revision !== syncRevision) return;
+            const endpoint = new URL(root.dataset.endpoint, location.href);
+            if (!response.ok || data.date !== root.dataset.date || String(data.facility)!==endpoint.searchParams.get('id')
+                || !Number.isFinite(Date.parse(data.now)) || !Array.isArray(data.slots) || !Array.isArray(data.courts)) throw new Error('Invalid schedule response');
+            const states = new Map();
+            data.courts.forEach(court => {
+                if (!Array.isArray(court.states) || court.states.length !== data.slots.length) throw new Error('Invalid court states');
+                data.slots.forEach((slot,index) => {
+                    if (!Array.isArray(slot) || slot.length!==2 || !Object.hasOwn(stateLabels,court.states[index])) throw new Error('Invalid slot state');
+                    states.set([court.id,data.date,slot[0],slot[1]].join('|'),court.states[index]);
+                });
+            });
+            epoch = Date.parse(data.now); started = performance.now(); lastSync = started;
+            synchronized = true; retryDelay = 5000;
+            let removed = false;
+            cells.forEach(cell => {
+                const past = Date.parse(root.dataset.date+'T'+cell.dataset.start+':00+07:00') <= epoch;
+                setState(cell, past ? 'unavailable' : (states.get(keyOf(cell)) || 'unavailable'));
+                if (cell.disabled && selected.delete(keyOf(cell))) removed = true;
+            });
+            if (removed) {
+                paint();
+                if (feedbackEl) feedbackEl.textContent='Một số ô vừa hết giờ hoặc không còn trống đã được bỏ chọn. Các ô còn hợp lệ được giữ nguyên.';
+            } else if (selected.size) updateQuote(Array.from(selected.values()));
+            else if (feedbackEl) feedbackEl.textContent='Chưa giữ sân';
+        } catch (error) {
+            if (revision !== syncRevision) return;
+            synchronized = false;
+            if (nextForm) nextForm.querySelector('button').disabled = true;
+            if (feedbackEl) feedbackEl.textContent='Chưa cập nhật được lịch. Đang kết nối lại; lựa chọn của bạn được giữ để kiểm tra lại.';
+            retryDelay = Math.min(30000,retryDelay*2);
+        } finally {
+            clearTimeout(timeout);
+            if (revision === syncRevision) {
+                syncRequest = null;
+                if (!document.hidden) syncTimer = setTimeout(syncSchedule,retryDelay);
+            }
+        }
+    }
+    function resumeSync() {
+        synchronized = false;
+        expire();
+        syncSchedule();
     }
 
     /* -------------------------------------------------------
@@ -215,6 +321,7 @@
     cells.forEach(function (cell) {
         cell.addEventListener('click', function () {
             expire();
+            if (!fresh()) { syncSchedule(); return; }
             if (cell.disabled) return;
 
             var key = keyOf(cell);
@@ -290,5 +397,15 @@
     paint();
     expire();
     setInterval(expire, 1000);
-    document.addEventListener('visibilitychange', expire);
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) {
+            clearTimeout(syncTimer); synchronized = false;
+            syncRevision++; syncRequest?.abort(); syncRequest = null;
+        } else resumeSync();
+    });
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) resumeSync();
+    });
+    window.addEventListener('online', resumeSync);
+    syncSchedule();
 })();

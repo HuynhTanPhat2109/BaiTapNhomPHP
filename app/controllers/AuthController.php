@@ -72,8 +72,23 @@ final class AuthController extends Controller
                 return;
             }
             try {
+                // Preserve only booking drafts; credentials/CSRF/session identity are rotated normally.
+                $bookingDrafts = $_SESSION['booking_drafts'] ?? [];
+                $bookingReturn = $_SESSION['booking_return'] ?? null;
                 if ($this->app->auth()->attempt($username, $password)) {
                     $user = $this->app->auth()->user();
+                    if (($user['ten_vai_tro'] ?? '') === 'KHACH_HANG') {
+                        foreach ($bookingDrafts as $key => $draft) {
+                            if (($draft['created'] ?? 0) > time()-7200 && (($draft['owner'] ?? null) === null || (int)$draft['owner'] === (int)$user['ma_khach_hang'])) {
+                                $draft['owner'] = (int)$user['ma_khach_hang'];
+                                $_SESSION['booking_drafts'][$key] = $draft;
+                            }
+                        }
+                        if (is_string($bookingReturn) && isset($_SESSION['booking_drafts'][$bookingReturn])) {
+                            header('Location: '.url('/booking/details').'&draft='.rawurlencode($bookingReturn), true, 303);
+                            exit;
+                        }
+                    }
                     $this->redirect($this->roleHome($user['ten_vai_tro'] ?? null));
                 }
             } catch (\PDOException $e) {

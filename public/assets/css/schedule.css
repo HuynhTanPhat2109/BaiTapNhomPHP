@@ -352,9 +352,6 @@
     background: #c8f36b;
 }
 
-.booking-grid .time-cell.is-free:hover {
-    background: #d9ff87;
-}
 
 /* Đã đặt */
 .booking-grid .time-cell.is-booked {
@@ -521,6 +518,7 @@
     padding: 20px 0;
     color: #9dac9c;
     line-height: 1.5;
+    font-size: 13px;
 }
 
 .selected-court-row {
@@ -538,7 +536,7 @@
 
 .selected-court-name strong {
     display: block;
-    font-size: 17px!important;
+    font-size: 15px!important;
 }
 
 .selected-court-name small {
@@ -547,13 +545,13 @@
 }
 
 .selected-time {
-    font-size: 15px!important;
+    font-size: 14px!important;
     font-variant-numeric: tabular-nums;
 }
 
 .selected-duration {
     color: var(--accent);
-    font-size: 15px!important;
+    font-size: 14px!important;
 }
 
 /* =========================================================
@@ -589,7 +587,7 @@
     display: block;
     margin-top: 5px;
     color: var(--text-main);
-    font-size: 17px;
+    font-size: 15px;
     line-height: 1.4;
     overflow-wrap: anywhere;
 }
@@ -672,10 +670,18 @@
 ========================================================= */
 
 /* Selected cell: dark green with lime border and checkmark */
+/* Ô được chọn phủ kín toàn bộ diện tích */
 .booking-grid .time-cell.is-selected {
     z-index: 1;
     background: #174f32;
-    box-shadow: inset 0 0 0 1px #d8ff9a;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    outline: none;
+}
+.booking-grid tbody td.slot-wrapper:has(> .time-cell.is-selected) {
+    background: #174f32;
+    border-right-color: #174f32;
 }
 
 .booking-grid .time-cell.is-selected::after {

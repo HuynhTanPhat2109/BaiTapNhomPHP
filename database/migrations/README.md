@@ -1,5 +1,24 @@
 # Nâng cấp database đã có
 
+## Booking và khóa chống request lặp
+
+Database đã có: chọn đúng database trong phpMyAdmin, sao lưu bằng Export,
+rồi Import **20261031_booking_request_key.sql** đúng một lần trước khi dùng luồng booking.
+Không import lại schema chính và không chạy lại các migration địa chỉ/logo đã áp dụng.
+Migration này chỉ thêm hai cột nullable `khoa_yeu_cau`, `dau_van_tay_yeu_cau`
+và UNIQUE cho khóa yêu cầu; không sửa hoặc xóa bản ghi cũ.
+Người cài mới dùng schema chính đã cập nhật thì không chạy migration này.
+
+Tồn dịch vụ được giữ bằng chi tiết dịch vụ của booking `CHO_THANH_TOAN` còn hạn;
+không thêm cột tồn giữ và không trừ tồn chính thức trước thanh toán.
+Hết hạn thì lượng giữ tự hết hiệu lực khi tính khả dụng, kể cả chưa chạy tác vụ dọn trạng thái.
+Có thể cấu hình lịch chạy `php bin/expire-bookings.php --run` mỗi phút để chuyển trạng thái hết hạn.
+Không chạy lệnh này nếu chưa muốn ghi trạng thái vào database đang cấu hình.
+
+Giao diện tích hợp thanh toán: `docs/booking-payment-contract.md`.
+Kiểm thử riêng: `php tests/booking-integration.php --run` tạo và xóa database test ngẫu nhiên,
+không áp dụng migration lên database ứng dụng; cần MySQL local và cổng 18989 trống.
+
 ## Logo CLB
 
 Nếu đã chạy migration địa chỉ/ảnh, chỉ chạy **20261023_co_so_logo.sql** một lần
