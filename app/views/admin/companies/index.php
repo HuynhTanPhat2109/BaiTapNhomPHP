@@ -19,7 +19,7 @@
                         <th scope="col">Số điện thoại</th>
                         <th scope="col">Ngày tham gia</th>
                         <th scope="col">Trạng thái</th>
-                        <th scope="col">Thao tác</th>
+                        <th class="company-actions-cell" scope="col">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -30,8 +30,8 @@
                         $inactive = ($company['trang_thai'] ?? '') === 'NGUNG_HOAT_DONG';
                         ?>
                         <tr>
-                            <td><?= e($company['ten_cong_ty'] ?? '') ?></td>
-                            <td><?= e($company['ma_so_thue'] ?? '') ?></td>
+                            <td class="admin-table-name"><?= e($company['ten_cong_ty'] ?? '') ?></td>
+                            <td class="list-nowrap"><?= e($company['ma_so_thue'] ?? '') ?></td>
                             <td><?= e($company['nguoi_dai_dien'] ?? '') ?></td>
                             <td><?= e($company['so_dien_thoai'] ?? '') ?></td>
                             <td><?= e($company['ngay_tham_gia'] ?? '') ?></td>

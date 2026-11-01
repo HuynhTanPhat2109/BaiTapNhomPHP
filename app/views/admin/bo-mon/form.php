@@ -1,5 +1,5 @@
 <?php $bodyClass = 'page-catalog'; ?>
-<section class="container catalog-page">
+<section class="container catalog-page catalog-workspace">
     <nav class="catalog-nav" aria-label="Quản lý danh mục">
         <a href="<?= e(url('/admin')) ?>">Quản trị</a>
         <a href="<?= e(url('/admin/bo-mon')) ?>">Bộ môn</a>
@@ -9,6 +9,7 @@
     <form class="catalog-form" method="post" action="<?= e(url('/admin/bo-mon/' . ($item ? 'update' : 'store'))) ?>" novalidate>
         <?= csrf_field() ?>
         <?php if ($item): ?><input type="hidden" name="id" value="<?= e($item['ma_bo_mon']) ?>"><?php endif; ?>
+        <h2 class="admin-form-heading">Thông tin bộ môn</h2>
         <div class="form-group">
             <label for="ten_bo_mon">Tên bộ môn</label>
             <input class="form-control" id="ten_bo_mon" name="ten_bo_mon" maxlength="100" required<?= field_error_attributes('ten_bo_mon', $errors) ?> value="<?= e($old['ten_bo_mon'] ?? '') ?>">

@@ -1,5 +1,5 @@
 <?php $bodyClass = 'page-catalog'; ?>
-<section class="container catalog-page">
+<section class="container catalog-page catalog-workspace">
     <header class="catalog-heading"><div><p class="eyebrow">STRYKE / Sân thể thao</p><h1><?= e($title) ?></h1></div></header>
     <?php if (!$facilities): ?><p class="alert alert--danger" role="alert">Chưa có cơ sở và công ty đang hoạt động. Kiểm tra <a href="<?= e(url('/admin/co-so')) ?>">Quản lý Cơ sở</a> trước khi thêm sân.</p><?php endif; ?>
     <?php if (!$types): ?><p class="alert alert--danger" role="alert">Chưa có loại sân và bộ môn đang hoạt động. Kiểm tra <a href="<?= e(url('/admin/loai-san')) ?>">Quản lý Loại sân</a>.</p><?php endif; ?>
@@ -10,6 +10,7 @@
     <form class="catalog-form" method="post" action="<?= e(url('/admin/san/' . ($item ? 'update' : 'store'))) ?>" novalidate>
         <?= csrf_field() ?>
         <?php if ($item): ?><input type="hidden" name="id" value="<?= e($item['ma_san']) ?>"><?php endif; ?>
+        <h2 class="admin-form-heading">Thông tin sân</h2>
         <div class="form-group">
             <label for="ma_co_so">Cơ sở thể thao</label>
             <select class="form-control" id="ma_co_so" name="ma_co_so" required<?= field_error_attributes('ma_co_so', $errors) ?>>
