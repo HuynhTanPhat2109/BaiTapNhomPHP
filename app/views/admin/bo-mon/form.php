@@ -1,24 +1,21 @@
 <?php $bodyClass = 'page-catalog'; ?>
-<section class="container catalog-page catalog-workspace">
+<section class="container catalog-page catalog-workspace workspace-page catalog-compact-form">
     <nav class="catalog-nav" aria-label="Quản lý danh mục">
         <a href="<?= e(url('/admin')) ?>">Quản trị</a>
         <a href="<?= e(url('/admin/bo-mon')) ?>">Bộ môn</a>
         <a href="<?= e(url('/admin/loai-san')) ?>">Loại sân</a>
     </nav>
-    <header class="catalog-heading"><div><p class="eyebrow">STRYKE / Bộ môn thể thao</p><h1><?= e($title) ?></h1></div></header>
-    <form class="catalog-form" method="post" action="<?= e(url('/admin/bo-mon/' . ($item ? 'update' : 'store'))) ?>" novalidate>
+    <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Bộ môn thể thao</p><h1><?= e($title) ?></h1><p class="module-subtitle">Danh mục bộ môn và các loại sân liên kết.</p></div><a class="btn btn--outline workspace-back" href="<?= e(url('/admin/bo-mon')) ?>">Quay lại</a></header>
+    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(url('/admin/bo-mon/' . ($item ? 'update' : 'store'))) ?>" novalidate>
         <?= csrf_field() ?>
         <?php if ($item): ?><input type="hidden" name="id" value="<?= e($item['ma_bo_mon']) ?>"><?php endif; ?>
+        <section class="module-form-card">
         <h2 class="admin-form-heading">Thông tin bộ môn</h2>
+        <div class="module-fields">
         <div class="form-group">
             <label for="ten_bo_mon">Tên bộ môn</label>
             <input class="form-control" id="ten_bo_mon" name="ten_bo_mon" maxlength="100" required<?= field_error_attributes('ten_bo_mon', $errors) ?> value="<?= e($old['ten_bo_mon'] ?? '') ?>">
             <?= field_error('ten_bo_mon', $errors) ?>
-        </div>
-        <div class="form-group">
-            <label for="mo_ta">Mô tả <span class="optional">(tùy chọn)</span></label>
-            <textarea class="form-control" id="mo_ta" name="mo_ta" rows="4" maxlength="255"<?= field_error_attributes('mo_ta', $errors) ?>><?= e($old['mo_ta'] ?? '') ?></textarea>
-            <?= field_error('mo_ta', $errors) ?>
         </div>
         <div class="form-group">
             <label for="trang_thai">Trạng thái</label>
@@ -28,10 +25,17 @@
             </select>
             <?= field_error('trang_thai', $errors) ?>
         </div>
-        <div class="catalog-actions">
-            <button class="btn btn--primary" type="submit">Lưu bộ môn</button>
+        <div class="form-group module-field--wide">
+            <label for="mo_ta">Mô tả <span class="optional">(tùy chọn)</span></label>
+            <textarea class="form-control" id="mo_ta" name="mo_ta" rows="4" maxlength="255"<?= field_error_attributes('mo_ta', $errors) ?>><?= e($old['mo_ta'] ?? '') ?></textarea>
+            <?= field_error('mo_ta', $errors) ?>
+        </div>
+        </div>
+        <div class="catalog-actions compact-form-actions">
+            <button class="btn btn--primary" type="submit"><?= $item ? 'Lưu thay đổi' : 'Thêm bộ môn' ?></button>
             <a class="btn btn--outline" href="<?= e(url('/admin/bo-mon')) ?>">Hủy</a>
         </div>
+        </section>
     </form>
 </section>
 

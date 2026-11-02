@@ -1,9 +1,9 @@
 <?php $bodyClass = 'page-catalog'; ?>
-<section class="container catalog-page">
-    <header class="catalog-heading"><div><p class="eyebrow">STRYKE / Cơ sở thể thao</p><h1>Xác nhận xóa cơ sở</h1></div></header>
+<section class="container catalog-page catalog-workspace workspace-page">
+    <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Cơ sở thể thao</p><h1>Xác nhận xóa cơ sở</h1><p class="module-subtitle">Thông tin cơ sở, liên hệ và giờ hoạt động.</p></div><a class="btn btn--outline workspace-back" href="<?= e(url('/admin/co-so')) ?>">Quay lại</a></header>
     <?php if (!empty($formError)): ?><p class="alert alert--danger" role="alert"><?= e($formError) ?></p><?php endif; ?>
     <?php $blocked = $related['san'] || $related['nhan_vien'] || $related['bang_gia'] || $related['dat_san'] || $related['dich_vu']; ?>
-    <div class="catalog-delete">
+    <div class="catalog-delete workspace-danger-card">
         <p>Bạn muốn xóa <strong><?= e($item['ten_co_so']) ?></strong>?</p>
         <p>Dữ liệu tham chiếu: <?= e($related['san']) ?> sân, <?= e($related['nhan_vien']) ?> nhân viên, <?= e($related['bang_gia']) ?> bảng giá, <?= e($related['dat_san']) ?> booking và <?= e($related['dich_vu']) ?> dịch vụ.</p>
         <?php if ($blocked): ?><p class="alert alert--danger" role="alert">Không thể xóa khi còn dữ liệu tham chiếu, kể cả dữ liệu đã ngừng hoặc là lịch sử.</p><?php else: ?><p>Thao tác này không thể hoàn tác.</p><?php endif; ?>

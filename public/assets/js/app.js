@@ -100,3 +100,84 @@
     shell.classList.remove('auth-leaving');
   });
 })();
+
+// Shared row actions. Popovers escape table overflow without moving links/forms.
+(() => {
+  'use strict';
+  const menus = [...document.querySelectorAll('[data-row-actions]')];
+  if (!menus.length) return;
+  const nativePopover = 'showPopover' in HTMLElement.prototype;
+  let active = null;
+  const panelOf = menu => menu.querySelector('.list-action-menu__panel');
+  const controlsOf = panel => [...panel.querySelectorAll('a[href], button:not([disabled]), select:not([disabled])')];
+  const triggerOf = menu => menu.querySelector('summary');
+  const close = (restoreFocus = false) => {
+    if (!active) return;
+    const menu = active;
+    active = null;
+    const panel = panelOf(menu);
+    if (nativePopover && panel.matches(':popover-open')) panel.hidePopover();
+    menu.open = false;
+    triggerOf(menu).setAttribute('aria-expanded', 'false');
+    if (restoreFocus) triggerOf(menu).focus({ preventScroll: true });
+  };
+  const position = menu => {
+    if (!nativePopover) return;
+    const panel = panelOf(menu), anchor = triggerOf(menu).getBoundingClientRect();
+    const below = innerHeight - anchor.bottom >= panel.offsetHeight + 8;
+    panel.dataset.side = below ? 'below' : 'above';
+    panel.style.left = Math.max(8, Math.min(anchor.right - panel.offsetWidth, innerWidth - panel.offsetWidth - 8)) + 'px';
+    panel.style.top = Math.max(8, Math.min(below ? anchor.bottom + 6 : anchor.top - panel.offsetHeight - 6, innerHeight - panel.offsetHeight - 8)) + 'px';
+  };
+  const open = (menu, last = false) => {
+    close();
+    active = menu;
+    menu.open = true;
+    triggerOf(menu).setAttribute('aria-expanded', 'true');
+    if (nativePopover) panelOf(menu).showPopover();
+    position(menu);
+    const links = controlsOf(panelOf(menu));
+    (last ? links.at(-1) : links[0])?.focus({ preventScroll: true });
+  };
+  menus.forEach(menu => {
+    const trigger = triggerOf(menu), panel = panelOf(menu);
+    if (nativePopover) {
+      panel.setAttribute('popover', 'auto');
+      panel.addEventListener('toggle', event => {
+        if (event.newState === 'closed' && active === menu) close();
+      });
+    }
+    trigger.addEventListener('click', event => {
+      event.preventDefault();
+      if (active === menu) close(true); else open(menu);
+    });
+    trigger.addEventListener('keydown', event => {
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+      event.preventDefault();
+      open(menu, event.key === 'ArrowUp');
+    });
+    panel.addEventListener('keydown', event => {
+      if (event.target.matches('select, input, textarea')) return;
+      const links = controlsOf(panel), index = links.indexOf(document.activeElement);
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? links.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length;
+      links[next]?.focus();
+    });
+    menu.addEventListener('focusout', () => requestAnimationFrame(() => {
+      if (active === menu && !menu.contains(document.activeElement)) close();
+    }));
+  });
+  document.addEventListener('click', event => {
+    if (active && !active.contains(event.target)) close();
+  });
+  document.addEventListener('keydown', event => {
+    if (active && event.key === 'Escape') { event.preventDefault(); close(true); }
+  });
+  document.addEventListener('scroll', event => {
+    if (active && !panelOf(active).contains(event.target)) position(active);
+  }, true);
+  window.addEventListener('resize', () => close());
+  window.addEventListener('pageshow', () => close());
+  document.addEventListener('workspace:close-row-menu', () => close());
+})();

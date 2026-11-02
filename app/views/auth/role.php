@@ -1,5 +1,6 @@
-<section class="container inner-page role-page">
-    <header class="page-heading"><p class="eyebrow">STRYKE / Khu vực của bạn</p><h1><?= e($title) ?></h1><p>Xin chào, <strong><?= e($user['ten_dang_nhap']) ?></strong>.</p></header>
+<?php $bodyClass = 'page-catalog'; ?>
+<section class="container catalog-page catalog-workspace role-page">
+    <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Khu vực của bạn</p><h1><?= e($title) ?></h1><p class="module-subtitle">Xin chào, <strong><?= e($user['ten_dang_nhap']) ?></strong>. Chọn chức năng để bắt đầu làm việc.</p></div></header>
     <?php if (($user['ten_vai_tro'] ?? '') === 'QUAN_LY_CONG_TY'): ?>
         <section aria-labelledby="company-management-heading">
             <h2 id="company-management-heading">Chức năng quản lý</h2>
@@ -9,7 +10,7 @@
             </div>
         </section>
     <?php else: ?>
-        <p class="role-notice">Bạn đã đăng nhập vào khu vực dành cho vai trò của mình. Các chức năng nghiệp vụ sẽ được bổ sung ở giai đoạn tiếp theo.</p>
+        <section class="account-card workspace-welcome"><h2>Không gian làm việc</h2><p>Các chức năng bên dưới sử dụng đúng phạm vi công ty và cơ sở được phân công cho tài khoản của bạn.</p></section>
     <?php endif; ?>
     <?php if (($user['ten_vai_tro'] ?? '') === 'QUAN_TRI_TAP_DOAN'): ?>
         <div class="hero__actions">

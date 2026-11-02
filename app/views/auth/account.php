@@ -23,7 +23,7 @@ $profile = $profileOld ?? [
 <section class="container account-page">
     <div class="account-page__intro">
         <p class="eyebrow">STRYKE / Tài khoản / Thông tin cá nhân</p>
-        <h1 class="account-h1">Thông tin cá nhân.</h1>
+        <h1 class="account-h1">Thông tin cá nhân<?= $isCustomer ? '.' : '' ?></h1>
         <p><?= $isCustomer ? 'Giữ thông tin liên hệ chính xác để các hoạt động trên sân luôn thuận tiện.' : 'Thông tin tài khoản và khu vực làm việc theo vai trò của bạn.' ?></p>
     </div>
     <?php if (!empty($notice)): ?><div class="alert alert--success account-notice" role="status"><?= e($notice) ?></div><?php endif; ?>
@@ -93,6 +93,13 @@ $profile = $profileOld ?? [
                     <p class="account-card__description">Tài khoản quản trị: <strong><?= e($user['ten_dang_nhap']) ?></strong>. Chọn Tổng quan trên Sidebar để quay lại Dashboard.</p>
                 <?php else: ?>
                     <p class="account-card__description">Họ và tên: <strong><?= e($displayName) ?></strong>. Thông tin nhân sự được quản lý tại khu vực dành cho nhân viên.</p>
+                <?php endif; ?>
+                <?php if (!$isCustomer): ?>
+                    <dl class="detail-fields">
+                        <div><dt>Tên đăng nhập</dt><dd><?= e($user['ten_dang_nhap'] ?? '') ?></dd></div>
+                        <div><dt>Vai trò</dt><dd><?= e($roleLabels[$roleKey] ?? $roleKey) ?></dd></div>
+                    </dl>
+                    <div class="catalog-actions workspace-account-actions"><a class="btn btn--primary" href="<?= e(url($destinations[$roleKey] ?? '/account')) ?>">Về khu vực làm việc</a><a class="btn btn--outline" href="<?= e(url('/account/settings')) ?>">Cài đặt tài khoản</a></div>
                 <?php endif; ?>
             </section>
         </div>

@@ -1,10 +1,13 @@
-<?php $bodyClass = 'page-catalog'; ?>
-<section class="container catalog-page">
-    <header class="admin-dashboard__heading">
+<?php
+$bodyClass = 'page-catalog';
+$dashboardLinks = (require dirname(__DIR__, 3) . '/config/admin-menu.php')['QUAN_TRI_TAP_DOAN']['QUẢN LÝ HỆ THỐNG'];
+?>
+<section class="container catalog-page catalog-workspace workspace-page">
+    <header class="admin-dashboard__heading module-heading"><div>
         <p class="eyebrow">STRYKE / Quản trị tập đoàn</p>
         <h1>Tổng quan quản trị</h1>
         <p>Xin chào, <strong><?= e($user['ten_dang_nhap']) ?></strong>. Chào mừng bạn trở lại STRYKE.</p>
-    </header>
+    </div></header>
     <div class="admin-stats">
         <section class="admin-stat" aria-labelledby="sports-title">
             <span class="admin-stat__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18"/></svg></span>
@@ -21,16 +24,15 @@
     </div>
     <section class="account-card admin-quick" aria-labelledby="quick-title">
         <h2 id="quick-title">Truy cập nhanh</h2>
-        <p>Quản lý danh mục thể thao của STRYKE.</p>
+        <p>Mở các chức năng quản trị đang có trong hệ thống.</p>
         <div class="admin-quick__links">
-            <a class="admin-quick-link" href="<?= e(url('/admin/bo-mon')) ?>">
-                <span><strong>Quản lý Bộ môn</strong><small>Thêm, sửa và quản lý trạng thái bộ môn</small></span>
+            <?php foreach ($dashboardLinks as $link): ?>
+            <?php if ($link['route'] === null) continue; ?>
+            <a class="admin-quick-link" href="<?= e(url($link['route'])) ?>">
+                <span><strong><?= e($link['label']) ?></strong><small>Mở khu vực quản lý</small></span>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
             </a>
-            <a class="admin-quick-link" href="<?= e(url('/admin/loai-san')) ?>">
-                <span><strong>Quản lý Loại sân</strong><small>Quản lý loại sân và liên kết bộ môn</small></span>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
-            </a>
+            <?php endforeach; ?>
         </div>
     </section>
 </section>

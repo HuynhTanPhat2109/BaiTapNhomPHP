@@ -1,16 +1,18 @@
 <?php $bodyClass = 'page-catalog'; ?>
-<section class="container catalog-page catalog-workspace">
-    <header class="catalog-heading"><div><p class="eyebrow">STRYKE / Sân thể thao</p><h1><?= e($title) ?></h1></div></header>
+<section class="container catalog-page catalog-workspace workspace-page">
+    <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Sân thể thao</p><h1><?= e($title) ?></h1><p class="module-subtitle">Sân thể thao và liên kết cơ sở, loại sân.</p></div><a class="btn btn--outline workspace-back" href="<?= e(url('/admin/san')) ?>">Quay lại</a></header>
     <?php if (!$facilities): ?><p class="alert alert--danger" role="alert">Chưa có cơ sở và công ty đang hoạt động. Kiểm tra <a href="<?= e(url('/admin/co-so')) ?>">Quản lý Cơ sở</a> trước khi thêm sân.</p><?php endif; ?>
     <?php if (!$types): ?><p class="alert alert--danger" role="alert">Chưa có loại sân và bộ môn đang hoạt động. Kiểm tra <a href="<?= e(url('/admin/loai-san')) ?>">Quản lý Loại sân</a>.</p><?php endif; ?>
     <?php if ($item && (($item['trang_thai_co_so'] ?? '') !== 'HOAT_DONG' || ($item['trang_thai_cong_ty'] ?? '') !== 'HOAT_DONG'
         || ($item['trang_thai_loai_san'] ?? '') !== 'HOAT_DONG' || ($item['trang_thai_bo_mon'] ?? '') !== 'HOAT_DONG')): ?>
         <p class="alert" role="status">Dữ liệu cha hiện có trạng thái ngừng. Chỉ có thể giữ sân ở trạng thái Tạm ngừng hoặc chuyển sang liên kết hoạt động khi chưa có lịch sử tham chiếu.</p>
     <?php endif; ?>
-    <form class="catalog-form" method="post" action="<?= e(url('/admin/san/' . ($item ? 'update' : 'store'))) ?>" novalidate>
+    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(url('/admin/san/' . ($item ? 'update' : 'store'))) ?>" novalidate>
         <?= csrf_field() ?>
         <?php if ($item): ?><input type="hidden" name="id" value="<?= e($item['ma_san']) ?>"><?php endif; ?>
-        <h2 class="admin-form-heading">Thông tin sân</h2>
+                <section class="module-form-card">
+        <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">1</span>Thông tin sân</h2>
+        <div class="module-fields">
         <div class="form-group">
             <label for="ma_co_so">Cơ sở thể thao</label>
             <select class="form-control" id="ma_co_so" name="ma_co_so" required<?= field_error_attributes('ma_co_so', $errors) ?>>
@@ -52,6 +54,7 @@
             </select>
             <?= field_error('trang_thai', $errors) ?>
         </div>
+        </div></section>
         <div class="catalog-actions"><button class="btn btn--primary" type="submit" <?= !$facilities || !$types ? 'disabled' : '' ?>>Lưu sân</button><a class="btn btn--outline" href="<?= e(url('/admin/san')) ?>">Hủy</a></div>
     </form>
 </section>

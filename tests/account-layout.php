@@ -47,9 +47,27 @@ try {
             $controller->$method();
             $html = ob_get_clean();
             checkAccountLayout(http_response_code() === $status, "$role $method response");
-            checkAccountLayout(str_contains($html, 'class="admin-sidebar"') === ($role === 'QUAN_TRI_TAP_DOAN'), "$role $method correct layout");
-            checkAccountLayout(str_contains($html, '/assets/css/admin.css') === ($role === 'QUAN_TRI_TAP_DOAN'), "$role $method scoped styles");
-            checkAccountLayout(str_contains($html, 'href="' . e(url($home)) . '"'), "$role $method return to role area");
+            $internal = $role !== 'KHACH_HANG';
+            $document = new DOMDocument();
+            checkAccountLayout($document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING), "$role $method rendered document");
+            $xpath = new DOMXPath($document);
+            checkAccountLayout($xpath->query('//aside[@id="admin-sidebar"]')->length === ($internal ? 1 : 0), "$role $method correct layout");
+            checkAccountLayout(str_contains($html, '/assets/css/admin.css') === $internal, "$role $method scoped styles");
+            checkAccountLayout($xpath->query('//a[@href="' . url($home) . '"]')->length > 0, "$role $method return to role area");
+            if ($internal) {
+                foreach ($xpath->query('//aside[@id="admin-sidebar"]//a[@href]') as $link) {
+                    parse_str(parse_url($link->getAttribute('href'), PHP_URL_QUERY) ?? '', $query);
+                    $path = $query['route'] ?? '';
+                    checkAccountLayout($path === $home || str_starts_with($path, $home . '/'), "$role Sidebar stays in own role area");
+                }
+            }
+            $forms = $xpath->query('//main//form[@method="post"]');
+            checkAccountLayout($forms->length === ($method === 'show' && $internal ? 0 : 1), "$role $method expected account form");
+            foreach ($forms as $form) {
+                $action = $method === 'show' ? '/account' : '/account/password';
+                checkAccountLayout($form->getAttribute('action') === url($action), "$role $method account POST route");
+                checkAccountLayout($xpath->query('.//input[@name="_token"]', $form)->item(0)?->getAttribute('value') === Core\Csrf::token(), "$role $method current CSRF token");
+            }
             checkAccountLayout(!str_contains($html, '<test.user>') && !str_contains($html, 'value="&lt;secret&gt;"'), 'escape identity and never echo passwords');
             checkAccountLayout(!str_contains($html, 'Thông tin cá nhân khách hàng') || $role === 'KHACH_HANG', 'no customer heading for staff/Admin');
             checkAccountLayout(Session::accountId() === 1, 'navigation preserves login');

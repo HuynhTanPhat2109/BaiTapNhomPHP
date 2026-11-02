@@ -9,13 +9,16 @@ $value = static function (array $data, string $field, string $default = ''): str
 };
 $status = $value($old, 'trang_thai', 'HOAT_DONG');
 ?>
-<section class="container account-page catalog-page">
-    <header class="account-page__intro catalog-heading">
+<section class="container account-page catalog-page catalog-workspace workspace-page">
+    <header class="account-page__intro catalog-heading module-heading"><div>
         <p class="eyebrow">Quản trị tập đoàn / Công ty nhượng quyền</p>
-        <h1 class="account-h1">Thêm công ty</h1>
-    </header>
-    <form class="catalog-form" method="post" action="<?= e(url('/admin/companies')) ?>">
+        <h1 class="account-h1">Thêm công ty</h1><p class="module-subtitle">Thông tin pháp lý, liên hệ và trạng thái hợp tác.</p>
+    </div><a class="btn btn--outline workspace-back" href="<?= e(url('/admin/companies')) ?>">Quay lại</a></header>
+    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(url('/admin/companies')) ?>">
         <?= csrf_field() ?>
+                <section class="module-form-card">
+        <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">1</span>Thông tin doanh nghiệp</h2>
+        <div class="module-fields">
         <div class="form-group">
             <label for="ten_cong_ty">Tên công ty</label>
             <input class="form-control" id="ten_cong_ty" name="ten_cong_ty" required maxlength="200" value="<?= e($value($old, 'ten_cong_ty')) ?>"<?= field_error_attributes('ten_cong_ty', $errors) ?>>
@@ -31,6 +34,10 @@ $status = $value($old, 'trang_thai', 'HOAT_DONG');
             <input class="form-control" id="nguoi_dai_dien" name="nguoi_dai_dien" maxlength="150" value="<?= e($value($old, 'nguoi_dai_dien')) ?>"<?= field_error_attributes('nguoi_dai_dien', $errors) ?>>
             <?= field_error('nguoi_dai_dien', $errors) ?>
         </div>
+                </div></section>
+        <section class="module-form-card">
+        <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">2</span>Thông tin liên hệ</h2>
+        <div class="module-fields">
         <div class="form-group">
             <label for="dia_chi">Địa chỉ</label>
             <input class="form-control" id="dia_chi" name="dia_chi" required maxlength="255" value="<?= e($value($old, 'dia_chi')) ?>"<?= field_error_attributes('dia_chi', $errors) ?>>
@@ -46,6 +53,10 @@ $status = $value($old, 'trang_thai', 'HOAT_DONG');
             <input class="form-control" id="email" type="email" name="email" maxlength="150" value="<?= e($value($old, 'email')) ?>"<?= field_error_attributes('email', $errors) ?>>
             <?= field_error('email', $errors) ?>
         </div>
+                </div></section>
+        <section class="module-form-card">
+        <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">3</span>Thông tin hợp tác</h2>
+        <div class="module-fields">
         <div class="form-group">
             <label for="ngay_tham_gia">Ngày tham gia</label>
             <input class="form-control" id="ngay_tham_gia" type="date" name="ngay_tham_gia" value="<?= e($value($old, 'ngay_tham_gia')) ?>"<?= field_error_attributes('ngay_tham_gia', $errors) ?>>
@@ -60,6 +71,7 @@ $status = $value($old, 'trang_thai', 'HOAT_DONG');
             </select>
             <?= field_error('trang_thai', $errors) ?>
         </div>
+        </div></section>
         <div class="catalog-actions"><button class="btn btn--primary" type="submit">Lưu công ty</button>
         <a class="btn btn--outline" href="<?= e(url('/admin/companies')) ?>">Quay lại</a></div>
     </form>
