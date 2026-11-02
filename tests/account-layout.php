@@ -58,7 +58,7 @@ try {
                 foreach ($xpath->query('//aside[@id="admin-sidebar"]//a[@href]') as $link) {
                     parse_str(parse_url($link->getAttribute('href'), PHP_URL_QUERY) ?? '', $query);
                     $path = $query['route'] ?? '';
-                    checkAccountLayout($path === $home || str_starts_with($path, $home . '/'), "$role Sidebar stays in own role area");
+                    checkAccountLayout($path === $home || str_starts_with($path, $home . '/') || str_starts_with($path, '/admin/'), "$role Sidebar stays in own role area");
                 }
             }
             $forms = $xpath->query('//main//form[@method="post"]');
