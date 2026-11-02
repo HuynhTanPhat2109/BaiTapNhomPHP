@@ -36,9 +36,30 @@ use App\Services\BookingPricingService as Money;
                                 <div class="booking-facility-photo booking-facility-placeholder" role="img" aria-label="Cơ sở chưa có ảnh">STRYKE<span>.</span></div>
                             <?php endif; ?>
                             <div class="booking-facility-copy">
-                                <h3><?= e($quote['facility']['ten_co_so']) ?></h3>
-                                <p><?= e($quote['facility']['dia_chi']) ?></p>
-                                <p class="booking-subtle">Giờ hoạt động: <?= e(substr($quote['facility']['gio_mo_cua'],0,5).' – '.substr($quote['facility']['gio_dong_cua'],0,5)) ?></p>
+                                <div class="booking-facility-detail">
+                                    <span class="booking-facility-label">Tên cơ sở</span>
+                                    <strong class="booking-facility-value">
+                                        <?= e($quote['facility']['ten_co_so']) ?>
+                                    </strong>
+                                </div>
+
+                                <div class="booking-facility-detail">
+                                    <span class="booking-facility-label">Địa chỉ</span>
+                                    <span class="booking-facility-value">
+                                        <?= e($quote['facility']['dia_chi']) ?>
+                                    </span>
+                                </div>
+
+                                <div class="booking-facility-detail">
+                                    <span class="booking-facility-label">Giờ hoạt động</span>
+                                    <span class="booking-facility-value booking-facility-hours">
+                                        <?= e(
+                                            substr($quote['facility']['gio_mo_cua'], 0, 5)
+                                            . ' – ' .
+                                            substr($quote['facility']['gio_dong_cua'], 0, 5)
+                                        ) ?>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -50,8 +71,70 @@ use App\Services\BookingPricingService as Money;
                                 <time datetime="<?= e($draft['input']['date']) ?>"><?= e((new DateTimeImmutable($draft['input']['date']))->format('d/m/Y')) ?></time>
                             </div>
                         </div>
+                        
+                        <?php
+                            // Chỉ gom các dòng để hiển thị.
+                            // Không thay đổi quote, booking hoặc giá gốc.
+                            $scheduleGroups = [];
+
+                            $lines = $quote['lines'];
+
+                            // Sắp xếp theo sân và giờ bắt đầu.
+                            usort($lines, static function ($a, $b) {
+                                $courtA = (string) (
+                                    $a['court_id'] ?? $a['ma_san'] ?? $a['name'] ?? ''
+                                );
+
+                                $courtB = (string) (
+                                    $b['court_id'] ?? $b['ma_san'] ?? $b['name'] ?? ''
+                                );
+
+                                return strcmp($courtA, $courtB)
+                                    ?: strcmp($a['start'], $b['start']);
+                            });
+
+                            foreach ($lines as $line) {
+                                // Ưu tiên mã sân, tạm dùng tên sân khi quote
+                                // chưa cung cấp mã sân.
+                                $courtKey = (string) (
+                                    $line['court_id']
+                                    ?? $line['ma_san']
+                                    ?? $line['name']
+                                );
+
+                                $lastIndex = count($scheduleGroups) - 1;
+
+                                if (
+                                    $lastIndex >= 0
+                                    && $scheduleGroups[$lastIndex]['_court_key'] === $courtKey
+                                    && $scheduleGroups[$lastIndex]['sport'] === $line['sport']
+                                    && $scheduleGroups[$lastIndex]['end'] === $line['start']
+                                ) {
+                                    // Hai khung giờ liên tiếp của cùng một sân.
+                                    $scheduleGroups[$lastIndex]['end'] = $line['end'];
+
+                                    $scheduleGroups[$lastIndex]['minutes'] +=
+                                        (int) $line['minutes'];
+
+                                    $scheduleGroups[$lastIndex]['_amount_cents'] +=
+                                        Money::cents($line['amount']);
+                                } else {
+                                    $group = $line;
+
+                                    $group['_court_key'] = $courtKey;
+
+                                    $group['minutes'] = (int) $line['minutes'];
+
+                                    $group['_amount_cents'] =
+                                        Money::cents($line['amount']);
+
+                                    $scheduleGroups[] = $group;
+                                }
+                            }
+                        ?>
+
                         <div class="booking-schedule-list">
-                            <?php foreach ($quote['lines'] as $line): ?>
+                            <?php foreach ($scheduleGroups as $line): ?>
                                 <article class="booking-schedule-item">
 
                                     <div class="booking-schedule-item-main">
@@ -65,7 +148,6 @@ use App\Services\BookingPricingService as Money;
                                         <?= e($line['start'] . ' – ' . $line['end']) ?>
                                     </div>
 
-                                    
                                     <div class="booking-schedule-duration">
                                         <?php
                                             $minutes = (int) $line['minutes'];
@@ -82,19 +164,35 @@ use App\Services\BookingPricingService as Money;
                                         <?php endif; ?>
                                     </div>
 
-
                                     <div class="booking-schedule-price">
-                                        <strong><?= e(Money::display($line['amount'])) ?></strong>
+                                        <strong>
+                                            <?= e(Money::display(
+                                                Money::decimal($line['_amount_cents'])
+                                            )) ?>
+                                        </strong>
                                     </div>
 
                                 </article>
                             <?php endforeach; ?>
                         </div>
 
+
                     </section>
                     <section class="booking-section booking-service-section">
-                        <div class="booking-section-title"><span class="booking-section-number">03</span><h2>Dịch vụ bổ sung</h2></div>
-                        <button type="button" class="booking-add-service" data-open-services <?= !$quote['offers']?'disabled':'' ?>><span aria-hidden="true">⊕</span> Thêm dịch vụ</button>
+                        <div class="booking-section-title booking-service-title">
+                            <span class="booking-section-number">03</span>
+                            <h2>Dịch vụ bổ sung</h2>
+
+                            <button
+                                type="button"
+                                class="booking-add-service"
+                                data-open-services
+                                <?= !$quote['offers'] ? 'disabled' : '' ?>
+                            >
+                                <span aria-hidden="true">⊕</span>
+                                Thêm dịch vụ
+                            </button>
+                        </div>
                         <div data-selected-services aria-live="polite"></div>
                         <?php if (!$quote['offers']): ?><p class="booking-subtle">Cơ sở chưa có dịch vụ đang cung cấp.</p><?php endif; ?>
                         <button type="button" class="booking-update" data-update-services hidden>Cập nhật dịch vụ</button>
@@ -239,14 +337,13 @@ use App\Services\BookingPricingService as Money;
                             <h2 id="booking-service-dialog-title">
                                 Chọn dịch vụ
                             </h2>
-                            <p>Chọn những dịch vụ bạn cần khi đến sân.</p>
                         </div>
 
                         <button type="button"
                                 class="booking-dialog-close"
                                 data-close-services
                                 aria-label="Đóng">
-                            ×
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M183.1 137.4C170.6 124.9 150.3 124.9 137.8 137.4C125.3 149.9 125.3 170.2 137.8 182.7L275.2 320L137.9 457.4C125.4 469.9 125.4 490.2 137.9 502.7C150.4 515.2 170.7 515.2 183.2 502.7L320.5 365.3L457.9 502.6C470.4 515.1 490.7 515.1 503.2 502.6C515.7 490.1 515.7 469.8 503.2 457.3L365.8 320L503.1 182.6C515.6 170.1 515.6 149.8 503.1 137.3C490.6 124.8 470.3 124.8 457.8 137.3L320.5 274.7L183.1 137.4z"/></svg>
                         </button>
                     </div>
 
@@ -265,7 +362,8 @@ use App\Services\BookingPricingService as Money;
                             $quantity = $draft['extras']['services'][$id] ?? 0;
                         ?>
                             <article class="booking-service"
-                                     data-service-row="<?= e($id) ?>">
+                                data-service-row="<?= e($id) ?>"
+                                data-unit-price-cents="<?= e(Money::cents($offer['don_gia'])) ?>">
 
                                 <div class="booking-service-name">
                                     <h3><?= e($offer['ten_dich_vu']) ?></h3>
@@ -334,7 +432,6 @@ use App\Services\BookingPricingService as Money;
                     </div>
 
                     <div class="booking-dialog-footer">
-                        <span>Giá sẽ được cập nhật sau khi áp dụng.</span>
                         <button type="button"
                                 class="booking-apply-services"
                                 data-apply-services>

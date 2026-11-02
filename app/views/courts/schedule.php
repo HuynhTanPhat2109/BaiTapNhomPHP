@@ -210,7 +210,6 @@ $labels = [
                 <span class="selection-eyebrow">
                     LỰA CHỌN CỦA BẠN
                 </span>
-
             </div>
 
             <button
@@ -232,27 +231,34 @@ $labels = [
             </p>
         </div>
 
-        <div class="selection-summary">
+    </section>
+    
+    <form
+        id="booking-next"
+        method="post"
+        action="<?= e(url('/booking/start')) ?>"
+        data-quote-url="<?= e(url('/booking/quote')) ?>"
+        data-facility="<?= e($facility['ma_co_so']) ?>"
+    >
+        <?= csrf_field() ?>
 
-            <div>
-                <span>Ngày chơi</span>
-                <strong><?= e($date) ?></strong>
-            </div>
+        <input type="hidden" name="selection" value="">
 
-            <div>
+        <div class="booking-next-summary">
+            <div class="booking-next-duration">
                 <span>Tổng thời gian</span>
                 <strong id="selection-duration">0 giờ</strong>
             </div>
 
-            <div>
+            <div class="booking-next-price">
                 <span>Tạm tính</span>
                 <strong id="selection-price">—</strong>
             </div>
-
         </div>
-    </section>
-    <form id="booking-next" method="post" action="<?= e(url('/booking/start')) ?>" data-quote-url="<?= e(url('/booking/quote')) ?>" data-facility="<?= e($facility['ma_co_so']) ?>">
-        <?= csrf_field() ?><input type="hidden" name="selection" value="">
-        <button class="btn btn--primary" type="submit" disabled>Tiếp theo</button>
+
+        <button class="btn btn--primary" type="submit" disabled>
+            Tiếp theo
+        </button>
     </form>
+
 </section>
