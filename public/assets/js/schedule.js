@@ -55,33 +55,91 @@
     const selected = new Map();
     const nextForm = document.getElementById('booking-next');
     let quoteTimer, quoteRequest, quoteRevision = 0;
+    let quotedSelection = null;
+    let quoteValid = false;
+    
     function updateQuote(items) {
         if (!nextForm) return;
+
+        const button = nextForm.querySelector('button[type="submit"]');
+        const price = document.getElementById('selection-price');
+
+        const selection = JSON.stringify({
+            facility: nextForm.dataset.facility,
+            date: root.dataset.date,
+            slots: items.map(item => ({
+                court: item.courtId,
+                start: item.start,
+                end: item.end
+            }))
+        });
+
+        nextForm.elements.selection.value = selection;
+
+        // Lựa chọn không đổi và báo giá trước đó vẫn hợp lệ:
+        // không cần gọi AJAX hoặc xóa giá đang hiển thị.
+        if (quoteValid && quotedSelection === selection) {
+            button.disabled = !fresh();
+            return;
+        }
+
         clearTimeout(quoteTimer);
         quoteRequest?.abort();
+
         const revision = ++quoteRevision;
-        const button = nextForm.querySelector('button');
-        const price = document.getElementById('selection-price');
+
+        quoteValid = false;
+        quotedSelection = null;
         button.disabled = true;
-        const selection = JSON.stringify({facility:nextForm.dataset.facility,date:root.dataset.date,
-            slots:items.map(item => ({court:item.courtId,start:item.start,end:item.end}))});
-        nextForm.elements.selection.value = selection;
         price.textContent = '—';
+
         if (!items.length) return;
+
         quoteTimer = setTimeout(async () => {
-            const controller = new AbortController(); quoteRequest = controller;
+            const controller = new AbortController();
+            quoteRequest = controller;
+
             try {
-                const response = await fetch(nextForm.dataset.quoteUrl, {method:'POST',body:new FormData(nextForm),signal:controller.signal,headers:{Accept:'application/json'}});
+                const response = await fetch(nextForm.dataset.quoteUrl, {
+                    method: 'POST',
+                    body: new FormData(nextForm),
+                    signal: controller.signal,
+                    headers: { Accept: 'application/json' }
+                });
+
                 const data = await response.json();
+
                 if (revision !== quoteRevision) return;
-                if (!response.ok) throw new Error(data.error || 'Không thể tính giá. Vui lòng tải lại lịch.');
-                price.textContent = Number(data.total).toLocaleString('vi-VN',{maximumFractionDigits:2}) + ' ₫';
+
+                if (!response.ok || !Number.isFinite(Number(data.total))) {
+                    throw new Error(
+                        data.error || 'Không thể tính giá. Vui lòng thử lại.'
+                    );
+                }
+
+                price.textContent =
+                    Number(data.total).toLocaleString('vi-VN', {
+                        maximumFractionDigits: 2
+                    }) + ' ₫';
+
+                quotedSelection = selection;
+                quoteValid = true;
+
                 button.disabled = !fresh();
+
             } catch (error) {
-                if (error.name !== 'AbortError' && revision === quoteRevision && feedbackEl) feedbackEl.textContent = error.message || 'Chưa kết nối được máy chủ.';
+                if (revision !== quoteRevision) return;
+
+                if (error.name !== 'AbortError' && feedbackEl) {
+                    feedbackEl.textContent =
+                        error.message || 'Chưa kết nối được máy chủ.';
+                }
+
+                button.disabled = true;
             }
-        },250);
+        }, 250);
     }
+
     nextForm?.addEventListener('submit', event => {
         expire();
         const button = nextForm.querySelector('button');
@@ -100,11 +158,18 @@
     ------------------------------------------------------- */
 
     /** Total duration – always shows "X giờ YY phút" */
+    
+    /** Hiển thị thời gian gọn, không hiện đơn vị bằng 0 */
     function formatTotal(minutes) {
-        var h = Math.floor(minutes / 60), m = minutes % 60;
-        if (m === 0) return minutes === 0 ? '0 giờ 00 phút' : h + ' giờ';
+        const h = Math.floor(minutes / 60);
+        const m = minutes % 60;
+
+        if (h === 0) return m + ' phút';
+        if (m === 0) return h + ' giờ';
+
         return h + ' giờ ' + m + ' phút';
     }
+
 
     /** Group duration – omits "0 giờ" */
     function formatGroup(minutes) {
@@ -293,8 +358,16 @@
             if (removed) {
                 paint();
                 if (feedbackEl) feedbackEl.textContent='Một số ô vừa hết giờ hoặc không còn trống đã được bỏ chọn. Các ô còn hợp lệ được giữ nguyên.';
-            } else if (selected.size) updateQuote(Array.from(selected.values()));
-            else if (feedbackEl) feedbackEl.textContent='Chưa giữ sân';
+            } else if (selected.size) {
+                updateQuote(
+                    Array.from(selected.values()).sort((a, b) =>
+                        a.courtId.localeCompare(b.courtId) ||
+                        a.start.localeCompare(b.start)
+                    )
+                );
+            } else if (feedbackEl) {
+                feedbackEl.textContent = 'Chưa giữ sân';
+            }
         } catch (error) {
             if (revision !== syncRevision) return;
             synchronized = false;

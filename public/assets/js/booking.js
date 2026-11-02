@@ -66,80 +66,178 @@
     }
     const form = document.querySelector('[data-booking-form]');
     if (form) {
-        let timer, request, revision=0;
-        const confirm = () => form.querySelector('[data-confirm-booking]');
-        const feedback = message => { const node=form.querySelector('[data-booking-feedback]'); if(node) { node.textContent=message; node.hidden=!message; } };
-        async function review() {
-            const current=++revision;
-            request?.abort(); request=new AbortController();
-            const controller=request;
-            const timeout=setTimeout(()=>controller.abort(),12000);
-            if(confirm()) confirm().disabled=true;
-            feedback('Đang cập nhật tổng tiền…');
+        const dialog=form.querySelector('[data-service-dialog]');
+        const note=form.querySelector('textarea[name=note]');
+        const open=form.querySelector('[data-open-services]');
+        const apply=dialog?.querySelector('[data-apply-services]');
+        const list=form.querySelector('[data-selected-services]');
+        const rows=()=>[...form.querySelectorAll('[data-service-row]')];
+        const quantities=()=>Object.fromEntries(rows().map(row=>[row.dataset.serviceRow,Number(row.querySelector('input').value)||0]));
+        let applied=quantities(), busy=false, synchronized=true, timer;
+        let acceptedNote=note?.value || '';
+        const confirm=()=>form.querySelector('[data-confirm-booking]');
+        const feedback=message=>{
+            for(const node of form.querySelectorAll('[data-booking-feedback], [data-service-feedback]')) {
+                node.textContent=message;node.hidden=!message;
+            }
+        };
+        function restore() {
+            rows().forEach(row => {
+                row.querySelector('input').value =
+                    String(applied[row.dataset.serviceRow] || 0);
+
+                updateDraftAmount(row);
+            });
+        }
+        function serviceData(data, values) {
+            for(const key of [...data.keys()]) if(/^services\[/.test(key)) data.delete(key);
+            for(const [id,quantity] of Object.entries(values)) if(quantity>0) data.set('services['+id+']',String(quantity));
+        }
+        // Native confirmation/login submits must never include un-applied modal edits.
+        form.addEventListener('formdata',event=>serviceData(event.formData,applied));
+        function renderSelected() {
+            if(!list)return;
+            list.replaceChildren();
+            const ul=document.createElement('ul');ul.className='booking-selected-list';
+            rows().forEach(row=>{
+                const id=row.dataset.serviceRow,quantity=applied[id]||0;
+                if(!quantity)return;
+                const name=row.querySelector('.booking-service-name h3').textContent.trim();
+                const li=document.createElement('li'),info=document.createElement('div');
+                const title = document.createElement('span');
+                title.className = 'booking-selected-name';
+                title.textContent = name;
+
+                const count = document.createElement('span');
+                count.className = 'booking-selected-quantity';
+                count.textContent = '× ' + quantity.toLocaleString('vi-VN');
+                const amount=document.createElement('span');amount.className='booking-selected-amount';amount.textContent=row.querySelector('[data-service-amount]').textContent.trim();
+                const remove=document.createElement('button');remove.type='button';remove.className='booking-selected-remove';remove.dataset.removeApplied=id;
+                remove.title='Xóa '+name;remove.setAttribute('aria-label','Xóa '+name);remove.disabled=busy;
+                remove.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>';
+                amount.append(remove);info.append(title,count);li.append(info,amount);ul.append(li);
+            });
+            if(ul.childElementCount)list.append(ul);
+            else {const empty=document.createElement('p');empty.className='booking-empty-services';empty.textContent='Bạn chưa chọn dịch vụ nào.';list.append(empty);}
+        }
+        function filter() {
+            if(!dialog)return;
+            const keyword=dialog.querySelector('[data-service-search]').value.trim().toLocaleLowerCase('vi');
+            rows().forEach(row=>row.hidden=!row.querySelector('h3').textContent.toLocaleLowerCase('vi').includes(keyword));
+            dialog.querySelector('[data-service-search-empty]').hidden=rows().some(row=>!row.hidden);
+        }
+        function close() {
+            if(busy)return;
+            restore();dialog?.close();open?.focus();
+            if(acceptedNote!==(note?.value||'')) review({...applied},false);
+        }
+        open?.addEventListener('click',()=>{
+            if(busy)return;clearTimeout(timer);restore();filter();feedback('');dialog.showModal();dialog.querySelector('[data-service-search]').focus();
+        });
+        dialog?.querySelector('[data-close-services]').addEventListener('click',close);
+        dialog?.addEventListener('cancel',event=>{event.preventDefault();close();});
+        dialog?.addEventListener('close',()=>{if(!busy)restore();});
+        dialog?.addEventListener('click',event=>{if(event.target===dialog)close();});
+        dialog?.querySelector('[data-service-search]').addEventListener('input',filter);
+        function updateDraftAmount(row) {
+            const input = row.querySelector('input[type="number"]');
+            const amount = row.querySelector('[data-service-amount]');
+
+            if (!input || !amount) return;
+
+            const quantity = Number(input.value) || 0;
+            const unitPriceCents = Number(row.dataset.unitPriceCents);
+
+            if (!Number.isFinite(unitPriceCents)) return;
+
+            const totalCents = quantity * unitPriceCents;
+
+            amount.textContent = quantity > 0
+                ? new Intl.NumberFormat('vi-VN').format(totalCents / 100) + ' đ'
+                : '—';
+        }
+        function normalize(input) {
+            const value=Number(input.value);
+            input.value=String(Number.isFinite(value)?Math.max(0,Math.min(Number(input.max),Math.trunc(value))):0);
+        }
+        form.addEventListener('click',event=>{
+            const button=event.target.closest('[data-quantity], [data-remove-service], [data-remove-applied]');
+            if(!button||button.disabled||busy)return;
+            if(button.hasAttribute('data-remove-applied')) {
+                const candidate={...applied,[button.dataset.removeApplied]:0};review(candidate,false);return;
+            }
+            const row = button.closest('[data-service-row]');
+            const input = row.querySelector('input');
+
+            input.value = button.hasAttribute('data-remove-service')
+                ? '0'
+                : String(Number(input.value || 0) + Number(button.dataset.quantity));
+
+            normalize(input);
+            updateDraftAmount(row);
+                    });
+        dialog?.addEventListener('input', event => {
+            if (!event.target.matches('input[type="number"]')) return;
+
+            normalize(event.target);
+            updateDraftAmount(event.target.closest('[data-service-row]'));
+        });
+        apply?.addEventListener('click',()=>{
+            if(busy)return;
+            rows().forEach(row=>normalize(row.querySelector('input')));
+            const candidate=quantities();
+            if(synchronized&&acceptedNote===(note?.value||'')&&JSON.stringify(candidate)===JSON.stringify(applied)){close();return;}
+            review(candidate,true);
+        });
+        async function review(candidate,closeAfter) {
+            if(busy)return;
+            clearTimeout(timer);busy=true;synchronized=false;
+            const controls=[...form.querySelectorAll('button,input[type=number],textarea')].map(node=>[node,node.disabled]);
+            controls.forEach(([node])=>node.disabled=true);
+            form.setAttribute('aria-busy','true');feedback('Đang cập nhật báo giá…');
+            const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
+            const sentNote=note?.value||'';
             try {
-                // Guest login/register buttons are named "action" and shadow form.action.
-                const response=await fetch(form.getAttribute('action'),{method:'POST',body:new FormData(form),signal:controller.signal});
+                const body=new FormData(form);serviceData(body,candidate);body.set('note',sentNote);
+                const response=await fetch(form.getAttribute('action'),{method:'POST',body,signal:controller.signal});
                 const page=new DOMParser().parseFromString(await response.text(),'text/html');
-                if(current!==revision) return;
-                const summary=page.querySelector('.booking-summary');
-                const quote=page.querySelector('[name=quote]');
-                const lines=page.querySelector('.booking-schedule-list');
-                const services=page.querySelector('.booking-dialog-list');
-                if(!response.ok || !summary || !quote || !lines
-                    || (!!form.querySelector('.booking-dialog-list') !== !!services)) {
-                    const message=page.querySelector('.booking-error')?.textContent
-                        || (response.status===403 ? 'Phiên hoặc mã CSRF không còn hợp lệ. Vui lòng tải lại trang rồi thử lại.'
-                        : response.status===410 ? 'Lựa chọn đã hết hạn. Vui lòng chọn lại lịch.'
-                        : 'Không thể cập nhật báo giá'+(response.status ? ' (HTTP '+response.status+')' : '')+'. Vui lòng tải lại trang để kiểm tra dịch vụ và thử lại.');
-                    throw new Error(message);
-                }
-                // Keep the customer's note and the modal itself alive. Only server-owned
-                // quote fragments are replaced, together, after the latest response wins.
+                const summary=page.querySelector('.booking-summary'),quote=page.querySelector('[name=quote]'),lines=page.querySelector('.booking-schedule-list'),services=page.querySelector('.booking-dialog-list');
+                if(!response.ok||!summary||!quote||!lines||!!dialog!==!!services)throw new Error(page.querySelector('.booking-error')?.textContent||'Không thể cập nhật báo giá (HTTP '+response.status+'). Vui lòng thử lại hoặc tải lại trang.');
                 form.querySelector('.booking-summary').replaceWith(summary);
                 form.querySelector('.booking-schedule-list').replaceWith(lines);
-                if (services) form.querySelector('.booking-dialog-list').replaceChildren(...services.childNodes);
+                if(services)dialog.querySelector('.booking-dialog-list').replaceChildren(...services.childNodes);
                 form.elements.quote.value=quote.value;
-                form.removeAttribute('aria-busy');
-                form.dispatchEvent(new Event('booking:quoted'));
+                applied=quantities();acceptedNote=sentNote;synchronized=true;
+                renderSelected();filter();
+                if(closeAfter)dialog.close();
                 feedback('Đã cập nhật giá và dịch vụ · Chưa giữ sân');
             } catch(error) {
-                if(current===revision) {
-                    form.removeAttribute('aria-busy');
-                    form.dispatchEvent(new Event('booking:quote-failed'));
-                    feedback(error.name==='AbortError' ? 'Máy chủ phản hồi quá lâu. Báo giá chưa được cập nhật; vui lòng thử lại.' : error.message);
-                }
-            } finally { clearTimeout(timeout); }
-        }
-        function changed() {
-            clearTimeout(timer); request?.abort(); revision++;
-            if(confirm()) confirm().disabled=true;
-            form.setAttribute('aria-busy','true');
-            feedback('Đang cập nhật báo giá. Số tiền mới chỉ được xác nhận sau khi máy chủ phản hồi.');
-            form.dispatchEvent(new Event('booking:quote-pending'));
-            timer=setTimeout(review,300);
-        }
-        // Delegation also covers service controls refreshed by an AJAX response.
-        form.addEventListener('click',event=>{
-            const button=event.target.closest('[data-quantity], [data-remove-service]');
-            if(!button || button.disabled || !form.contains(button)) return;
-            if(button.matches('[data-remove-service]')) {
-                button.closest('[data-service-row]').querySelector('input').value='0';
-                changed(); return;
+                // A failed/lost response may already have changed the server draft.
+                // Keep the last accepted display but require a successful review before confirm.
+                if(!closeAfter)restore();
+                feedback(error.name==='AbortError'?'Máy chủ phản hồi quá lâu. Chưa áp dụng thay đổi; vui lòng thử lại.':error.message);
+            } finally {
+                clearTimeout(timeout);busy=false;form.removeAttribute('aria-busy');
+                controls.forEach(([node,disabled])=>{if(node.isConnected)node.disabled=disabled;});
+                form.querySelectorAll('[data-remove-applied]').forEach(node=>node.disabled=false);
+                if(confirm())confirm().disabled=!synchronized;
             }
-            const input=button.parentElement.querySelector('input');
-            input.value=String(Math.max(0,Math.min(Number(input.max),Number(input.value||0)+Number(button.dataset.quantity))));
-            changed();
-        });
-        form.addEventListener('input',event=>{
-            if(event.target.matches('input[type=number],textarea')) changed();
+        }
+        note?.addEventListener('input',()=>{
+            if(busy)return;clearTimeout(timer);synchronized=false;if(confirm())confirm().disabled=true;
+            timer=setTimeout(()=>review({...applied},false),300);
         });
         form.addEventListener('submit',event=>{
-            if(!form.reportValidity()) { event.preventDefault(); return; }
-            clearTimeout(timer); request?.abort(); revision++;
-            // Disable after the browser has captured the clicked submit button's name/value.
-            setTimeout(()=>{form.querySelectorAll('button[type=submit],button[name=action],[data-confirm-booking]').forEach(button=>button.disabled=true);},0);
-            feedback('Đang xử lý yêu cầu…');
+            if(busy||dialog?.open){event.preventDefault();return;}
+            if(event.submitter?.hasAttribute('data-confirm-booking')&&!synchronized){
+                event.preventDefault();review({...applied},false);return;
+            }
+            restore();
+            if(!form.reportValidity()){event.preventDefault();return;}
+            clearTimeout(timer);
+            setTimeout(()=>form.querySelectorAll('button[type=submit],button[name=action],[data-confirm-booking]').forEach(button=>button.disabled=true),0);
         });
+        renderSelected();
     }
     const waiting=document.querySelector('[data-booking-wait]');
     if(!waiting) return;
@@ -171,213 +269,3 @@
 })();
 
 
-/* =========================================================
-   STRYKE - SERVICE SELECTION MODAL
-   Add AFTER the existing booking.js code.
-========================================================= */
-
-(() => {
-    'use strict';
-
-    const form = document.querySelector('[data-booking-form]');
-    const dialog = document.querySelector('[data-service-dialog]');
-
-    if (!form || !dialog) return;
-
-    const openButton = document.querySelector('[data-open-services]');
-    const closeButton = dialog.querySelector('[data-close-services]');
-    const applyButton = dialog.querySelector('[data-apply-services]');
-    const searchInput = dialog.querySelector('[data-service-search]');
-    const selectedContainer = document.querySelector('[data-selected-services]');
-    const rows = () => Array.from(dialog.querySelectorAll('[data-service-row]'));
-    let quotePending = false;
-    let quoteFailed = false;
-
-    const getInput = row =>
-        row.querySelector('input[type="number"]');
-
-    const getQuantity = row =>
-        Number(getInput(row)?.value || 0);
-
-    const normalizeQuantity = input => {
-        if (!input || input.disabled) return 0;
-
-        const max = Number(input.max || 999999);
-        const value = Number(input.value || 0);
-
-        const safe = Number.isFinite(value)
-            ? Math.max(0, Math.min(max, Math.trunc(value)))
-            : 0;
-
-        input.value = String(safe);
-        return safe;
-    };
-
-    const formatNumber = value =>
-        value.toLocaleString('vi-VN');
-
-    function renderSelected() {
-        if (!selectedContainer) return;
-
-        selectedContainer.replaceChildren();
-
-        const selected = rows().filter(row => getQuantity(row) > 0);
-
-        if (!selected.length) {
-            const empty = document.createElement('p');
-            empty.className = 'booking-empty-services';
-            empty.textContent = 'Bạn chưa chọn dịch vụ nào.';
-            selectedContainer.append(empty);
-            return;
-        }
-
-        const list = document.createElement('ul');
-        list.className = 'booking-selected-list';
-
-        for (const row of selected) {
-            const quantity = getQuantity(row);
-
-            const name = row.querySelector(
-                '.booking-service-name h3'
-            )?.textContent?.trim() || 'Dịch vụ';
-
-            const amount = quoteFailed ? 'Chưa cập nhật được' : quotePending ? 'Đang cập nhật…' : row.querySelector(
-                '[data-service-amount]'
-            )?.textContent?.trim() || '';
-
-            const item = document.createElement('li');
-
-            const info = document.createElement('div');
-
-            const nameNode = document.createElement('span');
-            nameNode.className = 'booking-selected-name';
-            nameNode.textContent = name;
-
-            const quantityNode = document.createElement('span');
-            quantityNode.className = 'booking-selected-quantity';
-            quantityNode.textContent =
-                `Số lượng: ${formatNumber(quantity)}`;
-
-            const amountNode = document.createElement('span');
-            amountNode.className = 'booking-selected-amount';
-            amountNode.textContent = amount;
-
-            info.append(nameNode, quantityNode);
-            item.append(info, amountNode);
-            list.append(item);
-        }
-
-        selectedContainer.append(list);
-    }
-
-    function filterServices() {
-        const keyword = searchInput.value
-            .trim()
-            .toLocaleLowerCase('vi');
-
-        let visible = 0;
-
-        for (const row of rows()) {
-            const name = row.querySelector(
-                '.booking-service-name h3'
-            )?.textContent?.toLocaleLowerCase('vi') || '';
-
-            const matches = name.includes(keyword);
-
-            row.hidden = !matches;
-
-            if (matches) visible++;
-        }
-
-        const searchEmpty = dialog.querySelector('[data-service-search-empty]');
-        if (searchEmpty) {
-            searchEmpty.hidden = visible > 0;
-        }
-    }
-
-    function openDialog() {
-        if (typeof dialog.showModal !== 'function') return;
-
-        searchInput.value = '';
-        filterServices();
-
-        dialog.showModal();
-        searchInput.focus();
-    }
-
-    function closeDialog() {
-        dialog.close();
-        openButton?.focus();
-    }
-
-    openButton?.addEventListener('click', openDialog);
-
-    closeButton?.addEventListener('click', closeDialog);
-
-    searchInput?.addEventListener('input', filterServices);
-
-    dialog.addEventListener('click', event => {
-        if (event.target === dialog) {
-            closeDialog();
-        }
-    });
-
-    // Keep the existing booking.js quantity handlers.
-    // These listeners only update the selected-service preview.
-    dialog.addEventListener('input', event => {
-        if (event.target.matches('input[type="number"]')) {
-            normalizeQuantity(event.target);
-            renderSelected();
-        }
-    });
-
-    dialog.addEventListener('click', event => {
-        if (
-            event.target.closest('[data-quantity]') ||
-            event.target.closest('[data-remove-service]')
-        ) {
-            // Existing booking.js changes the input synchronously.
-            queueMicrotask(renderSelected);
-        }
-    });
-
-    function applyServices() {
-    for (const row of rows()) {
-        normalizeQuantity(getInput(row));
-    }
-
-    renderSelected();
-    dialog.close();
-
-    const firstInput = dialog.querySelector('input[type="number"]');
-
-    if (firstInput) {
-        firstInput.dispatchEvent(
-            new Event('input', { bubbles: true })
-        );
-    }
-
-    openButton?.focus();
-}
-
-    applyButton?.addEventListener('click', applyServices);
-
-    form.addEventListener('booking:quote-pending', () => {
-        quotePending = true;
-        quoteFailed = false;
-        renderSelected();
-    });
-    form.addEventListener('booking:quote-failed', () => {
-        quotePending = false;
-        quoteFailed = true;
-        renderSelected();
-    });
-    form.addEventListener('booking:quoted', () => {
-        quotePending = false;
-        quoteFailed = false;
-        filterServices();
-        renderSelected();
-    });
-
-        renderSelected();
-})();
