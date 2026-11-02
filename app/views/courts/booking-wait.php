@@ -101,7 +101,7 @@ $states = [
                     <div class="stryke-alert-notice">
                         <span class="stryke-alert-icon">⚠️</span>
                         <div class="stryke-alert-text">
-                            Vui lòng chuyển khoản <strong><?= e(number_format((float) ($payment['so_tien'] ?? $booking['tong_tien_tam_tinh']), 0, ',', '.')) ?> đ</strong> và gửi ảnh vào ô bên dưới để hoàn tất đặt lịch!
+                            Vui lòng chuyển khoản <strong><?= e(number_format((float) ($payment['so_tien'] ?? $booking['tong_tien_tam_tinh']), 0, ',', '.')) ?> đ</strong> đúng nội dung. Chức năng xác minh giao dịch đang được tích hợp.
                             <div class="stryke-alert-memo">
                                 <span>Nội dung chuyển khoản: <strong class="stryke-memo-code"><?= e($payment['ma_tham_chieu'] ?? '') ?></strong></span>
                                 <button type="button" class="stryke-btn-copy-memo" data-copy-text="<?= e($payment['ma_tham_chieu'] ?? '') ?>">Sao chép mã</button>
@@ -146,8 +146,8 @@ $states = [
 
                 <?php else: ?>
                     <div class="stryke-bank-missing" style="background:#fff;border:1px solid #e5e7eb;padding:24px;border-radius:12px;text-align:center;">
-                        <h3 style="color:#d97706;margin:0 0 8px;">Cơ sở chưa cấu hình tài khoản ngân hàng</h3>
-                        <p style="color:#6b7280;margin:0;font-size:13px;">Vui lòng liên hệ ban quản lý cơ sở để thanh toán tiền mặt trực tiếp tại quầy.</p>
+                        <h3 style="color:#d97706;margin:0 0 8px;">Chưa sẵn sàng thanh toán</h3>
+                        <p style="color:#6b7280;margin:0;font-size:13px;" role="status"><?= e($paymentError ?? ($payment ? 'Cơ sở chưa cấu hình tài khoản ngân hàng hoạt động. Vui lòng liên hệ cơ sở.' : 'Chưa tạo được yêu cầu thanh toán. Bạn có thể thử lại khi booking còn hạn.')) ?></p>
                     </div>
                 <?php endif; ?>
             </div>
@@ -260,8 +260,11 @@ $states = [
                     <strong class="stryke-total-val"><?= e(Money::display($payment['so_tien'] ?? $booking['tong_tien_tam_tinh'])) ?></strong>
                 </div>
             </div>
-            <button type="button" class="stryke-btn-continue" data-submit-payment>
-                Tiếp tục thanh toán
+            <form id="booking-payment-retry" action="<?= e(url('/booking/payment')) ?>" method="post" hidden>
+                <?= csrf_field() ?><input type="hidden" name="id" value="<?= e($booking['ma_dat_san']) ?>">
+            </form>
+            <button type="<?= !$payment || $paymentError ? 'submit' : 'button' ?>" form="booking-payment-retry" class="stryke-btn-continue" <?= !$payment || $paymentError ? '' : 'data-submit-payment' ?> <?= $payment && $payment['trang_thai'] !== 'CHO_THANH_TOAN' ? 'disabled' : '' ?>>
+                <?= !$payment || $paymentError ? 'Thử lại yêu cầu thanh toán' : 'Tiếp tục thanh toán' ?>
             </button>
         </div>
     </div>

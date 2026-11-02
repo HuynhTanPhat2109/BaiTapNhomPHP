@@ -178,6 +178,18 @@ final class BookingService
         return $booking + $this->bookings->visit($id);
     }
 
+    /** GET projection: expiry releases availability immediately; cleanup is a POST/job. */
+    public function inspect(int $id, int $customer): array
+    {
+        $booking = $this->bookings->find($id);
+        if (!$booking || (int)$booking['ma_khach_hang'] !== $customer) throw new HttpException(404, 'Không tìm thấy booking.');
+        if ($booking['trang_thai_dat_san'] === self::PENDING
+            && $booking['het_han_giu_san_luc'] <= CourtScheduleService::now()->format('Y-m-d H:i:s')) {
+            $booking['trang_thai_dat_san'] = self::EXPIRED;
+        }
+        return $booking + $this->bookings->visit($id);
+    }
+
     public function cancelHold(int $id, int $customer): array
     {
         $this->pdo->beginTransaction();

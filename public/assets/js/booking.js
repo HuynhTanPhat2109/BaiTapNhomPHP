@@ -291,9 +291,6 @@
             if (data.now) epoch=Date.parse(data.now);
             start=performance.now();
             if (data.state) state=data.state;
-            if (data.payment_status==='THANH_CONG' && state==='CHO_THANH_TOAN') {
-                state='DA_XAC_NHAN';
-            }
             tick();
             if (isTerminal(state)) {
                 stopAllTimers();

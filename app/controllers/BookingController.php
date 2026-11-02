@@ -103,16 +103,43 @@ final class BookingController extends Controller
             $id=$this->service()->confirm((int)$user['ma_khach_hang'],$key,$draft['input'],$extras,post_string('quote'));
             $_SESSION['booking_drafts'][$key]['booking']=$id;
             $_SESSION['booking_drafts'][$key]['owner']=(int)$user['ma_khach_hang'];
+            $this->preparePayment($id, (int)$user['ma_khach_hang']);
             $this->go('/booking/wait','id',(string)$id);
         } catch (HttpException $e) { $this->page($key,$draft,$user,$e->getMessage(),$e->status); }
     }
+    /** POST-only handoff. Booking stays idempotent and its original deadline never changes. */
+    private function preparePayment(int $id, int $customer): void
+    {
+        unset($_SESSION['booking_payment_error'][$id]);
+        $booking = $this->service()->owned($id, $customer);
+        if ($booking['trang_thai_dat_san'] !== BookingService::PENDING) return;
+        try {
+            (new \App\Services\PaymentService($this->app->pdo()))->createPaymentRequest($id, $booking['tong_tien_tam_tinh']);
+        } catch (\App\Services\ValidationException $e) {
+            $_SESSION['booking_payment_error'][$id] = 'Yêu cầu thanh toán chưa thể tạo. Vui lòng kiểm tra trạng thái booking hoặc liên hệ cơ sở; thời hạn giữ sân không được gia hạn.';
+        } catch (\Throwable $e) {
+            error_log('Payment handoff failed: ' . get_class($e));
+            $_SESSION['booking_payment_error'][$id] = 'Kết nối thanh toán tạm thời gặp lỗi. Bạn có thể thử lại trong thời gian giữ sân còn hiệu lực.';
+        }
+    }
+
+    public function retryPayment(): void
+    {
+        $user = $this->app->auth()->user();
+        if (!$user || $user['ten_vai_tro'] !== 'KHACH_HANG') throw new HttpException(403, 'Vui lòng đăng nhập tài khoản khách hàng.');
+        $id = post_string('id');
+        if (!\App\Services\CoSoService::validId($id)) throw new HttpException(404, 'Không tìm thấy booking.');
+        $this->preparePayment((int)$id, (int)$user['ma_khach_hang']);
+        $this->go('/booking/wait', 'id', $id);
+    }
+
     public function waiting(): void
     {
         $user=$this->app->auth()->user();
         if (!$user || $user['ten_vai_tro']!=='KHACH_HANG') throw new HttpException(403,'Vui lòng đăng nhập tài khoản khách hàng.');
         $id=$_GET['id']??'';
         if (!is_string($id) || !\App\Services\CoSoService::validId($id)) throw new HttpException(404,'Không tìm thấy booking.');
-        $booking=$this->service()->visit((int)$id,(int)$user['ma_khach_hang']);
+        $booking=$this->service()->inspect((int)$id,(int)$user['ma_khach_hang']);
         $now=CourtScheduleService::now();
         header('Cache-Control: no-store');
         if (($_GET['status']??'')==='1') {
@@ -136,15 +163,11 @@ final class BookingController extends Controller
         $payment = null;
         $bankAccount = null;
         $qrUrl = null;
-        $paymentError = null;
+        $paymentError = $_SESSION['booking_payment_error'][(int)$id] ?? null;
         try {
             $paymentService = new \App\Services\PaymentService($this->app->pdo());
             $payment = $paymentService->getPaymentByBooking((int) $id);
-            if (!$payment && $booking['trang_thai_dat_san'] === 'CHO_THANH_TOAN') {
-                $created = $paymentService->createPaymentRequest((int) $id, $booking['tong_tien_tam_tinh']);
-                $payment = $paymentService->getPayment((int) $created['payment_id']);
-            }
-            if ($payment) {
+            if ($payment && $payment['trang_thai'] === 'CHO_THANH_TOAN') {
                 $bankModel = new \App\Models\TaiKhoanNganHang($this->app->pdo());
                 $bankAccount = $bankModel->getDefaultByFacility((int) $booking['ma_co_so']);
                 if ($bankAccount) {
@@ -157,10 +180,12 @@ final class BookingController extends Controller
                         $bankAccount['ten_chu_tai_khoan']
                     );
                 }
+            } elseif ($payment) {
+                $paymentError = 'Giao dịch đã kết thúc hoặc đang cần kiểm tra. Không chuyển khoản thêm; trạng thái đặt sân sẽ được cập nhật từ hệ thống.';
             }
         } catch (\Throwable $e) {
-            $paymentError = $e->getMessage();
-            error_log("Payment integration error: " . $e->getMessage());
+            $paymentError = 'Không thể đọc cấu hình thanh toán. Vui lòng thử lại hoặc liên hệ cơ sở.';
+            error_log('Payment read failed: ' . get_class($e));
         }
 
         // Lấy thông tin chi tiết khách hàng

@@ -87,7 +87,7 @@
                 }
                 if (placeholder) placeholder.hidden = true;
                 if (preview) preview.hidden = false;
-                showToast('Đã đính kèm ảnh chuyển khoản!');
+                showToast('Ảnh chỉ được xem trước trên thiết bị, chưa gửi lên hệ thống.');
             };
             reader.readAsDataURL(file);
         }
@@ -164,17 +164,7 @@
     const submitBtn = document.querySelector('[data-submit-payment]');
     if (submitBtn) {
         submitBtn.addEventListener('click', () => {
-            const hasImage = fileInput && fileInput.files && fileInput.files.length > 0;
-            if (hasImage) {
-                showToast('✓ Đã ghi nhận thông tin và ảnh xác nhận! Hệ thống đang xử lý...');
-                submitBtn.textContent = 'Đang xác nhận thanh toán...';
-                submitBtn.disabled = true;
-                setTimeout(() => {
-                    submitBtn.textContent = 'Đã gửi xác nhận';
-                }, 3000);
-            } else {
-                showToast('💡 Mẹo: Quét mã QR bằng App ngân hàng để hệ thống tự động xác nhận nhanh nhất!');
-            }
+            showToast('Chức năng gửi ảnh và xác minh thanh toán đang được tích hợp. Chưa có ảnh nào được gửi lên hệ thống.');
         });
     }
 

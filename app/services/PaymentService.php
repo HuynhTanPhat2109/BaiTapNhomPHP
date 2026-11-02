@@ -105,15 +105,19 @@ final class PaymentService
             if ($status === 'HET_HAN') {
                 throw new ValidationException(['booking' => 'Đơn đặt sân đã hết hạn giữ chỗ.']);
             }
-            if (!in_array($status, ['CHO_THANH_TOAN', 'CHO_XAC_NHAN'], true)) {
+            if ($status !== 'CHO_THANH_TOAN') {
                 throw new ValidationException(['booking' => 'Trạng thái đặt sân không hợp lệ để tạo yêu cầu thanh toán.']);
             }
 
             // 4. Kiểm tra thời hạn giữ sân (Asia/Ho_Chi_Minh)
             $now = self::now();
+            if (empty($booking['bat_dau_giu_san_luc']) || empty($booking['het_han_giu_san_luc'])
+                || $booking['het_han_giu_san_luc'] <= $booking['bat_dau_giu_san_luc']) {
+                throw new ValidationException(['booking' => 'Booking chưa có thời hạn giữ sân hợp lệ.']);
+            }
             if (!empty($booking['het_han_giu_san_luc'])) {
                 $expiresAt = new DateTimeImmutable($booking['het_han_giu_san_luc'], $now->getTimezone());
-                if ($now > $expiresAt) {
+                if ($now >= $expiresAt) {
                     throw new ValidationException(['booking' => 'Thời gian giữ sân đã hết hạn. Vui lòng đặt lại.']);
                 }
             }
@@ -142,9 +146,10 @@ final class PaymentService
                 $paymentId = (int) $existing['ma_thanh_toan'];
 
                 if ($existing['trang_thai'] !== 'CHO_THANH_TOAN') {
-                    // Nếu trước đó bị HUY hoặc HET_HAN nhưng booking được kích hoạt lại
-                    $referenceCode = $this->generateReferenceCode($bookingId);
-                    $this->thanhToanModel->refreshPaymentRequest($paymentId, $referenceCode, $formattedAmount, $note);
+                    throw new ValidationException(['payment' => 'Yêu cầu thanh toán đã kết thúc hoặc cần đối soát. Không thể tạo lại.']);
+                }
+                if (number_format((float)$existing['so_tien'], 2, '.', '') !== $bookingAmount) {
+                    throw new ValidationException(['payment' => 'Thông tin thanh toán cần được kiểm tra lại.']);
                 }
             } else {
                 // Tạo mới bản ghi thanh toán
@@ -187,6 +192,9 @@ final class PaymentService
                 );
             }
 
+            if (self::now() >= $expiresAt) {
+                throw new ValidationException(['booking' => 'Thời gian giữ sân đã hết hạn. Vui lòng đặt lại.']);
+            }
             if (!$inTx) {
                 $this->pdo->commit();
             }

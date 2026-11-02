@@ -43,7 +43,7 @@ vm.runInNewContext(fs.readFileSync('public/assets/js/schedule.js','utf8'),{
 });
 const count=()=>cells.filter(c=>c.classes.has('is-selected')).length;
 const groups=()=>nodes['selected-courts'].querySelectorAll('.selected-court-row');
-assert.equal(nodes['selection-duration'].textContent,'0 giờ 00 phút');
+assert.equal(nodes['selection-duration'].textContent,'0 phút');
 rows[0].cells[0].click();assert.equal(count(),1);rows[0].cells[0].click();assert.equal(count(),0);
 rows[0].cells[0].click();rows[0].cells[1].click();
 assert.equal(groups().length,1);assert.equal(groups()[0].children[1].textContent,'09:00–10:00');

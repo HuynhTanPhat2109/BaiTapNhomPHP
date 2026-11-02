@@ -5,7 +5,6 @@ namespace App\Controllers;
 use App\Models\TaiKhoanNganHang;
 use App\Models\ThanhToan;
 use App\Services\PaymentService;
-use App\Services\ValidationException;
 use App\Services\VietQRService;
 use Core\Application;
 use Core\Controller;
@@ -73,27 +72,6 @@ final class PaymentController extends Controller
             }
         }
 
-        if (!$payment && $bookingId > 0) {
-            // Chỉ tạo yêu cầu thanh toán nếu booking thực sự thuộc khách hàng đang đăng nhập
-            $booking = $this->thanhToanModel->findBooking($bookingId);
-            if ($booking && (int) ($booking['ma_khach_hang'] ?? 0) === (int) ($user['ma_khach_hang'] ?? 0)) {
-                try {
-                    $res = $this->paymentService->createPaymentRequest($bookingId, $booking['tong_tien_tam_tinh']);
-                    $payment = $this->paymentService->getPayment($res['payment_id']);
-                } catch (ValidationException $e) {
-                    $firstError = reset($e->errors) ?: 'Không thể tạo yêu cầu thanh toán.';
-                    if ($isJsonEndpoint) {
-                        http_response_code(400);
-                        header('Content-Type: application/json; charset=utf-8');
-                        echo json_encode(['error' => $firstError]);
-                        exit;
-                    }
-                    throw new HttpException(400, $firstError);
-                }
-            }
-        }
-
-        // Chống IDOR: Nếu không có bản ghi hoặc booking không thuộc về khách hàng này -> trả 404 chống enumeration
         $customerId = (int) ($user['ma_khach_hang'] ?? 0);
         if (!$payment || (int) ($payment['ma_khach_hang'] ?? 0) !== $customerId) {
             if ($isJsonEndpoint) {
@@ -115,42 +93,7 @@ final class PaymentController extends Controller
     {
         [$user, $payment] = $this->requireAuthorizedPayment(false);
 
-        // Lấy thông tin tài khoản ngân hàng của cơ sở
-        $facilityId = (int) $payment['ma_co_so'];
-        $bankAccount = $this->bankModel->getDefaultByFacility($facilityId);
-
-        $qrUrl = null;
-        if ($bankAccount) {
-            $qrUrl = $this->vietQrService->generateQuickLink(
-                $bankAccount['ma_bin'],
-                $bankAccount['so_tai_khoan'],
-                $payment['so_tien'],
-                $payment['ma_tham_chieu'],
-                $bankAccount['ten_chu_tai_khoan']
-            );
-        }
-
-        // Tính thời gian hết hạn còn lại
-        $expiresAt = $payment['het_han_giu_san_luc'] ?? null;
-        $now = new DateTimeImmutable('now', new DateTimeZone('Asia/Ho_Chi_Minh'));
-        $remainingSeconds = 0;
-        $isExpired = false;
-
-        if ($expiresAt) {
-            $expDate = new DateTimeImmutable($expiresAt, $now->getTimezone());
-            $diff = $expDate->getTimestamp() - $now->getTimestamp();
-            $remainingSeconds = max(0, $diff);
-            $isExpired = ($diff <= 0);
-        }
-
-        $this->render('payment/checkout', [
-            'title' => 'Thanh toán đặt sân qua VietQR',
-            'payment' => $payment,
-            'bankAccount' => $bankAccount,
-            'qrUrl' => $qrUrl,
-            'remainingSeconds' => $remainingSeconds,
-            'isExpired' => $isExpired,
-        ]);
+        header('Location: ' . url('/booking/wait') . '&id=' . (int)$payment['ma_dat_san'], true, 303);
     }
 
     /**
@@ -167,10 +110,10 @@ final class PaymentController extends Controller
         $isExpired = false;
         if (!empty($payment['het_han_giu_san_luc'])) {
             $expDate = new DateTimeImmutable($payment['het_han_giu_san_luc'], $now->getTimezone());
-            $isExpired = ($now > $expDate);
+            $isExpired = ($now >= $expDate);
         }
 
-        $isSuccess = ($payment['trang_thai'] === 'THANH_CONG' || $payment['trang_thai_dat_san'] === 'DA_XAC_NHAN');
+        $isSuccess = in_array($payment['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH'], true);
 
         echo json_encode([
             'payment_id' => (int) $payment['ma_thanh_toan'],
@@ -190,6 +133,13 @@ final class PaymentController extends Controller
     public function qrImage(): void
     {
         [$user, $payment] = $this->requireAuthorizedPayment(false);
+
+        if ($payment['trang_thai_dat_san'] !== 'CHO_THANH_TOAN'
+            || $payment['trang_thai'] !== 'CHO_THANH_TOAN'
+            || empty($payment['het_han_giu_san_luc'])
+            || new DateTimeImmutable($payment['het_han_giu_san_luc'], new DateTimeZone('Asia/Ho_Chi_Minh')) <= PaymentService::now()) {
+            throw new HttpException(409, 'Yêu cầu thanh toán không còn hiệu lực.');
+        }
 
         $facilityId = (int) $payment['ma_co_so'];
         $bankAccount = $this->bankModel->getDefaultByFacility($facilityId);
