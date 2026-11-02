@@ -1,6 +1,7 @@
 # Booking → payment handoff
 
-This PR does not create payment/invoice rows, QR codes or successful payments.
+PR5 creates pending payment requests using Duy's PaymentService after booking commit.
+It does not verify transfers, confirm paid bookings, deduct stock or create invoices.
 Run database/migrations/20261031_booking_request_key.sql once on an existing database;
 fresh installs use the main schema. Do not rerun older migrations. Both new fields are
 nullable for old bookings. The second field binds a request key to customer + canonical
@@ -11,7 +12,8 @@ slots + services + note. A retry returns the original booking, including expired
 - BookingService::quote(selection, extras): authoritative prices and availability; no writes.
 - BookingService::confirm(customerId, serverDraftKey, selection, extras, acceptedQuoteHash):
   transaction; authenticated caller derives customerId, never HTTP input. Returns booking ID.
-- owned(id, customerId): enforces ownership and lazily expires an overdue pending booking.
+- owned(id, customerId): enforces ownership and lazily expires an overdue pending booking (POST/job use).
+- inspect(id, customerId): read-only owned view for GET; projects overdue holds as HET_HAN without database writes.
 - expirePending(): optionally run via `php bin/expire-bookings.php --run` every minute.
 - lockPayable(id): **requires a caller-owned transaction**, locks booking and rejects anything
   except CHO_THANH_TOAN with expiry strictly after server time. It performs no payment writes.
@@ -50,6 +52,29 @@ preserving only compatible booking drafts and using a fixed internal return rout
 Each browser tab's draft key is independent. Reusing a key with changed content is rejected.
 Prices use integer hundredths of a dong; round half-up once per contiguous same-rate line.
 Displayed quotes are provisional. Changed prices require a new review before confirmation.
+
+## PR5 payment request and recovery
+
+- POST /booking/confirm commits the idempotent hold, then calls createPaymentRequest using
+  the stored booking total. Failure keeps the same booking/deadline and shows a safe message.
+- POST /booking/payment retries for the authenticated owner with CSRF. It cannot revive an
+  expired/cancelled booking, reset a reconciled payment, or extend six minutes.
+- GET /booking/wait, /payment/status and /payment/qr never create payment requests. GET /payment
+  redirects an owned existing payment to /booking/wait, reusing external scripts and existing CSP.
+- PaymentService's public signature/result shape is retained. Requests now require a valid,
+  unexpired CHO_THANH_TOAN hold. Existing pending requests are reused; terminal/reconciliation
+  payments are not reactivated. Missing bank configuration returns bank=null; technical failures
+  are caught by the handoff, with no SQL details exposed.
+- Cancellation and expiry lock booking then payment and update only pending payments to HUY
+  or HET_HAN. THANH_CONG/CAN_DOI_SOAT are preserved. Received money with an unconfirmed/expired
+  booking requires Duy's reconciliation; the frontend must never infer booking confirmation.
+- The optional expiry job must be scheduled (for example, every minute) to persist HET_HAN
+  for unattended bookings/payments. GET projections and availability release expired holds
+  immediately even before cleanup. GET refresh/retry never resets the deadline.
+- Payment proof selection is local preview only until Duy implements upload/verification;
+  the UI does not claim an image was sent. No real bank transfer was tested by this PR.
+- Existing databases need 20261101_tai_khoan_ngan_hang_co_so.sql once if the bank table is absent.
+  Back up using phpMyAdmin Export before Import; never re-import the destructive main schema.
 
 No schema migration is applied automatically. Tests create and remove only a randomly named
 isolated test database; never point booking test fixtures at the development database.

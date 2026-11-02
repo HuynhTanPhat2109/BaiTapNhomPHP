@@ -154,6 +154,54 @@ try {
     rejectBooking(fn()=>$booking->confirm($customers[0],bin2hex(random_bytes(32)),$r1,$none,$hash),409,'changed price requires review');
     $pdo->exec("UPDATE bang_gia SET don_gia='100000' WHERE gio_bat_dau='10:00:00'");
 
+    // Payment lifecycle tests: only this newly created, randomly named database.
+    $payments = new App\Services\PaymentService($pdo);
+    $paymentPick = $pick('20:00','20:30');
+    $paymentQuote = $booking->quote($paymentPick);
+    $paymentBooking = $booking->confirm($customers[0],bin2hex(random_bytes(32)),$paymentPick,$none,$paymentQuote['fingerprint']);
+    $deadline = $booking->inspect($paymentBooking,$customers[0])['het_han_giu_san_luc'];
+    try { $payments->createPaymentRequest($paymentBooking,$paymentQuote['total']); throw new RuntimeException('Missing bank table was ignored'); }
+    catch (PDOException $e) { checkBooking((int)$e->errorInfo[1]===1146,'missing bank schema fails payment transaction'); }
+    checkBooking((int)$pdo->query('SELECT COUNT(*) FROM thanh_toan')->fetchColumn()===0,'payment failure rolls back without losing booking');
+    $pdo->exec(file_get_contents(dirname(__DIR__).'/database/migrations/20261101_tai_khoan_ngan_hang_co_so.sql'));
+    $payment = $payments->createPaymentRequest($paymentBooking,$paymentQuote['total']);
+    checkBooking($payment['bank']===null,'missing bank configuration distinguished from technical failure');
+    $retried = $payments->createPaymentRequest($paymentBooking,$paymentQuote['total']);
+    checkBooking($payment['payment_id']===$retried['payment_id'] && $retried['expires_at']===$deadline,'retry reuses payment and never extends hold');
+    try { $payments->createPaymentRequest($legacy,0); throw new RuntimeException('Draft accepted'); }
+    catch (App\Services\ValidationException $e) { checkBooking(isset($e->errors['booking']),'draft without hold cannot request payment'); }
+    $booking->cancelHold($paymentBooking,$customers[0]);
+    checkBooking($payments->getPayment($payment['payment_id'])['trang_thai']==='HUY','cancellation synchronizes pending payment');
+    $booking->cancelHold($paymentBooking,$customers[0]);
+    checkBooking($payments->getPayment($payment['payment_id'])['trang_thai']==='HUY','repeated cancellation leaves payment cancelled');
+    try { $payments->createPaymentRequest($paymentBooking,$paymentQuote['total']); throw new RuntimeException('Cancelled accepted'); }
+    catch (App\Services\ValidationException $e) { checkBooking(isset($e->errors['booking']),'cancelled booking cannot retry payment'); }
+    $paymentBooking = $booking->confirm($customers[0],bin2hex(random_bytes(32)),$paymentPick,$none,$paymentQuote['fingerprint']);
+    $payment = $payments->createPaymentRequest($paymentBooking,$paymentQuote['total']);
+    $pdo->exec("UPDATE dat_san SET bat_dau_giu_san_luc=DATE_SUB(NOW(),INTERVAL 6 MINUTE),het_han_giu_san_luc=NOW() WHERE ma_dat_san=$paymentBooking");
+    checkBooking($booking->inspect($paymentBooking,$customers[0])['trang_thai_dat_san']==='HET_HAN'
+        && $pdo->query("SELECT trang_thai_dat_san FROM dat_san WHERE ma_dat_san=$paymentBooking")->fetchColumn()==='CHO_THANH_TOAN','GET projection reports expiry without writing');
+    try { $payments->createPaymentRequest($paymentBooking,$paymentQuote['total']); throw new RuntimeException('Expired accepted'); }
+    catch (App\Services\ValidationException $e) { checkBooking(isset($e->errors['booking']),'expiry boundary rejects payment retry'); }
+    $booking->expirePending();
+    checkBooking($payments->getPayment($payment['payment_id'])['trang_thai']==='HET_HAN','expiry synchronizes pending payment');
+    checkBooking($booking->expirePending()===0,'repeated payment expiry is harmless');
+    foreach (['CAN_DOI_SOAT','THANH_CONG'] as $protected) {
+        $pid=$booking->confirm($customers[0],bin2hex(random_bytes(32)),$paymentPick,$none,$paymentQuote['fingerprint']);
+        $pmt=$payments->createPaymentRequest($pid,$paymentQuote['total']);
+        // Simulate a recorded payment only in the disposable DB; no callback implementation.
+        $pdo->prepare("UPDATE thanh_toan SET trang_thai=?,ma_giao_dich=?,ngay_thanh_toan=NOW(),so_tien_thuc_nhan=so_tien WHERE ma_thanh_toan=?")
+            ->execute([$protected,'TEST-'.$pid,$pmt['payment_id']]);
+        try { $payments->createPaymentRequest($pid,$paymentQuote['total']); throw new RuntimeException('Protected payment reset'); }
+        catch (App\Services\ValidationException $e) { checkBooking(isset($e->errors['payment']),'retry preserves '.$protected); }
+        $booking->cancelHold($pid,$customers[0]);
+        checkBooking($payments->getPayment($pmt['payment_id'])['trang_thai']===$protected,'cancel preserves '.$protected);
+        $pdo->exec("UPDATE dat_san SET bat_dau_giu_san_luc=DATE_SUB(NOW(),INTERVAL 7 MINUTE),het_han_giu_san_luc=DATE_SUB(NOW(),INTERVAL 1 MINUTE) WHERE ma_dat_san=$pid");
+        $booking->expirePending();
+        checkBooking($payments->getPayment($pmt['payment_id'])['trang_thai']===$protected,'expiry preserves '.$protected);
+    }
+    insertBookingFixture('tai_khoan_ngan_hang_co_so',['ma_co_so'=>$facility,'ten_ngan_hang'=>'TEST ONLY','ma_bin'=>'970422','so_tai_khoan'=>'0000000000','ten_chu_tai_khoan'=>'TEST ONLY']);
+
     // Real HTTP with its own session cookies, auth, CSRF and the isolated database.
     $env=getenv();foreach($_ENV as $k=>$v)$env[$k]=$v;
     $env['DB_NAME']=$db;$env['APP_BASE_PATH']='/';
@@ -202,12 +250,24 @@ try {
     $r=$http('/booking/confirm',$post);checkBooking($r['status']===303 && str_contains($r['headers'],'id='.$httpId),'HTTP retry same booking');
     $r=$http('/booking/wait',null,['id'=>$httpId]);checkBooking($r['status']===200 && str_contains($r['body'],'data-payment-pending') && str_contains($r['body'],'đang được tích hợp'),'real waiting page without payment simulation');
     file_put_contents(dirname(__DIR__).'/storage/temp/booking-wait-test.html',$r['body']);
-    checkBooking(str_contains($r['body'],'Test facility') && str_contains($r['body'],'Court A') && preg_match('/17:00\s*–\s*17:30/u',$r['body']) && !str_contains($r['body'],'Quay lại lịch sân'),'waiting shows actual visit and only header back');
+    checkBooking(str_contains($r['body'],'Court A') && preg_match('/17:00\s*–\s*17:30/u',$r['body']) && !str_contains($r['body'],'Quay lại lịch sân'),'waiting shows actual visit and only header back');
     checkBooking($slotState($status(),$court,'17:00')==='held','other viewer sees new hold through endpoint');
-    checkBooking((int)$pdo->query('SELECT COUNT(*) FROM thanh_toan')->fetchColumn()===0 && (int)$pdo->query('SELECT COUNT(*) FROM hoa_don')->fetchColumn()===0,'no payment or invoice writes');
+    checkBooking((int)$pdo->query("SELECT COUNT(*) FROM thanh_toan WHERE ma_dat_san=$httpId")->fetchColumn()===1 && (int)$pdo->query('SELECT COUNT(*) FROM hoa_don')->fetchColumn()===0,'checkout creates one payment and no invoice');
+    checkBooking($http('/booking/payment',['id'=>$httpId])['status']===403,'payment retry requires CSRF');
+    checkBooking($http('/booking/payment',null,['id'=>$httpId])['status']===405,'GET cannot create payment');
+    checkBooking($http('/booking/payment',['_token'=>$csrf,'id'=>$httpId])['status']===303,'owned POST payment retry succeeds');
+    checkBooking((int)$pdo->query("SELECT COUNT(*) FROM thanh_toan WHERE ma_dat_san=$httpId")->fetchColumn()===1,'HTTP retry does not duplicate payment');
+    $redirect=$http('/payment',null,['booking_id'=>$httpId]);
+    checkBooking($redirect['status']===303 && str_contains($redirect['headers'],'booking%2Fwait'),'legacy payment route uses CSP-compatible waiting page');
     $waitOne=json_decode($http('/booking/wait',null,['id'=>$httpId,'status'=>'1'])['body'],true);
     $waitTwo=json_decode($http('/booking/wait',null,['id'=>$httpId,'status'=>'1'])['body'],true);
     checkBooking($waitOne['expires']===$waitTwo['expires'],'HTTP refresh does not reset deadline');
+    $pdo->exec("UPDATE thanh_toan SET trang_thai='THANH_CONG',ma_giao_dich='TEST-HTTP',ngay_thanh_toan=NOW(),so_tien_thuc_nhan=so_tien WHERE ma_dat_san=$httpId");
+    $pstatus=json_decode($http('/payment/status',null,['booking_id'=>$httpId])['body'],true);
+    checkBooking($pstatus['is_confirmed']===false && $pstatus['booking_status']==='CHO_THANH_TOAN','payment success alone does not claim booking confirmation');
+    $recorded=$http('/booking/wait',null,['id'=>$httpId]);
+    checkBooking(!str_contains($recorded['body'],'data-open-qr') && str_contains($recorded['body'],'Không chuyển khoản thêm'),'recorded payment does not offer another QR while awaiting booking confirmation');
+    $pdo->exec("UPDATE thanh_toan SET trang_thai='CHO_THANH_TOAN',ma_giao_dich=NULL,ngay_thanh_toan=NULL,so_tien_thuc_nhan=NULL WHERE ma_dat_san=$httpId");
     checkBooking($http('/booking/cancel',['id'=>$httpId])['status']===403,'cancellation requires CSRF');
     checkBooking($http('/booking/cancel',null,['id'=>$httpId])['status']===405,'GET cannot cancel');
     $r=$http('/booking/cancel',['_token'=>$csrf,'id'=>$httpId]);
@@ -215,6 +275,26 @@ try {
     checkBooking($slotState($status(),$court,'17:00')==='free','other viewer sees cancellation without reloading HTML');
     checkBooking($http('/booking/cancel',['_token'=>$csrf,'id'=>$httpId])['status']===303,'repeated HTTP cancellation succeeds');
     checkBooking(json_decode($http('/booking/wait',null,['id'=>$httpId,'status'=>'1'])['body'],true)['state']==='DA_HUY','revisit cancelled URL does not restore hold');
+    checkBooking($pdo->query("SELECT trang_thai FROM thanh_toan WHERE ma_dat_san=$httpId")->fetchColumn()==='HUY','HTTP cancel synchronizes payment');
+    // Simulate a temporarily unavailable dependency in the test DB only.
+    $r=$http('/booking/start',['_token'=>$csrf,'selection'=>json_encode($pick('22:00','22:30'))]);
+    preg_match('/draft=([a-f0-9]{64})/',$r['headers'],$m);$retryDraft=$m[1];
+    $r=$http('/booking/details',null,['draft'=>$retryDraft]);
+    preg_match('/name="quote"\s+value="([a-f0-9]{64})"/',$r['body'],$m);$retryHash=$m[1];
+    $pdo->exec('RENAME TABLE tai_khoan_ngan_hang_co_so TO test_bank_unavailable');
+    $r=$http('/booking/confirm',['_token'=>$csrf,'draft'=>$retryDraft,'quote'=>$retryHash,'note'=>'']);
+    checkBooking($r['status']===303,'payment failure still redirects to recoverable booking');
+    preg_match('/id=([0-9]+)/',$r['headers'],$m);$retryId=(int)$m[1];
+    $before=$pdo->query("SELECT het_han_giu_san_luc FROM dat_san WHERE ma_dat_san=$retryId")->fetchColumn();
+    $r=$http('/booking/wait',null,['id'=>$retryId]);
+    checkBooking($r['status']===200 && str_contains($r['body'],'booking-payment-retry') && !str_contains($r['body'],'SQLSTATE'),'technical failure has safe retry without SQL disclosure');
+    $pdo->exec('RENAME TABLE test_bank_unavailable TO tai_khoan_ngan_hang_co_so');
+    $http('/booking/wait',null,['id'=>$retryId]);
+    $http('/payment/status',null,['booking_id'=>$retryId]);
+    checkBooking((int)$pdo->query("SELECT COUNT(*) FROM thanh_toan WHERE ma_dat_san=$retryId")->fetchColumn()===0,'GET wait/status never creates missing payment');
+    checkBooking($http('/booking/payment',['_token'=>$csrf,'id'=>$retryId])['status']===303,'POST retry recovers after dependency is restored');
+    checkBooking((int)$pdo->query("SELECT COUNT(*) FROM thanh_toan WHERE ma_dat_san=$retryId")->fetchColumn()===1
+        && $pdo->query("SELECT het_han_giu_san_luc FROM dat_san WHERE ma_dat_san=$retryId")->fetchColumn()===$before,'recovered payment preserves booking and original expiry');
     $http('/logout',['_token'=>$csrf]);
     $r=$http('/courts/schedule',null,['id'=>$facility,'date'=>$date]);$csrf=$token($r);
     $r=$http('/booking/start',['_token'=>$csrf,'selection'=>json_encode($pick('19:00','19:30'))]);preg_match('/draft=([a-f0-9]{64})/',$r['headers'],$m);$signupDraft=$m[1];
@@ -227,6 +307,7 @@ try {
     checkBooking($http('/booking/wait',null,['id'=>$httpId])['status']===404,'HTTP ownership prevents another customer viewing booking');
     $r=$http('/booking/details',null,['draft'=>$signupDraft]);
     checkBooking($http('/booking/cancel',['_token'=>$token($r),'id'=>$httpId])['status']===404,'HTTP ownership prevents cancellation by another customer');
+    checkBooking($http('/booking/payment',['_token'=>$token($r),'id'=>$httpId])['status']===404,'HTTP ownership prevents payment retry by another customer');
     if (in_array('--browser',$argv,true)) {
         $browser=proc_open(['node',__DIR__.'/booking-browser.cjs',json_encode(['port'=>$port,'facility'=>$facility,'court'=>$court,'date'=>$date,'db'=>$db])], [0=>['pipe','r'],1=>STDOUT,2=>STDERR], $browserPipes,dirname(__DIR__));
         fclose($browserPipes[0]);

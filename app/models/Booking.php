@@ -38,11 +38,23 @@ final class Booking
     // Caller holds the booking row lock. No stock write: pending reservations are derived.
     public function cancelPending(int $id): void
     {
+        if (!$this->pdo->inTransaction()) throw new \LogicException('Cancellation requires transaction');
+        $this->rows('SELECT ma_thanh_toan FROM thanh_toan WHERE ma_dat_san=? FOR UPDATE', [$id]);
         $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san =
             CASE WHEN het_han_giu_san_luc <= CURRENT_TIMESTAMP THEN 'HET_HAN' ELSE 'DA_HUY' END
             WHERE ma_dat_san=? AND trang_thai_dat_san='CHO_THANH_TOAN'
             AND NOT EXISTS (SELECT 1 FROM thanh_toan WHERE ma_dat_san=? AND trang_thai='THANH_CONG')")
             ->execute([$id, $id]);
+        $this->syncEndedPayment($id);
+    }
+
+    private function syncEndedPayment(int $id): void
+    {
+        // Caller holds booking then payment locks. Never overwrite received/reconciliation money.
+        $this->pdo->prepare("UPDATE thanh_toan t JOIN dat_san b ON b.ma_dat_san=t.ma_dat_san
+            SET t.trang_thai=CASE WHEN b.trang_thai_dat_san='DA_HUY' THEN 'HUY' ELSE 'HET_HAN' END
+            WHERE b.ma_dat_san=? AND b.trang_thai_dat_san IN ('DA_HUY','HET_HAN')
+            AND t.trang_thai='CHO_THANH_TOAN'")->execute([$id]);
     }
 
     public function prices(int $facility, string $date, string $day): array
@@ -104,9 +116,28 @@ final class Booking
 
     public function expire(?int $id = null): int
     {
-        $stmt = $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san='HET_HAN'
-            WHERE trang_thai_dat_san='CHO_THANH_TOAN' AND het_han_giu_san_luc <= CURRENT_TIMESTAMP" . ($id === null ? '' : ' AND ma_dat_san=?'));
-        $stmt->execute($id === null ? [] : [$id]);
-        return $stmt->rowCount();
+        $ids = $id === null ? array_column($this->rows("SELECT ma_dat_san FROM dat_san
+            WHERE trang_thai_dat_san='CHO_THANH_TOAN' AND het_han_giu_san_luc <= CURRENT_TIMESTAMP
+            ORDER BY ma_dat_san"), 'ma_dat_san') : [$id];
+        $count = 0;
+        foreach ($ids as $bookingId) {
+            $ownsTransaction = !$this->pdo->inTransaction();
+            if ($ownsTransaction) $this->pdo->beginTransaction();
+            try {
+                $this->find((int)$bookingId, true);
+                $this->rows('SELECT ma_thanh_toan FROM thanh_toan WHERE ma_dat_san=? FOR UPDATE', [$bookingId]);
+                $stmt = $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san='HET_HAN'
+                    WHERE ma_dat_san=? AND trang_thai_dat_san='CHO_THANH_TOAN'
+                    AND het_han_giu_san_luc <= CURRENT_TIMESTAMP");
+                $stmt->execute([$bookingId]);
+                $count += $stmt->rowCount();
+                $this->syncEndedPayment((int)$bookingId);
+                if ($ownsTransaction) $this->pdo->commit();
+            } catch (\Throwable $e) {
+                if ($ownsTransaction && $this->pdo->inTransaction()) $this->pdo->rollBack();
+                throw $e;
+            }
+        }
+        return $count;
     }
 }

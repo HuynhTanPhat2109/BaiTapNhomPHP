@@ -144,8 +144,8 @@ final class VietQRService
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 8,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; STRYKE/1.0)',
         ]);
         $result = curl_exec($ch);
