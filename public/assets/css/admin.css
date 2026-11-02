@@ -174,7 +174,7 @@
 .page-admin .list-page:hover { background: #edf6e9; }
 .page-admin .list-page[aria-current="page"] { border-color: #a5d779; background: #b7ef7c; font-weight: 600; }
 .page-admin .list-page.is-disabled { opacity: .45; }
-.page-admin .admin-list .pricing-table { table-layout: fixed; min-width: 1080px; font-size: 12px; }
+.page-admin .admin-list .pricing-table { table-layout: fixed; min-width: 0; font-size: 12px; }
 .page-admin .pricing-col-stt { width: 4%; }
 .page-admin .pricing-col-name, .page-admin .pricing-col-type { width: 12%; }
 .page-admin .pricing-col-facility, .page-admin .pricing-col-dates, .page-admin .pricing-col-money, .page-admin .pricing-col-status { width: 10%; }
@@ -211,7 +211,7 @@
 .page-services .navbar__toggle span { background: var(--text); }
 .page-admin .service-module { min-width: 0; }
 .page-admin .service-breadcrumb { margin-bottom: 16px; color: var(--muted); font-size: 12px; }
-.page-admin .service-module .service-table { min-width: 1050px; }
+.page-admin .service-module .service-table { min-width: 0; }
 .page-admin .service-module .service-table th, .page-admin .service-module .service-table td { padding: 12px 10px; }
 .page-admin .service-module .service-table th[scope="row"] { min-width: 140px; }
 .page-admin .service-module .service-table .list-actions { min-width: 0; }
@@ -257,7 +257,7 @@
 .page-admin .catalog-workspace .catalog-table th, .page-admin .catalog-workspace .catalog-table td { padding: 15px 14px; word-break: normal; overflow-wrap: normal; }
 .page-admin .catalog-workspace .catalog-table thead th { font-size: var(--type-label); }
 .page-admin .catalog-workspace .catalog-table th[scope="row"] { font-weight: 600; }
-.page-admin .catalog-workspace .pricing-table { min-width: 1400px; }
+.page-admin .catalog-workspace .pricing-table { min-width: 0; }
 .page-admin .catalog-workspace .pricing-table .pricing-secondary, .page-admin .catalog-workspace .pricing-type small { font-size: var(--type-small); }
 .page-admin .catalog-workspace .list-actions { flex-wrap: nowrap; }
 .page-admin .catalog-workspace .list-actions .list-action { min-height: 38px; padding: 8px; font-size: var(--type-label); line-height: 1.5; }
@@ -267,11 +267,11 @@
 .page-admin .catalog-workspace .list-action-menu__panel { min-width: 180px; }
 .page-admin .catalog-workspace .list-pagination__summary { font-size: var(--type-label); }
 .page-admin .catalog-workspace .list-page { min-width: 40px; min-height: 40px; font-size: var(--type-label); }
-.page-admin .catalog-workspace .service-table { min-width: 1320px; }
-.page-admin .catalog-workspace .service-table th[scope="row"] { min-width: 185px; }
-.page-admin .catalog-workspace .service-table .list-actions { min-width: 230px; }
+.page-admin .catalog-workspace .service-table { min-width: 0; }
+.page-admin .catalog-workspace .service-table th[scope="row"] { min-width: 0; }
+.page-admin .catalog-workspace .service-table .list-actions { min-width: 0; }
 .page-admin .catalog-workspace .service-money { text-align: right; font-weight: 600; }
-.page-admin .catalog-workspace .service-stock-cell { min-width: 150px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.page-admin .catalog-workspace .service-stock-cell { min-width: 0; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .page-admin .catalog-workspace .service-stock { font-size: var(--type-small); line-height: 1.5; }
 .page-admin .catalog-workspace .service-type { display: inline-block; padding: 5px 9px; border: 1px solid #dae5de; border-radius: 7px; background: #f2f6f3; color: #405e4b; font-size: var(--type-small); font-weight: 600; white-space: nowrap; }
 .page-admin .catalog-workspace .service-type[data-type="CHO_THUE"] { background: #edf3fa; border-color: #dbe5f0; color: #3b5e7c; }

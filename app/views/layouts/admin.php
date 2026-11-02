@@ -1,5 +1,9 @@
 <?php
 $adminUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'] : 'Admin';
+$workspaceRole = $currentUser['ten_vai_tro'] ?? $data['user']['ten_vai_tro'] ?? $data['role'] ?? null;
+$currentUser ??= ['ten_vai_tro' => $workspaceRole];
+$workspaceRoleLabel = ['QUAN_TRI_TAP_DOAN' => 'Quản trị tập đoàn', 'QUAN_LY_CONG_TY' => 'Quản lý công ty', 'QUAN_LY_CO_SO' => 'Quản lý cơ sở', 'NHAN_VIEN' => 'Nhân viên'][$workspaceRole] ?? 'Tài khoản';
+$workspaceHome = ['QUAN_TRI_TAP_DOAN' => '/admin', 'QUAN_LY_CONG_TY' => '/company', 'QUAN_LY_CO_SO' => '/facility', 'NHAN_VIEN' => '/staff'][$workspaceRole] ?? '/account';
 ?>
 <!doctype html>
 <html lang="vi">
@@ -9,14 +13,13 @@ $adminUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'
     <meta name="theme-color" content="#13251B">
     <title><?= e($title ?? 'Quản trị') ?> — STRYKE</title>
     <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/app.css') ?>">
-    <?php if (($bodyClass ?? '') === 'page-catalog'): ?>
-        <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/catalog.css') ?>">
-    <?php endif; ?>
+    <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/catalog.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/catalog.css')) ?>">
     <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/admin.css')) ?>">
-    <script src="<?= e(base_path() . '/assets/js/app.js') ?>" defer></script>
-    <script src="<?= e(base_path() . '/assets/js/admin.js') ?>" defer></script>
+    <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin-catalog.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/admin-catalog.css')) ?>">
+    <script src="<?= e(base_path() . '/assets/js/app.js?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/js/app.js')) ?>" defer></script>
+    <script src="<?= e(base_path() . '/assets/js/admin.js?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/js/admin.js')) ?>" defer></script>
 </head>
-<body class="page-admin <?= e($bodyClass ?? '') ?>">
+<body class="page-admin page-catalog <?= e($bodyClass ?? '') ?>">
 <a class="skip-link" href="#main-content">Bỏ qua điều hướng</a>
 <div class="admin-shell">
     <?php require dirname(__DIR__) . '/admin/partials/sidebar.php'; ?>
@@ -26,9 +29,10 @@ $adminUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'
             <button class="admin-menu-toggle" id="admin-menu-toggle" type="button" aria-controls="admin-sidebar" aria-expanded="false" aria-label="Mở menu quản trị" hidden>
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
+            <button class="admin-collapse-toggle" data-sidebar-collapse type="button" aria-controls="admin-sidebar" aria-expanded="true" aria-label="Thu gọn Sidebar" hidden><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16m6-11-3 3 3 3"/></svg></button>
             <div class="admin-topbar__heading">
-                <p class="admin-topbar__label">Không gian quản trị</p>
-                <p class="admin-topbar__title"><?= e($title ?? 'Tổng quan') ?></p>
+                <p class="admin-topbar__label"><?= e($workspaceRoleLabel) ?></p>
+                <p class="admin-topbar__title">STRYKE Workspace</p>
             </div>
             <details class="account-menu" id="account-menu">
                 <summary class="account-menu__trigger">
@@ -47,10 +51,33 @@ $adminUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'
             </details>
         </header>
         <main id="main-content" tabindex="-1">
-            <?= $content /* Trusted templates escape dynamic values. */ ?>
+            <?php
+            $workspaceSection = null;
+            foreach ($menu as $navigationItems) {
+                foreach ($navigationItems as $navigationItem) {
+                    if ($navigationItem['route'] !== null && ($template === $navigationItem['template'] || str_starts_with($template, $navigationItem['template'] . '/'))) $workspaceSection = $navigationItem;
+                }
+            }
+            $workspaceLeaf = $data['servicePage'] ?? basename($template);
+            $workspaceLeafLabel = ['create' => 'Thêm mới', 'edit' => 'Chỉnh sửa', 'show' => 'Chi tiết', 'delete' => 'Xác nhận xóa', 'account' => 'Thông tin cá nhân', 'settings' => 'Cài đặt tài khoản'][$workspaceLeaf] ?? null;
+            if ($workspaceLeaf === 'form') $workspaceLeafLabel = empty($data['item']) ? 'Thêm mới' : 'Chỉnh sửa';
+            ?>
+            <nav class="workspace-breadcrumb" aria-label="Đường dẫn">
+                <a href="<?= e(url($workspaceHome)) ?>"><?= e($workspaceRoleLabel) ?></a>
+                <?php if (str_starts_with($template, 'facility/bank/')): ?><span aria-hidden="true">/</span><a href="<?= e(url('/facility/bank') . '&facility_id=' . (int) $data['facility']['ma_co_so']) ?>">Ngân hàng cơ sở</a><?php endif; ?>
+                <?php if ($workspaceSection && $workspaceSection['route'] !== $workspaceHome): ?><span aria-hidden="true">/</span><a href="<?= e(url($workspaceSection['route'])) ?>"><?= e($workspaceSection['label']) ?></a><?php endif; ?>
+                <?php if ($workspaceLeafLabel): ?><span aria-hidden="true">/</span><span aria-current="page"><?= e($workspaceLeafLabel) ?></span><?php endif; ?>
+            </nav>
+            <div class="admin-workspace catalog-workspace admin-catalog"><?= $content /* Trusted templates escape dynamic values. */ ?></div>
         </main>
-        <footer class="admin-footer">STRYKE<span class="brand-dot">.</span> <span>Quản trị tập đoàn</span></footer>
+        <footer class="admin-footer">STRYKE<span class="brand-dot">.</span> <span><?= e($workspaceRoleLabel) ?></span></footer>
     </div>
 </div>
+<dialog class="workspace-confirm" id="workspace-confirm" aria-labelledby="workspace-confirm-title" aria-describedby="workspace-confirm-description">
+    <span class="workspace-confirm__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg></span>
+    <h2 id="workspace-confirm-title">Xác nhận thao tác</h2>
+    <p id="workspace-confirm-description"></p>
+    <div class="catalog-actions"><button class="btn btn--outline" type="button" data-confirm-cancel autofocus>Hủy</button><button class="btn btn--primary" type="button" data-confirm-accept>Xác nhận</button></div>
+</dialog>
 </body>
 </html>

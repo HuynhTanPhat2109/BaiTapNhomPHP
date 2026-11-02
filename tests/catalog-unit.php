@@ -127,7 +127,7 @@ try {
 
     // Render the real views with in-memory values; never create database fixtures.
     $viewData = [
-        'title' => 'Kiểm tra quản trị', 'user' => ['ten_dang_nhap' => '<Admin>'],
+        'title' => 'Kiểm tra quản trị', 'user' => ['ten_dang_nhap' => '<Admin>', 'ten_vai_tro' => 'QUAN_TRI_TAP_DOAN'],
         'stats' => ['bo_mon' => 7, 'loai_san' => 12],
         'companies' => [], 'company' => ['ma_cong_ty' => 3, 'ten_cong_ty' => '<Công ty>'],
         'items' => [], 'types' => [], 'sports' => [], 'errors' => [], 'old' => [],
@@ -144,7 +144,7 @@ try {
             $templates[] = 'admin/' . $module . '/' . $page;
         }
     }
-    $menuGroups = require dirname(__DIR__) . '/config/admin-menu.php';
+    $menuGroups = (require dirname(__DIR__) . '/config/admin-menu.php')['QUAN_TRI_TAP_DOAN'];
     $upcoming = 0;
     foreach ($menuGroups as $group) {
         foreach ($group as $entry) {
@@ -155,20 +155,23 @@ try {
         ob_start();
         View::render($template, $viewData);
         $html = ob_get_clean();
-        preg_match('/<aside class="admin-sidebar".*?<\/aside>/s', $html, $match);
-        $sidebar = $match[0] ?? '';
+        $document = new DOMDocument();
+        checkCatalogUnit($document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING), $template . ': valid rendered document');
+        $xpath = new DOMXPath($document);
+        $sidebar = $xpath->query('//aside[@id="admin-sidebar"]')->item(0);
+        checkCatalogUnit($sidebar !== null, $template . ': shared Admin Sidebar');
         foreach (['/admin', '/admin/companies', '/admin/bo-mon', '/admin/loai-san', '/admin/co-so', '/admin/san'] as $path) {
-            checkCatalogUnit(strpos($sidebar, 'href="' . e(url($path)) . '"') !== false, $template . ': Admin navigation ' . $path);
+            checkCatalogUnit($xpath->query('.//a[@href="' . url($path) . '"]', $sidebar)->length > 0, $template . ': Admin navigation ' . $path);
         }
-        checkCatalogUnit(substr_count($sidebar, 'aria-current="page"') === 1, $template . ': exactly one active menu');
+        checkCatalogUnit($xpath->query('.//a[@aria-current="page"]', $sidebar)->length === 1, $template . ': exactly one active menu');
         $expectedPath = str_starts_with($template, 'admin/companies/') ? '/admin/companies'
             : (str_starts_with($template, 'admin/bo-mon/') ? '/admin/bo-mon'
                 : (str_starts_with($template, 'admin/loai-san/') ? '/admin/loai-san' : '/admin'));
-        checkCatalogUnit(strpos($sidebar, 'href="' . e(url($expectedPath)) . '" aria-current="page"') !== false, $template . ': correct active module');
-        checkCatalogUnit(substr_count($sidebar, 'aria-disabled="true"') === $upcoming, $template . ': upcoming items');
-        checkCatalogUnit(substr_count($sidebar, '<small>Sắp phát triển</small>') === $upcoming, $template . ': upcoming labels');
-        checkCatalogUnit(strpos($sidebar, '<a class="admin-menu__item is-disabled"') === false, $template . ': upcoming items have no links');
-        checkCatalogUnit(strpos($sidebar, '>Trang chủ</a>') === false, $template . ': no customer navigation');
+        checkCatalogUnit($xpath->query('.//a[@href="' . url($expectedPath) . '" and @aria-current="page"]', $sidebar)->length === 1, $template . ': correct active module');
+        checkCatalogUnit($xpath->query('.//*[@aria-disabled="true"]', $sidebar)->length === $upcoming, $template . ': upcoming items');
+        checkCatalogUnit($xpath->query('.//small[normalize-space()="Sắp phát triển"]', $sidebar)->length === $upcoming, $template . ': upcoming labels');
+        checkCatalogUnit($xpath->query('.//*[@aria-disabled="true"][@href] | .//*[@aria-disabled="true"]//a[@href]', $sidebar)->length === 0, $template . ': upcoming items have no links');
+        checkCatalogUnit($xpath->query('.//a[@href="' . url('/') . '"]', $sidebar)->length === 0, $template . ': no customer navigation');
         checkCatalogUnit(strpos($html, '/assets/css/admin.css') !== false, $template . ': isolated Admin styles');
         checkCatalogUnit(strpos($html, 'role-notice') === false, $template . ': dedicated Admin content');
         if ($template === 'admin/dashboard') {

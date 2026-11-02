@@ -4,7 +4,7 @@ $detailPath = '/admin/bo-mon'; $detailLabel = 'Bộ môn';
 $detailTitle = $item['ten_bo_mon']; $detailId = $item['ma_bo_mon']; $detailCanEdit = true;
 $detailStatusLabel = $item['trang_thai'] === 'HOAT_DONG' ? 'Hoạt động' : 'Ngừng';
 ?>
-<section class="container catalog-page catalog-workspace detail-page">
+<section class="container catalog-page catalog-workspace detail-page workspace-page">
     <?php require dirname(__DIR__) . '/partials/detail-header.php'; ?>
     <div class="detail-grid">
         <section class="detail-card" aria-labelledby="sport-info">

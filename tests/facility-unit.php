@@ -67,19 +67,26 @@ try {
                 'trang_thai_co_so' => 'HOAT_DONG', 'trang_thai_bo_mon' => 'HOAT_DONG', 'trang_thai_loai_san' => 'HOAT_DONG'];
             $related = array_fill_keys(['san', 'nhan_vien', 'bang_gia', 'dat_san', 'dich_vu',
                 'nhan_vien_dang_lam', 'booking_hieu_luc', 'chi_tiet_dat_san'], 0);
-            $data = ['title' => 'Kiểm thử', 'user' => ['ten_dang_nhap' => '<Admin>'], 'item' => $item,
+            $data = ['title' => 'Kiểm thử', 'user' => ['ten_dang_nhap' => '<Admin>', 'ten_vai_tro' => 'QUAN_TRI_TAP_DOAN'], 'item' => $item,
                 'items' => [$item], 'old' => $item, 'errors' => [], 'related' => $related, 'courts' => [],
                 'companies' => [], 'facilities' => [], 'types' => [], 'page' => 1, 'pages' => 1, 'total' => 1,
                 'filters' => ['q' => '', 'ma_cong_ty' => '', 'ma_co_so' => '', 'ma_loai_san' => '', 'trang_thai' => '', 'per_page' => 10, 'page' => 1]];
             ob_start();
             View::render('admin/' . $module . '/' . $page, $data);
             $html = ob_get_clean();
-            checkFacilityUnit(str_contains($html, 'class="admin-sidebar"'), 'shared Sidebar on ' . $module . '/' . $page);
-            checkFacilityUnit(str_contains($html, 'href="' . e(url('/admin/' . $module)) . '" aria-current="page"'), 'active module');
+            $document = new DOMDocument();
+            checkFacilityUnit($document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING), 'rendered document');
+            $xpath = new DOMXPath($document);
+            checkFacilityUnit($xpath->query('//aside[@id="admin-sidebar"]')->length === 1, 'shared Sidebar on ' . $module . '/' . $page);
+            checkFacilityUnit($xpath->query('//aside[@id="admin-sidebar"]//a[@href="' . url('/admin/' . $module) . '" and @aria-current="page"]')->length === 1, 'active module');
             checkFacilityUnit(!str_contains($html, '<script>company</script>'), 'HTML escaped');
             if ($page === 'form') {
                 checkFacilityUnit(str_contains($html, 'name="_token"'), 'CSRF field');
                 checkFacilityUnit((bool) preg_match('/type="submit"\s+disabled/', $html), 'no active parent disables save');
+                $form = $xpath->query('//main//form')->item(0);
+                checkFacilityUnit($form !== null && $form->getAttribute('method') === 'post'
+                    && $form->getAttribute('action') === url('/admin/' . $module . '/update'), 'existing update POST route');
+                checkFacilityUnit($xpath->query('.//input[@name="_token"]', $form)->item(0)?->getAttribute('value') === Core\Csrf::token(), 'current CSRF token');
             }
         }
     }

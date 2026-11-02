@@ -113,8 +113,8 @@ $pdo = new ListMemoryPDO();
 $models = ['bo-mon' => new BoMon($pdo), 'loai-san' => new LoaiSan($pdo), 'co-so' => new CoSo($pdo), 'san' => new San($pdo), 'bang-gia' => new BangGia($pdo)];
 $adminListPreviews = [];
 $formatPrice = require dirname(__DIR__) . '/app/views/admin/bang-gia/format-price.php';
-foreach ([['80000.00', '80.000 ₫/giờ'], ['80000.50', '80.000,50 ₫/giờ'], ['0.01', '0,01 ₫/giờ'],
-    ['9999999999.99', '9.999.999.999,99 ₫/giờ'], ['0000000001', '1 ₫/giờ'], ['12.5', '12,50 ₫/giờ'],
+foreach ([['80000.00', '80.000 đ/giờ'], ['80000.50', '80.000,50 đ/giờ'], ['0.01', '0,01 đ/giờ'],
+    ['9999999999.99', '9.999.999.999,99 đ/giờ'], ['0000000001', '1 đ/giờ'], ['12.5', '12,50 đ/giờ'],
     ['', '—'], ['<script>bad</script>', '—'], [[], '—'], ['1e5', '—']] as [$input, $expected]) {
     checkList($formatPrice($input) === $expected, 'exact Vietnamese price display');
 }
@@ -179,12 +179,12 @@ try {
             checkList(!str_contains($html, '<script>unsafe</script>'), "$slug escaped names");
             checkList(str_contains($html, '<span>Tìm kiếm</span>') && str_contains($html, '<span>Đặt lại</span>'), "$slug toolbar labels");
             if ($slug === 'bang-gia' && $data['items']) {
-                checkList(str_contains($html, '80.000 ₫/giờ') && str_contains($html, 'value="80000.00"'), 'format only display, preserve DECIMAL value');
+                checkList(str_contains($html, '80.000 đ/giờ') && str_contains($html, 'value="80000.00"'), 'format only display, preserve DECIMAL value');
                 checkList(str_contains($html, 'list-action-menu') && str_contains($html, 'confirm=1#status-confirmation'), 'price overflow action keeps confirmation URL');
             }
             checkList(str_contains($html, 'list-pagination__summary') && str_contains($html, 'tổng số ' . $data['total'] . ' kết quả'), "$slug footer total");
             checkList(!preg_match('/name="page"/', $html), "$slug submitting filters/page size resets page");
-            preg_match_all('/<td class="list-stt">([0-9]+)<\/td>/', $html, $numbers);
+            preg_match_all('/<td class="list-stt"[^>]*>([0-9]+)<\/td>/', $html, $numbers);
             $expectedNumbers = $data['total'] ? range(($data['page'] - 1) * $filters['per_page'] + 1, ($data['page'] - 1) * $filters['per_page'] + count($data['items'])) : [];
             checkList(array_map('intval', $numbers[1]) === $expectedNumbers, "$slug consecutive STT across pages");
             if ($case === 'page2') {

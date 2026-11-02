@@ -4,7 +4,7 @@ $detailPath = '/admin/co-so'; $detailLabel = 'Cơ sở';
 $detailTitle = $item['ten_co_so']; $detailId = $item['ma_co_so']; $detailCanEdit = true;
 $detailStatusLabel = $item['trang_thai'] === 'HOAT_DONG' ? 'Hoạt động' : 'Tạm ngừng';
 ?>
-<section class="container catalog-page catalog-workspace detail-page">
+<section class="container catalog-page catalog-workspace detail-page workspace-page">
     <?php require dirname(__DIR__) . '/partials/detail-header.php'; ?>
     <?php if ($item['trang_thai_cong_ty'] !== 'HOAT_DONG'): ?><p class="alert alert--danger" role="status">Công ty đã ngừng hoạt động. Không thể tạo hoặc kích hoạt sân tại cơ sở này.</p><?php endif; ?>
     <div class="detail-grid">

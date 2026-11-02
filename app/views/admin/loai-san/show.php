@@ -4,7 +4,7 @@ $detailPath = '/admin/loai-san'; $detailLabel = 'Loại sân';
 $detailTitle = $item['ten_loai_san']; $detailId = $item['ma_loai_san']; $detailCanEdit = true;
 $detailStatusLabel = $item['trang_thai'] === 'HOAT_DONG' ? 'Hoạt động' : 'Ngừng';
 ?>
-<section class="container catalog-page catalog-workspace detail-page">
+<section class="container catalog-page catalog-workspace detail-page workspace-page">
     <?php require dirname(__DIR__) . '/partials/detail-header.php'; ?>
     <div class="detail-grid">
         <section class="detail-card" aria-labelledby="type-info">

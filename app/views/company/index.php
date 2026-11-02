@@ -1,80 +1,63 @@
-<?php $bodyClass = 'page-catalog';
-$facilities = $facilities ?? [];
-$contracts = $contracts ?? [];
-$company = $company ?? [];
-$value = static fn ($item): string => $item === null || $item === '' ? '—' : e($item);
+<?php
+$bodyClass = 'page-catalog';
+$facilities = $facilities ?? []; $contracts = $contracts ?? []; $company = $company ?? [];
+$value = static fn($item): string => $item === null || $item === '' ? '—' : e($item);
+$formatDate = require dirname(__DIR__) . '/admin/partials/format-date.php';
+$formatMoney = require dirname(__DIR__) . '/admin/partials/format-money.php';
 ?>
-<section class="container account-page catalog-page">
-    <header class="account-page__intro catalog-heading">
-        <p class="eyebrow">STRYKE / Công ty</p>
-        <h1 class="account-h1"><?= e($company['ten_cong_ty'] ?? '') ?></h1>
-    </header>
-
-    <section aria-labelledby="company-info-heading">
+<section class="container catalog-page catalog-workspace workspace-page">
+    <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Không gian công ty</p><h1><?= e($company['ten_cong_ty'] ?? '') ?></h1><p class="module-subtitle">Thông tin hợp tác, cơ sở và nhân sự thuộc công ty của bạn.</p></div></header>
+    <div class="admin-stats">
+        <section class="admin-stat"><h2>Cơ sở trực thuộc</h2><p class="admin-stat__value"><?= e(count($facilities)) ?></p><p>Cơ sở trong dữ liệu công ty</p></section>
+        <section class="admin-stat"><h2>Hợp đồng nhượng quyền</h2><p class="admin-stat__value"><?= e(count($contracts)) ?></p><p>Hợp đồng thuộc công ty</p></section>
+    </div>
+    <section class="detail-card workspace-block" aria-labelledby="company-info-heading">
         <h2 id="company-info-heading">Thông tin công ty</h2>
-        <div class="account-card"><dl class="catalog-details">
+        <dl class="detail-fields">
             <div><dt>Mã số thuế</dt><dd><?= $value($company['ma_so_thue'] ?? null) ?></dd></div>
             <div><dt>Người đại diện</dt><dd><?= $value($company['nguoi_dai_dien'] ?? null) ?></dd></div>
-            <div><dt>Địa chỉ</dt><dd><?= $value($company['dia_chi'] ?? null) ?></dd></div>
+            <div class="detail-field--wide"><dt>Địa chỉ</dt><dd><?= $value($company['dia_chi'] ?? null) ?></dd></div>
             <div><dt>Số điện thoại</dt><dd><?= $value($company['so_dien_thoai'] ?? null) ?></dd></div>
             <div><dt>Email</dt><dd><?= $value($company['email'] ?? null) ?></dd></div>
             <div><dt>Trạng thái</dt><dd><span class="catalog-status" data-status="<?= ($company['trang_thai'] ?? '') === 'HOAT_DONG' ? 'HOAT_DONG' : 'NGUNG' ?>"><?= ($company['trang_thai'] ?? '') === 'HOAT_DONG' ? 'Hoạt động' : 'Ngừng hoạt động' ?></span></dd></div>
-        </dl></div>
+        </dl>
     </section>
-
-    <section class="account-card" aria-labelledby="employee-heading">
-        <h2 id="employee-heading">Nhân viên</h2>
-        <p>Quản lý nhân viên thuộc công ty của bạn.</p>
-        <p><a class="btn btn--primary" href="<?= e(url('/company/employees')) ?>">Quản lý nhân viên</a>
-            <a class="btn btn--outline" href="<?= e(url('/company/employees/create')) ?>">Thêm nhân viên</a></p>
+    <section class="account-card admin-quick workspace-block" aria-labelledby="company-team-heading">
+        <h2 id="company-team-heading">Nhân sự &amp; dịch vụ</h2><p>Truy cập các chức năng trong phạm vi công ty.</p>
+        <div class="admin-quick__links">
+            <a class="admin-quick-link" href="<?= e(url('/company/employees')) ?>"><span><strong>Quản lý nhân viên</strong><small>Hồ sơ và trạng thái làm việc</small></span><span aria-hidden="true">↗</span></a>
+            <a class="admin-quick-link" href="<?= e(url('/company/employees/create')) ?>"><span><strong>Thêm nhân viên</strong><small>Thông tin và phân công nhân sự</small></span><span aria-hidden="true">↗</span></a>
+            <a class="admin-quick-link" href="<?= e(url('/company/dich-vu')) ?>"><span><strong>Quản lý dịch vụ</strong><small>Dịch vụ tại các cơ sở trực thuộc</small></span><span aria-hidden="true">↗</span></a>
+        </div>
     </section>
-
-    <section aria-labelledby="facilities-heading">
-        <header class="account-page__intro catalog-heading"><div><p class="eyebrow">Cơ sở</p><h2 id="facilities-heading">Danh sách cơ sở</h2>
-            <p>Các cơ sở thuộc công ty.</p></div>
-        </header>
-        <?php if (!$facilities): ?>
-            <p role="status">Công ty hiện chưa có cơ sở.</p>
+    <section class="workspace-block" aria-labelledby="company-facilities-heading">
+        <?php $tableLabel = 'Cơ sở trực thuộc'; $tableTotal = count($facilities); require dirname(__DIR__) . '/admin/partials/list-summary.php'; ?>
+        <?php if (!$facilities): ?><div class="workspace-empty" role="status"><h2 id="company-facilities-heading">Chưa có cơ sở</h2><p>Công ty hiện chưa có cơ sở trong dữ liệu được phân quyền.</p></div>
         <?php else: ?>
-            <div class="catalog-table-wrap" tabindex="0" role="region" aria-label="Danh sách cơ sở"><table class="catalog-table">
-                <thead><tr><th scope="col">Tên cơ sở</th><th scope="col">Địa chỉ</th><th scope="col">Số điện thoại</th><th scope="col">Email</th><th scope="col">Giờ mở cửa</th><th scope="col">Giờ đóng cửa</th><th scope="col">Trạng thái</th></tr></thead>
-                <tbody><?php foreach ($facilities as $facility): ?>
-                    <tr>
-                        <td><?= $value($facility['ten_co_so'] ?? null) ?></td>
-                        <td><?= $value($facility['dia_chi'] ?? null) ?></td>
-                        <td><?= $value($facility['so_dien_thoai'] ?? null) ?></td>
-                        <td><?= $value($facility['email'] ?? null) ?></td>
-                        <td><?= $value($facility['gio_mo_cua'] ?? null) ?></td>
-                        <td><?= $value($facility['gio_dong_cua'] ?? null) ?></td>
-                        <td><span class="catalog-status" data-status="<?= e($facility['trang_thai'] ?? '') ?>"><?= ($facility['trang_thai'] ?? '') === 'HOAT_DONG' ? 'Hoạt động' : 'Tạm ngưng' ?></span></td>
-                    </tr>
-                <?php endforeach; ?></tbody>
-            </table></div>
-        <?php endif; ?>
+        <div class="catalog-table-wrap" tabindex="0" role="region" aria-label="Danh sách cơ sở"><table class="catalog-table workspace-table">
+            <colgroup><col><col><col><col class="workspace-col-status"></colgroup>
+            <thead><tr><th scope="col" id="company-facilities-heading">Cơ sở</th><th scope="col">Liên hệ</th><th scope="col">Giờ hoạt động</th><th class="workspace-number" scope="col">Trạng thái</th></tr></thead>
+            <tbody><?php foreach ($facilities as $facility): ?><tr>
+                <th scope="row"><?= $value($facility['ten_co_so'] ?? null) ?><small class="workspace-secondary"><?= $value($facility['dia_chi'] ?? null) ?></small></th>
+                <td data-label="Liên hệ"><?= $value($facility['so_dien_thoai'] ?? null) ?><small class="workspace-secondary"><?= $value($facility['email'] ?? null) ?></small></td>
+                <td data-label="Giờ hoạt động"><?= $value($facility['gio_mo_cua'] ?? null) ?> – <?= $value($facility['gio_dong_cua'] ?? null) ?></td>
+                <td class="workspace-number" data-label="Trạng thái"><span class="catalog-status" data-status="<?= e($facility['trang_thai'] ?? '') ?>"><?= ($facility['trang_thai'] ?? '') === 'HOAT_DONG' ? 'Hoạt động' : 'Tạm ngưng' ?></span></td>
+            </tr><?php endforeach; ?></tbody>
+        </table></div><?php endif; ?>
     </section>
-
-    <section aria-labelledby="contracts-heading">
-        <header class="account-page__intro catalog-heading"><div><p class="eyebrow">Hợp đồng nhượng quyền</p><h2 id="contracts-heading">Danh sách hợp đồng</h2>
-            <p>Các hợp đồng nhượng quyền thuộc công ty.</p></div>
-        </header>
-        <?php if (!$contracts): ?>
-            <p role="status">Công ty hiện chưa có hợp đồng nhượng quyền.</p>
+    <section class="workspace-block" aria-labelledby="company-contracts-heading">
+        <?php $tableLabel = 'Hợp đồng nhượng quyền'; $tableTotal = count($contracts); require dirname(__DIR__) . '/admin/partials/list-summary.php'; ?>
+        <?php if (!$contracts): ?><div class="workspace-empty" role="status"><h2 id="company-contracts-heading">Chưa có hợp đồng</h2><p>Công ty hiện chưa có hợp đồng nhượng quyền.</p></div>
         <?php else: ?>
-            <div class="catalog-table-wrap" tabindex="0" role="region" aria-label="Danh sách hợp đồng"><table class="catalog-table">
-                <thead><tr><th scope="col">Số hợp đồng</th><th scope="col">Ngày ký</th><th scope="col">Ngày bắt đầu</th><th scope="col">Ngày kết thúc</th><th scope="col">Phí nhượng quyền</th><th scope="col">Tỷ lệ phí</th><th scope="col">Trạng thái</th></tr></thead>
-                <tbody><?php foreach ($contracts as $contract): ?>
-                    <?php $status = $contract['trang_thai'] ?? ''; ?>
-                    <tr>
-                        <td><?= $value($contract['so_hop_dong'] ?? null) ?></td>
-                        <td><?= $value($contract['ngay_ky'] ?? null) ?></td>
-                        <td><?= $value($contract['ngay_bat_dau'] ?? null) ?></td>
-                        <td><?= $value($contract['ngay_ket_thuc'] ?? null) ?></td>
-                        <td><?= $value($contract['phi_nhuong_quyen'] ?? null) ?></td>
-                        <td><?= $value($contract['ty_le_phi'] ?? null) ?>%</td>
-                        <td><span class="catalog-status" data-status="<?= $status === 'HIEU_LUC' ? 'HOAT_DONG' : 'NGUNG' ?>"><?= $status === 'HIEU_LUC' ? 'Hiệu lực' : ($status === 'HET_HAN' ? 'Hết hạn' : ($status === 'CHAM_DUT' ? 'Chấm dứt' : 'Không xác định')) ?></span></td>
-                    </tr>
-                <?php endforeach; ?></tbody>
-            </table></div>
-        <?php endif; ?>
+        <div class="catalog-table-wrap" tabindex="0" role="region" aria-label="Danh sách hợp đồng"><table class="catalog-table workspace-table">
+            <colgroup><col><col><col><col class="workspace-col-status"></colgroup>
+            <thead><tr><th scope="col" id="company-contracts-heading">Hợp đồng</th><th scope="col">Thời hạn</th><th scope="col">Điều khoản phí</th><th class="workspace-number" scope="col">Trạng thái</th></tr></thead>
+            <tbody><?php foreach ($contracts as $contract): ?><?php $status = $contract['trang_thai'] ?? ''; ?><tr>
+                <th scope="row"><?= $value($contract['so_hop_dong'] ?? null) ?><small class="workspace-secondary">Ký ngày <?= e($formatDate($contract['ngay_ky'] ?? null)) ?></small></th>
+                <td data-label="Thời hạn"><?= e($formatDate($contract['ngay_bat_dau'] ?? null)) ?><small class="workspace-secondary">Đến <?= e($formatDate($contract['ngay_ket_thuc'] ?? null)) ?></small></td>
+                <td data-label="Điều khoản phí"><?= e($formatMoney($contract['phi_nhuong_quyen'] ?? null)) ?><small class="workspace-secondary">Tỷ lệ phí: <?= $value($contract['ty_le_phi'] ?? null) ?>%</small></td>
+                <td class="workspace-number" data-label="Trạng thái"><span class="catalog-status" data-status="<?= e($status) ?>"><?= e(['HIEU_LUC' => 'Hiệu lực', 'HET_HAN' => 'Hết hạn', 'CHAM_DUT' => 'Chấm dứt'][$status] ?? 'Không xác định') ?></span></td>
+            </tr><?php endforeach; ?></tbody>
+        </table></div><?php endif; ?>
     </section>
 </section>

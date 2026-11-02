@@ -1,4 +1,12 @@
 <?php
+// Internal pages share the workspace shell; customer templates keep their current layout.
+if ((in_array($template, ['auth/role', 'auth/account', 'auth/settings', 'services/page'], true)
+        && in_array($data['user']['ten_vai_tro'] ?? null, ['QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO', 'NHAN_VIEN'], true))
+    || (str_starts_with($template, 'facility/bank/')
+        && in_array($data['role'] ?? null, ['QUAN_TRI_TAP_DOAN', 'QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO'], true))) {
+    require __DIR__ . '/admin.php';
+    return;
+}
 $isAuthPage = ($bodyClass ?? '') === 'page-auth';
 $isAdminArea = str_starts_with($template ?? '', 'admin/');
 $navAuthenticated = Core\Session::accountId() !== null;

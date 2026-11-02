@@ -1,12 +1,14 @@
 <?php $bodyClass = 'page-catalog'; ?>
-<section class="container catalog-page catalog-workspace">
-    <header class="catalog-heading"><div><p class="eyebrow">STRYKE / Cơ sở thể thao</p><h1><?= e($title) ?></h1></div></header>
+<section class="container catalog-page catalog-workspace workspace-page">
+    <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Cơ sở thể thao</p><h1><?= e($title) ?></h1><p class="module-subtitle">Thông tin cơ sở, liên hệ và giờ hoạt động.</p></div><a class="btn btn--outline workspace-back" href="<?= e(url('/admin/co-so')) ?>">Quay lại</a></header>
     <?php if (!$companies): ?><p class="alert alert--danger" role="alert">Chưa có công ty đang hoạt động. Kiểm tra <a href="<?= e(url('/admin/companies')) ?>">Quản lý Công ty</a> trước khi thêm cơ sở.</p><?php endif; ?>
     <?php if (($item['trang_thai_cong_ty'] ?? 'HOAT_DONG') !== 'HOAT_DONG'): ?><p class="alert" role="status">Công ty hiện tại đã ngừng. Cơ sở chỉ được giữ ở trạng thái Tạm ngừng hoặc chuyển sang công ty hoạt động khi chưa có dữ liệu tham chiếu.</p><?php endif; ?>
-    <form class="catalog-form" method="post" enctype="multipart/form-data" action="<?= e(url('/admin/co-so/' . ($item ? 'update' : 'store'))) ?>" novalidate>
+    <form class="catalog-form module-form workspace-form" method="post" enctype="multipart/form-data" action="<?= e(url('/admin/co-so/' . ($item ? 'update' : 'store'))) ?>" novalidate>
         <?= csrf_field() ?>
         <?php if ($item): ?><input type="hidden" name="id" value="<?= e($item['ma_co_so']) ?>"><?php endif; ?>
-        <h2 class="admin-form-heading">Thông tin cơ sở</h2>
+                <section class="module-form-card">
+        <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">1</span>Thông tin cơ sở</h2>
+        <div class="module-fields">
         <div class="form-group">
             <label for="ma_cong_ty">Công ty nhượng quyền</label>
             <select class="form-control" id="ma_cong_ty" name="ma_cong_ty" required<?= field_error_attributes('ma_cong_ty', $errors) ?>>
@@ -53,7 +55,10 @@
             </div>
         </div>
         <p class="form-hint">Giữ địa chỉ đầy đủ bên dưới. Khi đổi tỉnh/phường, hãy rà soát lại địa chỉ. Cơ sở cũ có thể bổ sung địa phương sau.</p>
-        <h2 class="admin-form-heading">Hình ảnh cơ sở</h2>
+                </div></section>
+        <section class="module-form-card">
+        <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">2</span>Hình ảnh cơ sở</h2>
+        <div class="module-fields">
         <div class="form-group">
             <label for="anh_dai_dien">Ảnh đại diện (tùy chọn)</label>
             <input class="form-control" type="file" name="anh_dai_dien" id="anh_dai_dien" accept="image/jpeg,image/png,image/webp"<?= field_error_attributes('anh_dai_dien', $errors) ?>>
@@ -73,7 +78,10 @@
             <img id="facility-logo-preview" class="facility-photo" alt="Logo CLB" <?php if (App\Services\FacilityImage::validPath($item['logo_clb'] ?? null)): ?>src="<?= e(base_path() . '/' . $item['logo_clb']) ?>"<?php else: ?>hidden<?php endif; ?>>
             <?php if (!empty($item['logo_clb'])): ?><label><input type="checkbox" name="xoa_logo" value="1" <?= ($old['xoa_logo'] ?? '') === '1' ? 'checked' : '' ?>> Xóa logo hiện tại (logo mới được ưu tiên)</label><?php endif; ?>
         </div>
-        <h2 class="admin-form-heading">Liên hệ &amp; hoạt động</h2>
+                </div></section>
+        <section class="module-form-card">
+        <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">3</span>Liên hệ &amp; hoạt động</h2>
+        <div class="module-fields">
         <?php foreach ([
             'ten_co_so' => ['Tên cơ sở', 200, true, 'text'],
             'dia_chi' => ['Địa chỉ', 255, true, 'text'],
@@ -110,6 +118,7 @@
             </select>
             <?= field_error('trang_thai', $errors) ?>
         </div>
+        </div></section>
         <div class="catalog-actions"><button class="btn btn--primary" type="submit" <?= !$companies ? 'disabled' : '' ?>>Lưu cơ sở</button><a class="btn btn--outline" href="<?= e(url('/admin/co-so')) ?>">Hủy</a></div>
     </form>
 </section>

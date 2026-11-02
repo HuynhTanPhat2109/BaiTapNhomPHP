@@ -37,3 +37,66 @@
 .facility-photo[hidden] { display: none; }
 
 .facility-logo, #facility-logo-preview { width: 96px; height: 96px; object-fit: contain; border-radius: 50%; }
+
+/* Price/service lists only: fixed column proportions, no desktop minimum table width. */
+.page-catalog .catalog-workspace.data-list .catalog-table { width: 100%; min-width: 0; table-layout: fixed; font-size: 15px; }
+.page-catalog .catalog-workspace.data-list .catalog-table th,
+.page-catalog .catalog-workspace.data-list .catalog-table td { min-width: 0; max-width: none; padding: 14px 7px; vertical-align: middle; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+.page-catalog .catalog-workspace.data-list .catalog-table th[scope="row"],
+.page-catalog .catalog-workspace.data-list .catalog-table .data-list-facility,
+.page-catalog .catalog-workspace.data-list .catalog-table .data-list-name { min-width: 0; text-align: left; }
+.page-catalog .catalog-workspace.data-list .catalog-table thead th { font-size: 13px; line-height: 1.5; white-space: normal; }
+.page-catalog .catalog-workspace.data-list .catalog-table .list-stt { width: auto; min-width: 0; max-width: none; padding-inline: 2px; }
+.page-catalog .data-list .pricing-col-stt, .page-catalog .data-list .service-col-stt { width: 5%; }
+.page-catalog .data-list .pricing-col-name { width: 16%; }
+.page-catalog .data-list .pricing-col-facility, .page-catalog .data-list .pricing-col-type { width: 14%; }
+.page-catalog .data-list .pricing-col-day, .page-catalog .data-list .pricing-col-hours { width: 10%; }
+.page-catalog .data-list .pricing-col-money { width: 12%; }
+.page-catalog .data-list .pricing-col-status { width: 11%; }
+.page-catalog .data-list .pricing-col-actions, .page-catalog .data-list .service-col-actions { width: 8%; }
+.page-catalog .data-list .service-col-name { width: 19%; }
+.page-catalog .data-list .service-col-facility { width: 16%; }
+.page-catalog .data-list .service-col-type, .page-catalog .data-list .service-col-status { width: 11%; }
+.page-catalog .data-list .service-col-unit { width: 8%; }
+.page-catalog .data-list .service-col-money { width: 12%; }
+.page-catalog .data-list .service-col-stock { width: 10%; }
+.page-catalog .catalog-workspace.data-list .pricing-copy,
+.page-catalog .catalog-workspace.data-list .pricing-money { display: block; overflow: visible; white-space: normal; -webkit-line-clamp: unset; }
+.page-catalog .catalog-workspace.data-list .pricing-type small,
+.page-catalog .catalog-workspace.data-list .pricing-secondary,
+.page-catalog .catalog-workspace.data-list .service-secondary { display: block; color: var(--muted); font-size: 13px; white-space: normal; }
+.page-catalog .catalog-workspace.data-list .pricing-hours time { white-space: nowrap; }
+.page-catalog .catalog-workspace.data-list .catalog-status,
+.page-catalog .catalog-workspace.data-list .service-type { max-width: 100%; padding: 5px 7px; font-size: 13px; white-space: normal; overflow-wrap: normal; }
+.page-catalog .catalog-workspace.data-list .service-stock { font-size: 14px; }
+.page-catalog .catalog-workspace.data-list .catalog-table .list-actions { display: inline-flex; justify-content: center; min-width: 0; }
+.page-catalog .catalog-workspace.data-list .list-action-menu { flex-basis: auto; }
+.page-catalog .catalog-workspace.data-list .list-action-menu > summary { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 38px; min-height: 38px; padding: 0; border: 1px solid #dce6de; border-radius: 8px; background: #f3f7f3; color: #36513e; cursor: pointer; list-style: none; }
+.page-catalog .data-list .list-action-menu > summary::-webkit-details-marker { display: none; }
+.page-catalog .data-list .list-action-menu > summary svg { width: 20px; height: 20px; fill: currentColor; stroke: none; }
+.page-catalog .catalog-workspace.data-list .list-action-menu__panel { position: static; min-width: 0; max-width: 100%; padding: 6px; border: 1px solid #dce6de; border-radius: 10px; background: #fff; color: #183c28; box-shadow: 0 12px 36px #13251b26; text-align: left; }
+.page-catalog .catalog-workspace.data-list .list-action-menu__panel[popover] { position: fixed; inset: auto; margin: 0; width: 200px; min-width: 0; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); overflow: auto; }
+.page-catalog .catalog-workspace.data-list .list-action-menu__panel .list-action { display: flex; justify-content: flex-start; gap: 10px; min-height: 42px; padding: 9px 12px; border-radius: 6px; font-size: 15px; text-decoration: none; white-space: normal; }
+.page-catalog .data-list .list-action-menu__panel .list-action + .list-action { margin-top: 4px; }
+.page-catalog .data-list .list-action-menu :focus-visible { outline: 2px solid #317044; outline-offset: 2px; }
+@media (min-width: 901px) and (max-width: 1150px) {
+    .page-catalog .catalog-workspace.data-list .catalog-table { font-size: 14px; }
+    .page-catalog .catalog-workspace.data-list .catalog-table th,
+    .page-catalog .catalog-workspace.data-list .catalog-table td { padding-inline: 4px; }
+}
+@media (max-width: 900px) {
+    .page-catalog .catalog-workspace.data-list .catalog-table-wrap { overflow: visible; border: 0; background: transparent; }
+    .page-catalog .catalog-workspace.data-list .catalog-table,
+    .page-catalog .data-list .catalog-table tbody { display: block; }
+    .page-catalog .data-list .catalog-table colgroup { display: none; }
+    .page-catalog .data-list .catalog-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .page-catalog .data-list .catalog-table tbody { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 16px; }
+    .page-catalog .catalog-workspace.data-list .catalog-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 16px; min-width: 0; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+    .page-catalog .catalog-workspace.data-list .catalog-table td,
+    .page-catalog .catalog-workspace.data-list .catalog-table th[scope="row"] { display: block; padding: 0; border: 0; text-align: left; font-size: 15px; }
+    .page-catalog .data-list .catalog-table th[scope="row"] { grid-column: 1 / -1; order: -1; font-size: 17px; }
+    .page-catalog .data-list .catalog-table .data-list-facility,
+    .page-catalog .data-list .catalog-table td[colspan] { grid-column: 1 / -1; }
+    .page-catalog .data-list .catalog-table td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 5px; color: var(--muted); font-size: 13px; font-weight: 500; }
+    .page-catalog .data-list .catalog-table .list-actions { justify-content: flex-start; }
+}

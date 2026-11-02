@@ -88,6 +88,12 @@ final class ServiceMemoryStatement extends PDOStatement
 
 $checks = 0;
 function serviceCheck(bool $ok, string $label): void { global $checks; if (!$ok) throw new RuntimeException('FAIL: ' . $label); $checks++; }
+function serviceDocument(string $html): DOMXPath
+{
+    $document = new DOMDocument();
+    serviceCheck($document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING), 'rendered service document');
+    return new DOMXPath($document);
+}
 function serviceReject(callable $callback, int|string $expected): void
 {
     try { $callback(); }
@@ -225,29 +231,61 @@ try {
     foreach ($users as $role => $user) {
         $accounts->user = $user; Session::authenticate(1); $base = Service::basePath($role);
         if ($role === 'KHACH_HANG') { foreach (['/admin', '/company', '/facility', '/staff'] as $area) serviceReject(fn() => $router->dispatch('GET', $area . '/dich-vu'), 403); continue; }
+        $visibleIds = array_keys(array_filter($pdo->services, static fn(array $row): bool => match ($role) {
+            'QUAN_TRI_TAP_DOAN' => true,
+            'QUAN_LY_CONG_TY' => $pdo->facilities[$row['ma_co_so']]['ma_cong_ty'] === $user['ma_cong_ty'],
+            default => $row['ma_co_so'] === $user['ma_co_so'],
+        }));
+        rsort($visibleIds, SORT_NUMERIC);
+        $firstRecordId = (string) $visibleIds[10]; // Page 2, ten rows per page, descending IDs.
         foreach (['index' => '', 'show' => '/show', 'create' => '/create', 'edit' => '/edit'] as $page => $suffix) {
             $_GET = ['id' => '1', 'page' => $page === 'index' ? '2' : '1'];
             if ($role === 'NHAN_VIEN' && in_array($page, ['create', 'edit'], true)) { serviceReject(fn() => $router->dispatch('GET', $base . $suffix), 404); continue; }
             $before = $pdo->services; ob_start(); $router->dispatch('GET', $base . $suffix); $html = ob_get_clean();
             serviceCheck($pdo->services === $before, 'GET never writes');
-            serviceCheck(str_contains($html, 'class="admin-sidebar"') === ($role === 'QUAN_TRI_TAP_DOAN'), "$role correct Sidebar isolation");
+            $xpath = serviceDocument($html);
+            serviceCheck($xpath->query('//aside[@id="admin-sidebar"]')->length === 1, "$role internal role has shared Sidebar");
+            $area = substr($base, 0, -strlen('/dich-vu'));
+            foreach ($xpath->query('//aside[@id="admin-sidebar"]//a[@href]') as $link) {
+                parse_str(parse_url($link->getAttribute('href'), PHP_URL_QUERY) ?? '', $query);
+                $path = $query['route'] ?? '';
+                serviceCheck($path === $area || str_starts_with($path, $area . '/'), "$role Sidebar stays in own role area");
+            }
             serviceCheck(!str_contains($html, '<script>unsafe</script>'), 'escaped text');
-            if ($role !== 'QUAN_TRI_TAP_DOAN') serviceCheck(!str_contains($html, '>Đặt sân</a>') && str_contains($html, 'page-services'), 'role area has service UI, no customer booking nav');
+            if ($role !== 'QUAN_TRI_TAP_DOAN') serviceCheck(!str_contains($html, '>Đặt sân</a>') && str_contains($html, 'page-admin'), 'internal service workspace has no customer booking nav');
             if ($page === 'index') {
                 serviceCheck(str_contains($html, 'Tìm kiếm') && str_contains($html, 'Đặt lại') && !str_contains($html, '<caption>'), 'shared list UI');
-                serviceCheck(str_contains($html, '<td class="list-stt">11</td>') && str_contains($html, 'per_page=10'), 'STT and pagination');
-                serviceCheck(str_contains($html, '+ Thêm dịch vụ') === ($role !== 'NHAN_VIEN'), 'staff no create control');
+                $firstNumber = $xpath->query('//main//tbody//td[contains(concat(" ", normalize-space(@class), " "), " list-stt ")]')->item(0);
+                serviceCheck($firstNumber !== null && trim($firstNumber->textContent) === '11' && str_contains($html, 'per_page=10'), 'STT and pagination');
+                serviceCheck($xpath->query('//main//a[@href="' . url($base . '/create') . '"]')->length === ($role !== 'NHAN_VIEN' ? 1 : 0), 'create route only visible to writers');
                 if ($role === 'NHAN_VIEN') serviceCheck(!str_contains($html, 'list-action--edit') && !str_contains($html, 'list-action--stop'), 'staff no write actions');
+                $firstRow = $xpath->query('//main//tbody/tr')->item(0);
+                $headers = $xpath->query('//main//table/thead/tr/th');
+                serviceCheck($headers->length === 8 && $xpath->query('./th | ./td', $firstRow)->length === $headers->length, 'eight matching columns after grouping service/type');
+                serviceCheck($xpath->query('.//span[contains(concat(" ", normalize-space(@class), " "), " service-type ")]', $firstRow)->length === 1, 'service type retained under service name');
+                $actions = $xpath->query('.//details[@data-row-actions]', $firstRow)->item(0);
+                serviceCheck($actions !== null, 'service actions keep the three-dot menu');
+                foreach (['view' => '/show', 'edit' => '/edit', 'stop' => '/show'] as $kind => $actionSuffix) {
+                    $links = $xpath->query('.//a[contains(concat(" ", normalize-space(@class), " "), " list-action--' . $kind . ' ")]', $actions);
+                    $allowed = $kind === 'view' || $role !== 'NHAN_VIEN';
+                    serviceCheck($links->length === ($allowed ? 1 : 0), "$role visible $kind action");
+                    if ($allowed) {
+                        parse_str(parse_url($links->item(0)->getAttribute('href'), PHP_URL_QUERY) ?? '', $query);
+                        serviceCheck(($query['route'] ?? '') === $base . $actionSuffix && ($query['id'] ?? '') === $firstRecordId, "$role $kind keeps route and row ID");
+                        if ($kind === 'stop') serviceCheck(($query['confirm'] ?? '') === '1', 'stop action opens existing confirmation page');
+                    }
+                }
             }
             $servicePreviews[$role][$page] = $html;
         }
         foreach ([10, 20, 50] as $size) {
             $_GET = ['page' => '2', 'per_page' => (string) $size];
             ob_start(); $router->dispatch('GET', $base); $html = ob_get_clean();
-            preg_match_all('/<td class="list-stt">([0-9]+)<\/td>/', $html, $numbers);
+            $xpath = serviceDocument($html);
+            $numbers = array_map(static fn(DOMNode $node): int => (int) trim($node->textContent), iterator_to_array($xpath->query('//main//tbody//td[contains(concat(" ", normalize-space(@class), " "), " list-stt ")]')));
             $count = $role === 'QUAN_TRI_TAP_DOAN' ? 53 : ($role === 'QUAN_LY_CONG_TY' ? 36 : 18);
             $pageNumber = min(2, (int) ceil($count / $size)); $start = ($pageNumber - 1) * $size + 1;
-            serviceCheck(array_map('intval', $numbers[1]) === range($start, min($pageNumber * $size, $count)), "$role consecutive STT at size $size");
+            serviceCheck($numbers === range($start, min($pageNumber * $size, $count)), "$role consecutive STT at size $size");
         }
         $_GET = ['id' => '1', 'confirm' => '1']; ob_start(); $router->dispatch('GET', $base . '/show'); $html = ob_get_clean();
         serviceCheck(str_contains($html, 'name="confirmed"') === ($role !== 'NHAN_VIEN'), 'only writers see confirmation'); $servicePreviews[$role]['confirm'] = $html;
