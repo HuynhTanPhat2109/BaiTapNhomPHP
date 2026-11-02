@@ -22,7 +22,7 @@ $icons = [
 $priceActions = $listPath === '/admin/bang-gia';
 $secondaryAction = ($priceActions || ($serviceActions && $canWrite)) ? array_pop($buttons) : null;
 ?>
-<div class="list-actions<?= $priceActions || ($serviceActions && $canWrite) ? ' list-actions--pricing' : '' ?>">
+<div class="list-actions<?= $priceActions || $serviceActions ? ' list-actions--pricing' : '' ?>">
     <?php foreach ($buttons as [$kind, $label, $href]): ?>
         <a class="list-action list-action--<?= e($kind) ?>" href="<?= e($href) ?>" title="<?= e($label) ?>">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><?= $icons[$kind] /* Fixed SVG paths only. */ ?></svg><span><?= e($label) ?></span>

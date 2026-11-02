@@ -211,10 +211,10 @@
 .page-services .navbar__toggle span { background: var(--text); }
 .page-admin .service-module { min-width: 0; }
 .page-admin .service-breadcrumb { margin-bottom: 16px; color: var(--muted); font-size: 12px; }
-.page-admin .service-module .service-table { min-width: 1050px; }
-.page-admin .service-module .service-table th, .page-admin .service-module .service-table td { padding: 12px 10px; }
+.page-admin .service-module .service-table { min-width: 960px; width: 100%; }
+.page-admin .service-module .service-table th, .page-admin .service-module .service-table td { padding: 12px 12px; }
 .page-admin .service-module .service-table th[scope="row"] { min-width: 140px; }
-.page-admin .service-module .service-table .list-actions { min-width: 0; }
+.page-admin .service-module .service-table .list-actions { min-width: 0; width: auto; }
 .page-admin .service-secondary { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
 .page-admin .service-money { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .page-admin .service-stock { display: inline-block; color: var(--muted); font-size: 12px; }
@@ -267,9 +267,11 @@
 .page-admin .catalog-workspace .list-action-menu__panel { min-width: 180px; }
 .page-admin .catalog-workspace .list-pagination__summary { font-size: var(--type-label); }
 .page-admin .catalog-workspace .list-page { min-width: 40px; min-height: 40px; font-size: var(--type-label); }
-.page-admin .catalog-workspace .service-table { min-width: 1320px; }
-.page-admin .catalog-workspace .service-table th[scope="row"] { min-width: 185px; }
-.page-admin .catalog-workspace .service-table .list-actions { min-width: 230px; }
+.page-admin .catalog-workspace .service-table { min-width: 960px; width: 100%; }
+.page-admin .catalog-workspace .service-table th[scope="row"] { min-width: 150px; }
+.page-admin .catalog-workspace .service-table .list-actions { min-width: 0; width: auto; justify-content: flex-end; }
+.page-admin .service-module .service-actions-col { text-align: right; white-space: nowrap; width: 1%; padding-right: 20px; }
+.page-admin .service-module .service-actions-col .list-actions { min-width: 0; display: inline-flex; justify-content: flex-end; }
 .page-admin .catalog-workspace .service-money { text-align: right; font-weight: 600; }
 .page-admin .catalog-workspace .service-stock-cell { min-width: 150px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .page-admin .catalog-workspace .service-stock { font-size: var(--type-small); line-height: 1.5; }
@@ -391,4 +393,95 @@
 }
 @media (max-width: 600px) {
   .page-admin .list-pagination { align-items: flex-start; flex-direction: column; }
+}
+
+/* =========================================================
+   BẢO VỆ ẢNH BIÊN LAI TRANG QUẢN TRỊ BOOKING (CHỐNG TRÀN SAFARI/WEBKIT)
+   ========================================================= */
+.alert svg {
+    width: 22px !important;
+    height: 22px !important;
+    max-width: 22px !important;
+    max-height: 22px !important;
+    flex: 0 0 22px !important;
+    flex-shrink: 0 !important;
+}
+
+.admin-receipt-preview {
+    display: inline-block !important;
+    width: 240px !important;
+    max-width: 100% !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    background: #0f172a !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid #cbd5e1 !important;
+    box-sizing: border-box !important;
+    margin: 4px 0 !important;
+}
+
+.admin-receipt-preview a {
+    display: block !important;
+    width: 240px !important;
+    height: 140px !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    position: relative !important;
+    background: #0f172a !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+}
+
+.admin-receipt-preview img {
+    width: 240px !important;
+    height: 140px !important;
+    max-width: 240px !important;
+    max-height: 140px !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 auto !important;
+    border: 0 !important;
+}
+
+.admin-receipt-preview .admin-receipt-zoom-tag {
+    position: absolute !important;
+    bottom: 6px !important;
+    right: 6px !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    color: #c8f36b !important;
+    font-size: 11px !important;
+    padding: 2px 7px !important;
+    border-radius: 4px !important;
+    pointer-events: none !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+    text-decoration: none !important;
+}
+
+.admin-receipt-preview .admin-receipt-footer {
+    padding: 6px 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    font-size: 0.8rem !important;
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+    width: 240px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.admin-receipt-preview .admin-receipt-footer a {
+    color: #1a73e8 !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+    font-size: 0.78rem !important;
+    width: auto !important;
+    height: auto !important;
+    display: inline !important;
+    background: transparent !important;
+}
+
+.admin-receipt-preview .admin-receipt-footer a:hover {
+    text-decoration: underline !important;
 }

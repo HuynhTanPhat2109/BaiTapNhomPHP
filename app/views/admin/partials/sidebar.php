@@ -1,7 +1,13 @@
 <?php
 $allMenus = require dirname(__DIR__, 4) . '/config/admin-menu.php';
-$role = $currentUser['ten_vai_tro'] ?? null;
+$role = $currentUser['ten_vai_tro'] ?? $user['ten_vai_tro'] ?? null;
 $menu = $allMenus[$role] ?? [];
+$brandHome = match ($role) {
+    'QUAN_LY_CONG_TY' => '/company',
+    'QUAN_LY_CO_SO' => '/facility',
+    'NHAN_VIEN' => '/staff',
+    default => '/admin',
+};
 $icons = [
     'overview' => 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
     'company' => 'M4 21V5l8-3v19M12 9h8v12M2 21h20M7 7h2M7 11h2M7 15h2M15 12h2M15 16h2',
@@ -20,7 +26,7 @@ $icons = [
 ?>
 <aside class="admin-sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị">
     <div class="admin-sidebar__brand">
-        <a class="navbar__brand" href="<?= e(url('/admin')) ?>" aria-label="STRYKE — Tổng quan quản trị">
+        <a class="navbar__brand" href="<?= e(url($brandHome)) ?>" aria-label="STRYKE — Trang chủ">
             <svg class="brand-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true"><rect x="3" y="5" width="30" height="26" rx="1"/><path d="M18 5v26M3 11h7v14H3m30-14h-7v14h7"/><circle cx="18" cy="18" r="5"/></svg>
             <span>STRYKE<span class="brand-dot">.</span></span>
         </a>
@@ -29,11 +35,22 @@ $icons = [
         </button>
     </div>
     <nav class="admin-sidebar__nav" aria-label="Chức năng quản trị">
+        <?php
+        $currentPath = request_path();
+        ?>
         <?php foreach ($menu as $group => $items): ?>
             <section class="admin-menu-group" aria-label="<?= e($group) ?>">
                 <h2><?= e($group) ?></h2>
                 <?php foreach ($items as $item): ?>
-                    <?php $active = $item['route'] !== null && ($template === $item['template'] || str_starts_with($template, $item['template'] . '/')); ?>
+                    <?php
+                    $isRootArea = in_array($item['route'], ['/admin', '/company', '/facility', '/staff'], true);
+                    $active = $item['route'] !== null && (
+                        $currentPath === $item['route']
+                        || (!$isRootArea && str_starts_with($currentPath, $item['route'] . '/'))
+                        || ($template === $item['template'] && !in_array($template, ['services/page', 'auth/role'], true))
+                        || ($item['template'] !== null && str_starts_with($template, $item['template'] . '/'))
+                    );
+                    ?>
                     <?php if ($item['route'] !== null): ?>
                         <a class="admin-menu__item<?= $active ? ' is-active' : '' ?>" href="<?= e(url($item['route'])) ?>"<?= $active ? ' aria-current="page"' : '' ?>>
                     <?php else: ?>
@@ -46,5 +63,5 @@ $icons = [
             </section>
         <?php endforeach; ?>
     </nav>
-    <p class="admin-sidebar__footer"><span class="status-dot" aria-hidden="true"></span> Khu vực quản trị STRYKE</p>
+    <p class="admin-sidebar__footer"><span class="status-dot" aria-hidden="true"></span> Khu vực vận hành STRYKE</p>
 </aside>

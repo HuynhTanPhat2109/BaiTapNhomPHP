@@ -1,5 +1,5 @@
 <?php
-$bodyClass = 'page-catalog';
+$bodyClass = 'page-catalog page-services';
 $listLabel = 'dịch vụ';
 $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
 $filterFields = [
@@ -19,9 +19,9 @@ $home = substr($listPath, 0, -strlen('/dich-vu'));
     </header>
     <?php if ($notice): ?><p class="alert alert--success" role="status"><?= e($notice) ?></p><?php endif; ?>
     <?php require dirname(__DIR__) . '/partials/list-toolbar.php'; ?>
-    <div class="catalog-table-wrap" tabindex="0" role="region" aria-label="Danh sách dịch vụ">
-        <table class="catalog-table service-table">
-            <thead><tr><th class="list-stt" scope="col">STT</th><th scope="col">Tên dịch vụ</th><th scope="col">Cơ sở</th><th scope="col">Loại dịch vụ</th><th scope="col">Đơn vị tính</th><th class="service-money" scope="col">Đơn giá</th><th class="service-stock-cell" scope="col">Tồn kho</th><th scope="col">Trạng thái</th><th scope="col">Thao tác</th></tr></thead>
+    <div class="catalog-table-wrap" tabindex="0" role="region" aria-label="Danh sách dịch vụ" style="background: var(--surface, #fff); border: 1px solid var(--border, #e0e0e0); border-radius: 12px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
+        <table class="catalog-table service-table" style="width: 100%; min-width: 960px; border-collapse: collapse;">
+            <thead><tr><th class="list-stt" scope="col">STT</th><th scope="col">Tên dịch vụ</th><th scope="col">Cơ sở</th><th scope="col">Loại dịch vụ</th><th scope="col">Đơn vị tính</th><th class="service-money" scope="col">Đơn giá</th><th class="service-stock-cell" scope="col">Tồn kho</th><th scope="col">Trạng thái</th><th class="service-actions-col" scope="col" style="text-align: right; padding-right: 20px;">Thao tác</th></tr></thead>
             <tbody>
             <?php foreach ($items as $index => $row): ?>
                 <tr>
@@ -39,7 +39,7 @@ $home = substr($listPath, 0, -strlen('/dich-vu'));
                     </td>
                     <td><span class="catalog-status" data-status="<?= e($row['trang_thai']) ?>"><?= e(App\Services\DichVuService::STATES[$row['trang_thai']] ?? 'Không xác định') ?></span>
                         <?php if ($row['trang_thai_co_so'] !== 'HOAT_DONG' || $row['trang_thai_cong_ty'] !== 'HOAT_DONG'): ?><small class="service-secondary">Cơ sở/công ty đã ngừng</small><?php endif; ?></td>
-                    <td><?php $recordId = $row['ma_dich_vu']; require dirname(__DIR__) . '/partials/list-actions.php'; ?></td>
+                    <td class="service-actions-col" style="text-align: right; padding-right: 20px; white-space: nowrap;"><?php $recordId = $row['ma_dich_vu']; require dirname(__DIR__) . '/partials/list-actions.php'; ?></td>
                 </tr>
             <?php endforeach; ?>
             <?php if (!$items): ?><tr><td colspan="9">Không tìm thấy dịch vụ phù hợp trong phạm vi được phép.</td></tr><?php endif; ?>

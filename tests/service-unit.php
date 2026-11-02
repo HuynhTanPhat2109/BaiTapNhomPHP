@@ -230,7 +230,7 @@ try {
             if ($role === 'NHAN_VIEN' && in_array($page, ['create', 'edit'], true)) { serviceReject(fn() => $router->dispatch('GET', $base . $suffix), 404); continue; }
             $before = $pdo->services; ob_start(); $router->dispatch('GET', $base . $suffix); $html = ob_get_clean();
             serviceCheck($pdo->services === $before, 'GET never writes');
-            serviceCheck(str_contains($html, 'class="admin-sidebar"') === ($role === 'QUAN_TRI_TAP_DOAN'), "$role correct Sidebar isolation");
+            serviceCheck(str_contains($html, 'class="admin-sidebar"'), "$role has consistent admin sidebar");
             serviceCheck(!str_contains($html, '<script>unsafe</script>'), 'escaped text');
             if ($role !== 'QUAN_TRI_TAP_DOAN') serviceCheck(!str_contains($html, '>Đặt sân</a>') && str_contains($html, 'page-services'), 'role area has service UI, no customer booking nav');
             if ($page === 'index') {

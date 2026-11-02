@@ -144,14 +144,28 @@ final class BookingController extends Controller
         header('Cache-Control: no-store');
         if (($_GET['status']??'')==='1') {
             $paymentStatus = null;
+            $paymentNote = null;
+            $receiptSubmitted = false;
             try {
                 $paymentService = new \App\Services\PaymentService($this->app->pdo());
                 $payment = $paymentService->getPaymentByBooking((int) $id);
                 $paymentStatus = $payment['trang_thai'] ?? null;
+                if (!empty($payment['ghi_chu'])) {
+                    $paymentNote = \App\Services\ReceiptImage::stripReceiptTag($payment['ghi_chu']);
+                    $receiptSubmitted = (\App\Services\ReceiptImage::getReceiptFromNote($payment['ghi_chu']) !== null);
+                }
             } catch (\Throwable $e) {}
+
+            $currentState = $booking['trang_thai_dat_san'];
+            if ($receiptSubmitted && in_array($currentState, ['CHO_THANH_TOAN', 'HET_HAN'], true)) {
+                $currentState = 'CHO_XAC_NHAN';
+            }
+
             $this->json([
-                'state' => $booking['trang_thai_dat_san'],
+                'state' => $currentState,
                 'payment_status' => $paymentStatus,
+                'payment_note' => $paymentNote,
+                'receipt_submitted' => $receiptSubmitted,
                 'now' => $now->format(DATE_ATOM),
                 'expires' => $booking['het_han_giu_san_luc']
             ]);
@@ -164,6 +178,11 @@ final class BookingController extends Controller
         $bankAccount = null;
         $qrUrl = null;
         $paymentError = $_SESSION['booking_payment_error'][(int)$id] ?? null;
+        unset($_SESSION['booking_payment_error'][(int)$id]);
+        $receiptNotice = $_SESSION['booking_receipt_notice'][(int)$id] ?? null;
+        unset($_SESSION['booking_receipt_notice'][(int)$id]);
+        $receiptImage = null;
+
         try {
             $paymentService = new \App\Services\PaymentService($this->app->pdo());
             $payment = $paymentService->getPaymentByBooking((int) $id);
@@ -180,12 +199,60 @@ final class BookingController extends Controller
                         $bankAccount['ten_chu_tai_khoan']
                     );
                 }
-            } elseif ($payment) {
-                $paymentError = 'Giao dịch đã kết thúc hoặc đang cần kiểm tra. Không chuyển khoản thêm; trạng thái đặt sân sẽ được cập nhật từ hệ thống.';
+            } elseif ($payment && $payment['trang_thai'] === 'THANH_CONG') {
+                // Đã thanh toán thành công - không có bất kỳ lỗi hoặc cảnh báo nào
+                $paymentError = null;
+            } elseif ($payment && $payment['trang_thai'] === 'CAN_DOI_SOAT') {
+                $paymentError = null; // Hiển thị card đối soát chuyên biệt, không dùng toast lỗi đơn thuần
+            } elseif ($payment && in_array($payment['trang_thai'], ['THAT_BAI', 'HET_HAN'], true)) {
+                $paymentError = 'Giao dịch đã kết thúc hoặc đã hủy. Không chuyển khoản thêm; trạng thái đặt sân sẽ được cập nhật từ hệ thống.';
+            }
+
+            if ($payment) {
+                $receiptImage = \App\Services\ReceiptImage::findForBooking((int) $id, $payment['ghi_chu'] ?? null);
             }
         } catch (\Throwable $e) {
             $paymentError = 'Không thể đọc cấu hình thanh toán. Vui lòng thử lại hoặc liên hệ cơ sở.';
             error_log('Payment read failed: ' . get_class($e));
+        }
+
+        $receiptSubmitted = ($receiptImage !== null);
+        $isReconcile = ($payment && $payment['trang_thai'] === 'CAN_DOI_SOAT');
+        $reconcileReason = $isReconcile ? \App\Services\ReceiptImage::stripReceiptTag($payment['ghi_chu'] ?? '') : '';
+
+        // Lấy thông tin cơ sở thể thao (tên cơ sở, hotline, địa chỉ) để khách liên hệ Zalo khi cần đối soát
+        $facility = null;
+        if (!empty($booking['ma_co_so'])) {
+            try {
+                $fStmt = $this->app->pdo()->prepare('SELECT * FROM co_so WHERE ma_co_so = :cid');
+                $fStmt->execute(['cid' => (int) $booking['ma_co_so']]);
+                $facility = $fStmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+            } catch (\Throwable $e) {}
+        }
+
+        // Đảm bảo không hiển thị cảnh báo lỗi nếu đơn đã được xác nhận thành công
+        if (in_array($booking['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH'], true) || ($payment && $payment['trang_thai'] === 'THANH_CONG')) {
+            $paymentError = null;
+        }
+
+        // Khách hàng đã chuyển khoản và gửi biên lai thì đảm bảo trạng thái là CHO_XAC_NHAN, không để HET_HAN
+        if ($receiptSubmitted && in_array($booking['trang_thai_dat_san'], ['CHO_THANH_TOAN', 'HET_HAN'], true) && !$isReconcile) {
+            $booking['trang_thai_dat_san'] = 'CHO_XAC_NHAN';
+            try {
+                $this->app->pdo()->prepare("UPDATE dat_san SET trang_thai_dat_san = 'CHO_XAC_NHAN' WHERE ma_dat_san = :id")->execute(['id' => (int) $id]);
+            } catch (\Throwable $e) {}
+        }
+
+        // Tiêu đề trang tương ứng với trạng thái thực tế của booking
+        $pageTitle = 'Chờ thanh toán';
+        if ($isReconcile) {
+            $pageTitle = 'Cần đối soát thanh toán';
+        } elseif (in_array($booking['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH'], true) || ($payment && $payment['trang_thai'] === 'THANH_CONG')) {
+            $pageTitle = 'Đặt sân & Thanh toán thành công';
+        } elseif ($receiptSubmitted || $booking['trang_thai_dat_san'] === 'CHO_XAC_NHAN') {
+            $pageTitle = 'Chờ xác nhận thanh toán';
+        } elseif (in_array($booking['trang_thai_dat_san'], ['HET_HAN', 'DA_HUY'], true)) {
+            $pageTitle = 'Đã hết thời gian giữ sân';
         }
 
         // Lấy thông tin chi tiết khách hàng
@@ -198,7 +265,138 @@ final class BookingController extends Controller
             } catch (\Throwable) {}
         }
 
-        $this->render('courts/booking-wait',compact('booking','now','user','customer','bookingBackUrl','payment','bankAccount','qrUrl','paymentError')+['title'=>'Chờ thanh toán']);
+        $this->render('courts/booking-wait', compact(
+            'booking', 'now', 'user', 'customer', 'facility', 'bookingBackUrl',
+            'payment', 'bankAccount', 'qrUrl', 'paymentError', 'receiptImage',
+            'receiptSubmitted', 'receiptNotice', 'isReconcile', 'reconcileReason'
+        ) + ['title' => $pageTitle]);
+    }
+
+    /**
+     * TH1: Tiếp nhận ảnh biên lai chuyển khoản từ khách hàng.
+     * Bắt buộc phải có ảnh. Khi gửi thành công, chuyển màn hình sang "THANH TOÁN THÀNH CÔNG (Chờ xác nhận)".
+     */
+    public function uploadReceipt(): void
+    {
+        $user = $this->app->auth()->user();
+        if (!$user || $user['ten_vai_tro'] !== 'KHACH_HANG') {
+            throw new HttpException(403, 'Vui lòng đăng nhập tài khoản khách hàng.');
+        }
+
+        $id = post_string('id');
+        if (!\App\Services\CoSoService::validId($id)) {
+            throw new HttpException(404, 'Không tìm thấy booking.');
+        }
+
+        $bookingId = (int) $id;
+        $booking = $this->service()->inspect($bookingId, (int) $user['ma_khach_hang']);
+        if (!$booking) {
+            throw new HttpException(404, 'Không tìm thấy booking.');
+        }
+
+        // Kiểm tra xem đơn đã hết hạn hoặc bị hủy chưa
+        if (in_array($booking['trang_thai_dat_san'], ['DA_HUY', 'HET_HAN'], true)) {
+            $_SESSION['booking_payment_error'][$bookingId] = 'Đơn đặt sân đã hết hạn giữ chỗ hoặc đã bị hủy.';
+            $this->redirect('/booking/wait?id=' . $bookingId);
+        }
+
+        try {
+            $file = $_FILES['bien_lai'] ?? null;
+            $relativePath = \App\Services\ReceiptImage::store($file, $bookingId);
+
+            // Cập nhật đường dẫn ảnh vào ghi chú thanh toán
+            $stmt = $this->app->pdo()->prepare('SELECT * FROM thanh_toan WHERE ma_dat_san = :id');
+            $stmt->execute(['id' => $bookingId]);
+            $payment = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if ($payment) {
+                $newNote = \App\Services\ReceiptImage::appendReceiptToNote($payment['ghi_chu'] ?? '', $relativePath);
+                $upd = $this->app->pdo()->prepare('UPDATE thanh_toan SET ghi_chu = :note WHERE ma_thanh_toan = :pid');
+                $upd->execute(['note' => $newNote, 'pid' => $payment['ma_thanh_toan']]);
+            }
+
+            // Chuyển trạng thái booking sang CHO_XAC_NHAN để bảo vệ đơn không bị hủy khi hết 6 phút
+            $updBooking = $this->app->pdo()->prepare("UPDATE dat_san SET trang_thai_dat_san = 'CHO_XAC_NHAN' WHERE ma_dat_san = :id AND trang_thai_dat_san IN ('CHO_THANH_TOAN', 'HET_HAN')");
+            $updBooking->execute(['id' => $bookingId]);
+
+            $_SESSION['booking_receipt_notice'][$bookingId] = 'Đã gửi biên lai chuyển khoản thành công. Đang chờ nhân viên cơ sở xác nhận!';
+        } catch (\App\Services\ValidationException $e) {
+            $_SESSION['booking_payment_error'][$bookingId] = $e->errors['bien_lai'] ?? 'Lỗi tải ảnh biên lai.';
+        } catch (\Throwable $e) {
+            $_SESSION['booking_payment_error'][$bookingId] = 'Không thể xử lý ảnh biên lai: ' . $e->getMessage();
+        }
+
+        $this->redirect('/booking/wait?id=' . $bookingId);
+    }
+
+    /**
+     * TH2: Khi hết thời gian giữ sân, tự động hủy booking và cập nhật CSDL.
+     */
+    public function expire(): void
+    {
+        $json = str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json');
+        try {
+            $user = $this->app->auth()->user();
+            if (!$user || $user['ten_vai_tro'] !== 'KHACH_HANG') {
+                throw new HttpException(403, 'Vui lòng đăng nhập tài khoản khách hàng.');
+            }
+
+            $id = post_string('id');
+            if (!\App\Services\CoSoService::validId($id)) {
+                throw new HttpException(404, 'Không tìm thấy booking.');
+            }
+
+            $bookingId = (int) $id;
+            $customerId = (int) $user['ma_khach_hang'];
+
+            $this->app->pdo()->beginTransaction();
+            try {
+                // Kiểm tra xem đơn đã nộp biên lai thanh toán chưa
+                $payStmt = $this->app->pdo()->prepare('SELECT ghi_chu FROM thanh_toan WHERE ma_dat_san = :id');
+                $payStmt->execute(['id' => $bookingId]);
+                $note = $payStmt->fetchColumn();
+                $hasReceipt = (\App\Services\ReceiptImage::getReceiptFromNote($note) !== null);
+
+                if ($hasReceipt) {
+                    // Khách đã chuyển khoản và gửi biên lai: Tuyệt đối không hủy đơn!
+                    if ($this->app->pdo()->inTransaction()) {
+                        $this->app->pdo()->commit();
+                    }
+                    if ($json) {
+                        $this->json(['success' => true, 'state' => 'CHO_XAC_NHAN', 'receipt_submitted' => true]);
+                        return;
+                    }
+                    $this->redirect('/booking/wait?id=' . $bookingId);
+                    return;
+                }
+
+                $booking = $this->service()->inspect($bookingId, $customerId);
+                // Nếu chưa xác nhận thành công thì chuyển trạng thái HỦY / HẾT HẠN
+                if ($booking['trang_thai_dat_san'] === 'CHO_THANH_TOAN') {
+                    $upd = $this->app->pdo()->prepare("UPDATE dat_san SET trang_thai_dat_san = 'DA_HUY' WHERE ma_dat_san = :id AND trang_thai_dat_san = 'CHO_THANH_TOAN'");
+                    $upd->execute(['id' => $bookingId]);
+
+                    $updPay = $this->app->pdo()->prepare("UPDATE thanh_toan SET trang_thai = 'HUY' WHERE ma_dat_san = :id AND trang_thai = 'CHO_THANH_TOAN'");
+                    $updPay->execute(['id' => $bookingId]);
+                }
+                $this->app->pdo()->commit();
+            } catch (\Throwable $e) {
+                if ($this->app->pdo()->inTransaction()) {
+                    $this->app->pdo()->rollBack();
+                }
+                throw $e;
+            }
+
+            if ($json) {
+                $this->json(['success' => true, 'state' => 'DA_HUY']);
+                return;
+            }
+
+            $this->redirect('/booking/wait?id=' . $bookingId);
+        } catch (HttpException $error) {
+            if (!$json) throw $error;
+            $this->json(['error' => $error->getMessage()], $error->status);
+        }
     }
 
     private function scheduleUrl(int $facility, string $date): string

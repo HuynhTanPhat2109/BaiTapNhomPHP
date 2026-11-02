@@ -1,5 +1,5 @@
 <?php
-$bodyClass = 'page-catalog';
+$bodyClass = 'page-catalog page-services';
 $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
 ?>
 <section class="container catalog-page catalog-workspace service-module">

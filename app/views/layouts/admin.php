@@ -8,9 +8,9 @@ $adminUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#13251B">
     <title><?= e($title ?? 'Quản trị') ?> — STRYKE</title>
-    <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/app.css') ?>">
+    <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/app.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/app.css')) ?>">
     <?php if (($bodyClass ?? '') === 'page-catalog'): ?>
-        <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/catalog.css') ?>">
+        <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/catalog.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/catalog.css')) ?>">
     <?php endif; ?>
     <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/admin.css')) ?>">
     <script src="<?= e(base_path() . '/assets/js/app.js') ?>" defer></script>
@@ -38,6 +38,13 @@ $adminUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'
                 </summary>
                 <div class="account-menu__panel">
                     <a href="<?= e(url('/account')) ?>">Thông tin cá nhân</a>
+                    <?php if (($role ?? '') === 'QUAN_LY_CO_SO'): ?>
+                        <a href="<?= e(url('/facility')) ?>">Khu vực cơ sở</a>
+                    <?php elseif (($role ?? '') === 'NHAN_VIEN'): ?>
+                        <a href="<?= e(url('/staff')) ?>">Khu vực nhân viên</a>
+                    <?php elseif (($role ?? '') === 'QUAN_LY_CONG_TY'): ?>
+                        <a href="<?= e(url('/company')) ?>">Khu vực công ty</a>
+                    <?php endif; ?>
                     <a href="<?= e(url('/account/settings')) ?>">Cài đặt tài khoản</a>
                     <form method="post" action="<?= e(url('/logout')) ?>">
                         <?= csrf_field() ?>
@@ -49,7 +56,15 @@ $adminUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'
         <main id="main-content" tabindex="-1">
             <?= $content /* Trusted templates escape dynamic values. */ ?>
         </main>
-        <footer class="admin-footer">STRYKE<span class="brand-dot">.</span> <span>Quản trị tập đoàn</span></footer>
+        <?php
+        $roleLabel = match ($role ?? '') {
+            'QUAN_LY_CONG_TY' => 'Quản lý công ty',
+            'QUAN_LY_CO_SO' => 'Quản lý cơ sở',
+            'NHAN_VIEN' => 'Vận hành cơ sở',
+            default => 'Quản trị tập đoàn',
+        };
+        ?>
+        <footer class="admin-footer">STRYKE<span class="brand-dot">.</span> <span><?= e($roleLabel) ?></span></footer>
     </div>
 </div>
 </body>

@@ -1,5 +1,5 @@
 <?php
-$bodyClass = 'page-catalog';
+$bodyClass = 'page-catalog page-services';
 $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
 $active = $item['trang_thai'] === 'DANG_CUNG_CAP';
 $detailPath = $listPath; $detailLabel = 'Dịch vụ';

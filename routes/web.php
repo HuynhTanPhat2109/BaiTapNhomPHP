@@ -71,3 +71,5 @@ require __DIR__ . '/courts.php';
 require __DIR__ . '/prices.php';
 require __DIR__ . '/services.php';
 require __DIR__ . '/payment.php';
+require __DIR__ . '/bookings.php';
+require __DIR__ . '/invoices.php';
