@@ -115,9 +115,65 @@ final class BookingController extends Controller
         $booking=$this->service()->visit((int)$id,(int)$user['ma_khach_hang']);
         $now=CourtScheduleService::now();
         header('Cache-Control: no-store');
-        if (($_GET['status']??'')==='1') { $this->json(['state'=>$booking['trang_thai_dat_san'],'now'=>$now->format(DATE_ATOM),'expires'=>$booking['het_han_giu_san_luc']]); return; }
+        if (($_GET['status']??'')==='1') {
+            $paymentStatus = null;
+            try {
+                $paymentService = new \App\Services\PaymentService($this->app->pdo());
+                $payment = $paymentService->getPaymentByBooking((int) $id);
+                $paymentStatus = $payment['trang_thai'] ?? null;
+            } catch (\Throwable $e) {}
+            $this->json([
+                'state' => $booking['trang_thai_dat_san'],
+                'payment_status' => $paymentStatus,
+                'now' => $now->format(DATE_ATOM),
+                'expires' => $booking['het_han_giu_san_luc']
+            ]);
+            return;
+        }
         $bookingBackUrl = $this->scheduleUrl((int)$booking['ma_co_so'], $booking['lines'][0]['ngay_choi'] ?? $now->format('Y-m-d'));
-        $this->render('courts/booking-wait',compact('booking','now','user','bookingBackUrl')+['title'=>'Chờ thanh toán']);
+
+        // Tích hợp thanh toán VietQR cho cơ sở sân
+        $payment = null;
+        $bankAccount = null;
+        $qrUrl = null;
+        $paymentError = null;
+        try {
+            $paymentService = new \App\Services\PaymentService($this->app->pdo());
+            $payment = $paymentService->getPaymentByBooking((int) $id);
+            if (!$payment && $booking['trang_thai_dat_san'] === 'CHO_THANH_TOAN') {
+                $created = $paymentService->createPaymentRequest((int) $id, $booking['tong_tien_tam_tinh']);
+                $payment = $paymentService->getPayment((int) $created['payment_id']);
+            }
+            if ($payment) {
+                $bankModel = new \App\Models\TaiKhoanNganHang($this->app->pdo());
+                $bankAccount = $bankModel->getDefaultByFacility((int) $booking['ma_co_so']);
+                if ($bankAccount) {
+                    $vietqr = new \App\Services\VietQRService();
+                    $qrUrl = $vietqr->generateQuickLink(
+                        $bankAccount['ma_bin'],
+                        $bankAccount['so_tai_khoan'],
+                        $payment['so_tien'],
+                        $payment['ma_tham_chieu'],
+                        $bankAccount['ten_chu_tai_khoan']
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            $paymentError = $e->getMessage();
+            error_log("Payment integration error: " . $e->getMessage());
+        }
+
+        // Lấy thông tin chi tiết khách hàng
+        $customer = null;
+        if (!empty($user['ma_khach_hang'])) {
+            try {
+                $stmt = $this->app->pdo()->prepare('SELECT * FROM khach_hang WHERE ma_khach_hang = :cid');
+                $stmt->execute(['cid' => (int) $user['ma_khach_hang']]);
+                $customer = $stmt->fetch() ?: null;
+            } catch (\Throwable) {}
+        }
+
+        $this->render('courts/booking-wait',compact('booking','now','user','customer','bookingBackUrl','payment','bankAccount','qrUrl','paymentError')+['title'=>'Chờ thanh toán']);
     }
 
     private function scheduleUrl(int $facility, string $date): string

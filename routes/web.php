@@ -70,3 +70,4 @@ require __DIR__ . '/facilities.php';
 require __DIR__ . '/courts.php';
 require __DIR__ . '/prices.php';
 require __DIR__ . '/services.php';
+require __DIR__ . '/payment.php';

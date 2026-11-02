@@ -1,4 +1,5 @@
-# For XAMPP installations under htdocs, expose only public/.
+# For installations under htdocs, expose only public/.
 RewriteEngine On
+RewriteBase /QuanLyDatSan/
 RewriteRule ^$ public/ [R=302,L]
 RewriteRule !^public(?:/|$) - [F,L]

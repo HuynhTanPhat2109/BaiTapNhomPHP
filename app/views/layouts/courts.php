@@ -2,7 +2,7 @@
 $backRoute = $template === 'courts/index' ? '/' : '/courts';
 $backLabel = $template === 'courts/index' ? 'Trang chủ' : '';
 $backUrl = $bookingBackUrl ?? url($backRoute);
-$cancelHold = $template === 'courts/booking-wait';
+$cancelHold = $template === 'courts/booking-wait' && ($booking['trang_thai_dat_san'] ?? '') === 'CHO_THANH_TOAN';
 $backAccessibleLabel = isset($bookingBackUrl) ? 'Về lịch sân' : ($template === 'courts/index' ? 'Về trang chủ' : 'Về danh sách cơ sở');
 ?>
 <!doctype html>
