@@ -63,6 +63,7 @@ const test = async () => {
     const total=()=>form.querySelector('.booking-total').textContent;
     const remove=async id=>{form.querySelector('[data-remove-applied="'+id+'"]').click();await sleep(30);};
     try {
+        check(feedback()?.getAttribute('role')==='alert'&&dialog.querySelector('[data-service-feedback]')?.getAttribute('role')==='alert','review errors have accessible main/modal feedback regions');
         check(!form.querySelector('.booking-summary').contains(note),'note outside replaced summary');
         const initialTotal=total(),initialPreview=preview();
         open();edit(1,1);edit(2,2);
@@ -87,7 +88,10 @@ const test = async () => {
         check(total()==='55000 TEST'&&!form.querySelector('[data-remove-applied="1"]')&&input().value==='0','external delete updates amount and resets modal quantity');
         await remove(2);
         check(total()==='40000 TEST'&&!form.querySelector('.booking-selected-list'),'delete last service returns server zero-service quote');
-        open();edit(1,1);mode='network';await apply();
+        open();edit(1,1);
+        dialog.dispatchEvent(new Event('close'));
+        check(dialog.open&&input().value==='1','late close event cannot overwrite a reopened modal draft');
+        mode='network';await apply();
         check(dialog.open&&total()==='40000 TEST'&&!form.querySelector('.booking-selected-list')&&!feedback().hidden&&confirm().disabled,'failed apply preserves accepted display and blocks confirmation');
         check(!dialog.querySelector('[data-service-feedback]').hidden&&input().value==='1','failure visible in modal and candidate retained for retry');
         mode='ok';await apply();
@@ -114,7 +118,7 @@ const test = async () => {
         check(lastNote==='second note'&&input().value==='2'&&total()==='64000 TEST','close discards modal changes while saving pending note');
         check((!form.querySelector('[data-confirm-booking]')||!confirm().disabled)&&form.elements._token.value.length===64,'confirmation enabled with CSRF preserved');
         document.querySelector('#result').textContent=JSON.stringify({pass:results.length,results,calls});
-    } catch(error) {document.querySelector('#result').textContent=JSON.stringify({fail:error.message,feedback:feedback()?.textContent,results});}
+    } catch(error) {document.querySelector('#result').textContent=JSON.stringify({fail:error.message,feedback:feedback()?.textContent,quantity:input()?.value,modalConnected:dialog.isConnected,modalFeedbackHidden:dialog.querySelector('[data-service-feedback]')?.hidden,results});}
 };
 const dir=fs.mkdtempSync(path.resolve('storage/temp/booking-review-'));
 const file=path.join(dir,'test.html');

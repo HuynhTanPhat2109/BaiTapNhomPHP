@@ -8,6 +8,14 @@ $brandHome = match ($role) {
     'NHAN_VIEN' => '/staff',
     default => '/admin',
 };
+// These are existing role-protected pages; navigation does not grant permissions.
+if (!$menu && in_array($role, ['QUAN_LY_CO_SO', 'NHAN_VIEN'], true)) {
+    $homePath = $role === 'QUAN_LY_CO_SO' ? '/facility' : '/staff';
+    $menu = ['KHÔNG GIAN LÀM VIỆC' => [
+        ['label' => 'Tổng quan', 'icon' => 'overview', 'route' => $homePath, 'template' => 'auth/role'],
+        ['label' => $role === 'NHAN_VIEN' ? 'Dịch vụ tại cơ sở' : 'Quản lý dịch vụ', 'icon' => 'service', 'route' => $homePath . '/dich-vu', 'template' => 'services/page'],
+    ]];
+}
 $icons = [
     'overview' => 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
     'company' => 'M4 21V5l8-3v19M12 9h8v12M2 21h20M7 7h2M7 11h2M7 15h2M15 12h2M15 16h2',
@@ -26,7 +34,7 @@ $icons = [
 ?>
 <aside class="admin-sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị">
     <div class="admin-sidebar__brand">
-        <a class="navbar__brand" href="<?= e(url($brandHome)) ?>" aria-label="STRYKE — Trang chủ">
+        <a class="navbar__brand" href="<?= e(url($brandHome ?? $workspaceHome ?? '/admin')) ?>" aria-label="STRYKE — Khu vực của bạn">
             <svg class="brand-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true"><rect x="3" y="5" width="30" height="26" rx="1"/><path d="M18 5v26M3 11h7v14H3m30-14h-7v14h7"/><circle cx="18" cy="18" r="5"/></svg>
             <span>STRYKE<span class="brand-dot">.</span></span>
         </a>
@@ -52,7 +60,7 @@ $icons = [
                     );
                     ?>
                     <?php if ($item['route'] !== null): ?>
-                        <a class="admin-menu__item<?= $active ? ' is-active' : '' ?>" href="<?= e(url($item['route'])) ?>"<?= $active ? ' aria-current="page"' : '' ?>>
+                        <a class="admin-menu__item<?= $active ? ' is-active' : '' ?>" title="<?= e($item['label']) ?>" aria-label="<?= e($item['label']) ?>" href="<?= e(url($item['route'])) ?>"<?= $active ? ' aria-current="page"' : '' ?>>
                     <?php else: ?>
                         <span class="admin-menu__item is-disabled" aria-disabled="true">
                     <?php endif; ?>

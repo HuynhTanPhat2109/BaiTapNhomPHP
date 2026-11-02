@@ -4,7 +4,7 @@ $detailPath = '/admin/san'; $detailLabel = 'Sân';
 $detailTitle = $item['ten_san']; $detailId = $item['ma_san']; $detailCanEdit = true;
 $detailStatusLabel = ['HOAT_DONG' => 'Hoạt động', 'BAO_TRI' => 'Bảo trì', 'TAM_NGUNG' => 'Tạm ngừng'][$item['trang_thai']];
 ?>
-<section class="container catalog-page catalog-workspace detail-page">
+<section class="container catalog-page catalog-workspace detail-page workspace-page">
     <?php require dirname(__DIR__) . '/partials/detail-header.php'; ?>
     <?php if ($item['trang_thai_co_so'] !== 'HOAT_DONG' || $item['trang_thai_cong_ty'] !== 'HOAT_DONG'
         || $item['trang_thai_loai_san'] !== 'HOAT_DONG' || $item['trang_thai_bo_mon'] !== 'HOAT_DONG'): ?>

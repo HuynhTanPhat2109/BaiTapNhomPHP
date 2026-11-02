@@ -146,7 +146,8 @@
         });
         dialog?.querySelector('[data-close-services]').addEventListener('click',close);
         dialog?.addEventListener('cancel',event=>{event.preventDefault();close();});
-        dialog?.addEventListener('close',()=>{if(!busy)restore();});
+        // A queued close event must not reset a dialog that has already reopened.
+        dialog?.addEventListener('close',()=>{if(!busy&&!dialog.open)restore();});
         dialog?.addEventListener('click',event=>{if(event.target===dialog)close();});
         dialog?.querySelector('[data-service-search]').addEventListener('input',filter);
         function updateDraftAmount(row) {

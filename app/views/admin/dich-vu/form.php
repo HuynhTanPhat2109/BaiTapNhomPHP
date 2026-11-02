@@ -2,15 +2,17 @@
 $bodyClass = 'page-catalog page-services';
 $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
 ?>
-<section class="container catalog-page catalog-workspace service-module">
+<section class="container catalog-page catalog-workspace service-module<?= $listPath === '/admin/dich-vu' ? ' module-form-page' : '' ?> workspace-page">
     <p class="service-breadcrumb"><a class="admin-table-link" href="<?= e(url($listPath)) ?>">Dịch vụ</a> / <?= $item ? 'Chỉnh sửa' : 'Thêm mới' ?></p>
-    <header class="catalog-heading"><div><p class="eyebrow">STRYKE / Dịch vụ</p><h1><?= e($title) ?></h1></div></header>
+    <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Dịch vụ</p><h1><?= e($title) ?></h1><p class="module-subtitle">Thiết lập thông tin, đơn giá và cách theo dõi số lượng dịch vụ.</p></div></header>
     <?php if ($formError): ?><div class="alert alert--danger" role="alert"><p><?= e($formError) ?></p><p>Dữ liệu bạn nhập vẫn ở bên dưới. <a href="<?= e(url($listPath . '/edit') . '&id=' . ($item['ma_dich_vu'] ?? '')) ?>">Tải lại dữ liệu mới nhất</a> trước khi sửa tiếp.</p></div><?php endif; ?>
     <?php if (!$facilities): ?><p class="alert alert--danger" role="alert">Chưa có cơ sở/công ty hoạt động trong phạm vi được phép.</p><?php endif; ?>
-    <form class="catalog-form service-form" method="post" action="<?= e(url($listPath . ($item ? '/update' : '/store'))) ?>" novalidate>
+    <form class="catalog-form service-form module-form" method="post" action="<?= e(url($listPath . ($item ? '/update' : '/store'))) ?>" novalidate>
         <?= csrf_field() ?>
         <?php if ($item): ?><input type="hidden" name="id" value="<?= e($item['ma_dich_vu']) ?>"><input type="hidden" name="version" value="<?= e($old['version'] ?? '') ?>"><?php endif; ?>
-        <h2 class="admin-form-heading">Thông tin dịch vụ</h2>
+        <section class="module-form-card" aria-labelledby="service-info-heading">
+        <h2 class="admin-form-heading" id="service-info-heading"><span class="module-step" aria-hidden="true">1</span>Thông tin dịch vụ</h2>
+        <div class="module-fields">
         <div class="form-group">
             <label for="ma_co_so">Cơ sở *</label>
             <select class="form-control" id="ma_co_so" name="ma_co_so" required<?= field_error_attributes('ma_co_so', $errors) ?>>
@@ -19,8 +21,9 @@ $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
             </select><?= field_error('ma_co_so', $errors) ?>
         </div>
         <div class="form-group"><label for="ten_dich_vu">Tên dịch vụ *</label><input class="form-control" id="ten_dich_vu" name="ten_dich_vu" maxlength="150" required value="<?= e($old['ten_dich_vu'] ?? '') ?>"<?= field_error_attributes('ten_dich_vu', $errors) ?>><?= field_error('ten_dich_vu', $errors) ?></div>
-        <h2 class="admin-form-heading">Phân loại, giá &amp; tồn kho</h2>
-        <div class="account-form-grid">
+        </div></section><section class="module-form-card" aria-labelledby="service-stock-heading">
+        <h2 class="admin-form-heading" id="service-stock-heading"><span class="module-step" aria-hidden="true">2</span>Phân loại, giá &amp; tồn kho</h2>
+        <div class="account-form-grid module-fields">
             <div class="form-group"><label for="loai_dich_vu">Loại dịch vụ *</label><select class="form-control" id="loai_dich_vu" name="loai_dich_vu" required<?= field_error_attributes('loai_dich_vu', $errors) ?>><option value="">Chọn loại</option><?php foreach (App\Services\DichVuService::TYPES as $value => $label): ?><option value="<?= e($value) ?>" <?= ($old['loai_dich_vu'] ?? '') === $value ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select><?= field_error('loai_dich_vu', $errors) ?></div>
             <div class="form-group"><label for="don_vi_tinh">Đơn vị tính *</label><input class="form-control" id="don_vi_tinh" name="don_vi_tinh" list="service-units" maxlength="30" required value="<?= e($old['don_vi_tinh'] ?? '') ?>"<?= field_error_attributes('don_vi_tinh', $errors) ?>><datalist id="service-units"><?php foreach (['chai', 'lon', 'cái', 'cây', 'bộ', 'buổi', 'lượt'] as $unit): ?><option value="<?= e($unit) ?>"><?php endforeach; ?></datalist><?= field_error('don_vi_tinh', $errors) ?></div>
             <div class="form-group"><label for="don_gia">Đơn giá (VNĐ/đơn vị) *</label><input class="form-control" id="don_gia" name="don_gia" inputmode="decimal" maxlength="13" placeholder="Ví dụ: 10000 hoặc 10000.50" required value="<?= e($old['don_gia'] ?? '') ?>"<?= field_error_attributes('don_gia', $errors) ?>><?= field_error('don_gia', $errors) ?><?php if (($old['don_gia'] ?? '') !== ''): ?><small class="form-hint"><?= e($formatMoney($old['don_gia'])) ?>/<?= e($old['don_vi_tinh'] ?? 'đơn vị') ?></small><?php endif; ?></div>
@@ -32,12 +35,19 @@ $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
             <?= field_error('theo_doi_ton', $errors) ?>
         </fieldset>
         <p class="form-hint">Không thể đổi đơn vị nếu tồn hiện tại lớn hơn 0 hoặc có booking chưa hoàn tất. Loại dịch vụ cũng bị khóa khi có booking chưa hoàn tất. Dụng cụ cho thuê chưa được theo dõi giao/nhận trong PR4.</p>
+
+        </section>
+        <section class="module-form-card" aria-labelledby="service-description-heading">
+        <h2 class="admin-form-heading" id="service-description-heading"><span class="module-step" aria-hidden="true">3</span>Mô tả &amp; trạng thái</h2>
+        <div class="module-fields">
+
         <div class="form-group"><label for="mo_ta">Mô tả</label><textarea class="form-control" id="mo_ta" name="mo_ta" maxlength="255" rows="3"<?= field_error_attributes('mo_ta', $errors) ?>><?= e($old['mo_ta'] ?? '') ?></textarea><?= field_error('mo_ta', $errors) ?></div>
         <div class="form-group">
             <?php if ($item): ?><input type="hidden" name="trang_thai" value="<?= e($old['trang_thai'] ?? $item['trang_thai']) ?>"><p>Trạng thái: <?= e(App\Services\DichVuService::STATES[$item['trang_thai']] ?? 'Không xác định') ?>. <a href="<?= e(url($listPath . '/show') . '&id=' . $item['ma_dich_vu']) ?>">Ngừng/Kích hoạt tại trang chi tiết</a>.</p>
             <?php else: ?><label for="trang_thai">Trạng thái *</label><select class="form-control" id="trang_thai" name="trang_thai"<?= field_error_attributes('trang_thai', $errors) ?>><?php foreach (App\Services\DichVuService::STATES as $value => $label): ?><option value="<?= e($value) ?>" <?= ($old['trang_thai'] ?? 'DANG_CUNG_CAP') === $value ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select><?php endif; ?>
             <?= field_error('trang_thai', $errors) ?>
         </div>
+        </div></section>
         <div class="catalog-actions"><button class="btn btn--primary" type="submit" <?= !$facilities ? 'disabled' : '' ?>>Lưu dịch vụ</button><a class="btn btn--outline" href="<?= e(url($listPath)) ?>">Hủy</a></div>
     </form>
 </section>

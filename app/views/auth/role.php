@@ -5,11 +5,11 @@ $facilityName = $user['ten_co_so'] ?? null;
 $companyName = $user['ten_cong_ty'] ?? null;
 $displayName = $user['ten_nhan_vien'] ?? $user['ten_dang_nhap'] ?? 'Nhân viên';
 ?>
-<section class="container catalog-page">
-    <header class="admin-dashboard__heading" style="margin-bottom: 24px;">
+<section class="container catalog-page catalog-workspace role-page">
+    <header class="catalog-heading module-heading" style="margin-bottom: 24px;">
         <p class="eyebrow">STRYKE / <?= e($title) ?></p>
         <h1><?= e($facilityName ?: $title) ?></h1>
-        <p>Xin chào, <strong><?= e($displayName) ?></strong>. Chào mừng bạn đến không gian vận hành STRYKE.</p>
+        <p class="module-subtitle">Xin chào, <strong><?= e($displayName) ?></strong>. Chào mừng bạn đến không gian vận hành STRYKE.</p>
     </header>
 
     <?php if (in_array($role, ['QUAN_LY_CO_SO', 'NHAN_VIEN'], true)): ?>
@@ -82,6 +82,8 @@ $displayName = $user['ten_nhan_vien'] ?? $user['ten_dang_nhap'] ?? 'Nhân viên'
                         <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
                     </a>
                 <?php endif; ?>
+            </div>
+        </section>
             </div>
         </section>
 
@@ -157,6 +159,6 @@ $displayName = $user['ten_nhan_vien'] ?? $user['ten_dang_nhap'] ?? 'Nhân viên'
         </section>
 
     <?php else: ?>
-        <p class="role-notice">Bạn đã đăng nhập vào khu vực dành cho vai trò của mình.</p>
+        <section class="account-card workspace-welcome"><h2>Không gian làm việc</h2><p>Các chức năng bên dưới sử dụng đúng phạm vi công ty và cơ sở được phân công cho tài khoản của bạn.</p></section>
     <?php endif; ?>
 </section>

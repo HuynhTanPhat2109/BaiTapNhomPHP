@@ -8,6 +8,9 @@
   const backdrop = document.getElementById('admin-backdrop');
   if (!sidebar || !main || !toggle || !close || !backdrop) return;
   const mobile = window.matchMedia('(max-width: 1023px)');
+  const collapse = document.querySelector('[data-sidebar-collapse]');
+  let compact = false;
+  try { compact = localStorage.getItem('stryke.sidebar.compact') === '1'; } catch {}
   let opened = false;
   document.body.classList.add('sidebar-enhanced');
 
@@ -38,12 +41,23 @@
     }
   };
   const resize = () => {
+    document.body.classList.toggle('sidebar-compact', !mobile.matches && compact);
+    if (collapse) {
+      collapse.hidden = mobile.matches;
+      collapse.setAttribute('aria-expanded', String(!compact));
+      collapse.setAttribute('aria-label', compact ? 'Mở rộng Sidebar' : 'Thu gọn Sidebar');
+    }
     toggle.hidden = !mobile.matches;
     close.hidden = !mobile.matches;
     setOpen(false);
     if (mobile.matches && sidebar.contains(document.activeElement)) toggle.focus();
   };
   toggle.addEventListener('click', () => setOpen(!opened, opened));
+  collapse?.addEventListener('click', () => {
+    compact = !compact;
+    try { localStorage.setItem('stryke.sidebar.compact', compact ? '1' : '0'); } catch {}
+    resize();
+  });
   close.addEventListener('click', () => setOpen(false, true));
   backdrop.addEventListener('click', () => setOpen(false, true));
   sidebar.addEventListener('click', event => {
@@ -70,4 +84,38 @@
   mobile.addEventListener('change', resize);
   window.addEventListener('pageshow', resize);
   resize();
+})();
+
+// Confirmation UI only; native POST fields, CSRF and validation remain on the original form.
+(() => {
+  'use strict';
+  const dialog = document.getElementById('workspace-confirm');
+  if (!dialog || typeof dialog.showModal !== 'function') return;
+  let pending = null, approved = null, returnFocus = null;
+  document.addEventListener('submit', event => {
+    const form = event.target;
+    if (!form.matches('form[data-confirm]')) return;
+    if (approved === form) { approved = null; return; }
+    event.preventDefault();
+    if (dialog.open) return;
+    pending = { form, submitter: event.submitter };
+    returnFocus = form.closest('[data-row-actions]')?.querySelector('summary') || event.submitter;
+    dialog.querySelector('#workspace-confirm-description').textContent = form.dataset.confirm;
+    document.dispatchEvent(new Event('workspace:close-row-menu'));
+    dialog.showModal();
+  });
+  dialog.querySelector('[data-confirm-cancel]').addEventListener('click', () => dialog.close());
+  dialog.querySelector('[data-confirm-accept]').addEventListener('click', () => {
+    const request = pending;
+    if (!request) return;
+    approved = request.form;
+    dialog.close();
+    request.form.requestSubmit(request.submitter || undefined);
+    approved = null;
+  });
+  dialog.addEventListener('close', () => { pending = null; returnFocus?.focus({ preventScroll: true }); });
+  dialog.addEventListener('click', event => {
+    const box = dialog.getBoundingClientRect();
+    if (event.target === dialog && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) dialog.close();
+  });
 })();

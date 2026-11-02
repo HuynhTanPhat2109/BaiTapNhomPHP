@@ -10,13 +10,16 @@ $value = static function (array $data, string $field, string $default = ''): str
 };
 $status = $value($old, 'trang_thai', 'HIEU_LUC');
 ?>
-<section class="container account-page catalog-page">
-    <header class="account-page__intro catalog-heading">
+<section class="container account-page catalog-page catalog-workspace workspace-page">
+    <header class="account-page__intro catalog-heading module-heading"><div>
         <p class="eyebrow">Quản trị tập đoàn / Hợp đồng nhượng quyền</p>
-        <h1 class="account-h1">Thêm hợp đồng</h1>
-    </header>
-    <form class="catalog-form" method="post" action="<?= e(url('/admin/contracts')) ?>">
+        <h1 class="account-h1">Thêm hợp đồng</h1><p class="module-subtitle">Thời hạn, điều khoản và trạng thái nhượng quyền.</p>
+    </div><a class="btn btn--outline workspace-back" href="<?= e(url('/admin/contracts')) ?>">Quay lại</a></header>
+    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(url('/admin/contracts')) ?>">
         <?= csrf_field() ?>
+                <section class="module-form-card">
+        <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">1</span>Thông tin hợp đồng</h2>
+        <div class="module-fields">
         <div class="form-group">
             <label for="ma_cong_ty">Công ty</label>
             <select class="form-control" id="ma_cong_ty" name="ma_cong_ty" required<?= field_error_attributes('ma_cong_ty', $errors) ?>>
@@ -33,6 +36,10 @@ $status = $value($old, 'trang_thai', 'HIEU_LUC');
             <input class="form-control" id="so_hop_dong" name="so_hop_dong" type="text" required maxlength="50" value="<?= e($value($old, 'so_hop_dong')) ?>"<?= field_error_attributes('so_hop_dong', $errors) ?>>
             <?= field_error('so_hop_dong', $errors) ?>
         </div>
+                </div></section>
+        <section class="module-form-card">
+        <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">2</span>Thời hạn hợp đồng</h2>
+        <div class="module-fields">
         <div class="form-group">
             <label for="ngay_ky">Ngày ký</label>
             <input class="form-control" id="ngay_ky" name="ngay_ky" type="date" required value="<?= e($value($old, 'ngay_ky')) ?>"<?= field_error_attributes('ngay_ky', $errors) ?>>
@@ -48,6 +55,10 @@ $status = $value($old, 'trang_thai', 'HIEU_LUC');
             <input class="form-control" id="ngay_ket_thuc" name="ngay_ket_thuc" type="date" required value="<?= e($value($old, 'ngay_ket_thuc')) ?>"<?= field_error_attributes('ngay_ket_thuc', $errors) ?>>
             <?= field_error('ngay_ket_thuc', $errors) ?>
         </div>
+                </div></section>
+        <section class="module-form-card">
+        <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">3</span>Điều khoản &amp; trạng thái</h2>
+        <div class="module-fields">
         <div class="form-group">
             <label for="phi_nhuong_quyen">Phí nhượng quyền</label>
             <input class="form-control" id="phi_nhuong_quyen" name="phi_nhuong_quyen" type="number" required min="0" step="0.01" value="<?= e($value($old, 'phi_nhuong_quyen')) ?>"<?= field_error_attributes('phi_nhuong_quyen', $errors) ?>>
@@ -72,6 +83,7 @@ $status = $value($old, 'trang_thai', 'HIEU_LUC');
             </select>
             <?= field_error('trang_thai', $errors) ?>
         </div>
+        </div></section>
         <div class="catalog-actions"><button class="btn btn--primary" type="submit">Lưu hợp đồng</button>
         <a class="btn btn--outline" href="<?= e(url('/admin/contracts')) ?>">Quay lại</a></div>
     </form>

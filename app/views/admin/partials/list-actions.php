@@ -19,26 +19,16 @@ $icons = [
     'stop' => '<circle cx="12" cy="12" r="9"/><path d="M9 8v8M15 8v8"/>',
     'activate' => '<circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/>',
 ];
-$priceActions = $listPath === '/admin/bang-gia';
-$secondaryAction = ($priceActions || ($serviceActions && $canWrite)) ? array_pop($buttons) : null;
+$rowMenuId = 'row-actions-' . str_replace('/', '-', trim($listPath, '/')) . '-' . $recordId;
+$rowMenuLabel = $row['ten_bang_gia'] ?? $row['ten_dich_vu'] ?? $row['ten_bo_mon'] ?? $row['ten_loai_san'] ?? $row['ten_co_so'] ?? $row['ten_san'] ?? 'bản ghi';
+$rowMenuHasForms = false;
+$rowMenuUsePopover = $serviceActions || $listPath === '/admin/bang-gia';
+ob_start();
 ?>
-<div class="list-actions<?= $priceActions || $serviceActions ? ' list-actions--pricing' : '' ?>">
     <?php foreach ($buttons as [$kind, $label, $href]): ?>
-        <a class="list-action list-action--<?= e($kind) ?>" href="<?= e($href) ?>" title="<?= e($label) ?>">
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><?= $icons[$kind] /* Fixed SVG paths only. */ ?></svg><span><?= e($label) ?></span>
+        <a class="list-action list-action--<?= e($kind) ?>" href="<?= e($href) ?>" title="<?= e($label) ?>"<?= $rowMenuUsePopover ? ' role="menuitem"' : '' ?>>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><?= $icons[$kind] /* Fixed SVG paths only. */ ?></svg><span><?= e(!$rowMenuUsePopover && $kind === 'view' ? 'Xem' : $label) ?></span>
         </a>
     <?php endforeach; ?>
-    <?php if ($secondaryAction): ?>
-        <?php [$kind, $label, $href] = $secondaryAction; ?>
-        <details class="list-action-menu">
-            <summary class="list-action" title="Thao tác khác" aria-label="Thao tác khác">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
-            </summary>
-            <div class="list-action-menu__panel">
-                <a class="list-action list-action--<?= e($kind) ?>" href="<?= e($href) ?>" title="<?= e($label) ?>">
-                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><?= $icons[$kind] ?></svg><span><?= e($label) ?></span>
-                </a>
-            </div>
-        </details>
-    <?php endif; ?>
-</div>
+<?php $rowMenuContent = ob_get_clean(); ?>
+<div class="list-actions<?= $rowMenuUsePopover ? '' : ' list-actions--direct' ?>"><?php require __DIR__ . '/row-menu.php'; ?></div>

@@ -6,7 +6,7 @@ $detailPath = $listPath; $detailLabel = 'Dịch vụ';
 $detailTitle = $item['ten_dich_vu']; $detailId = $item['ma_dich_vu']; $detailCanEdit = $canWrite;
 $detailStatusLabel = App\Services\DichVuService::STATES[$item['trang_thai']] ?? 'Không xác định';
 ?>
-<section class="container catalog-page catalog-workspace detail-page service-module">
+<section class="container catalog-page catalog-workspace detail-page service-module workspace-page">
     <?php require dirname(__DIR__) . '/partials/detail-header.php'; ?>
     <?php if ($errors): ?><div class="alert alert--danger" role="alert"><?php foreach ($errors as $message): ?><p><?= e($message) ?></p><?php endforeach; ?></div><?php endif; ?>
     <?php if ($item['trang_thai_co_so'] !== 'HOAT_DONG' || $item['trang_thai_cong_ty'] !== 'HOAT_DONG'): ?><p class="alert alert--danger">Cơ sở/công ty đã ngừng hoạt động. Chưa đủ điều kiện kích hoạt dịch vụ.</p><?php endif; ?>
@@ -23,10 +23,10 @@ $detailStatusLabel = App\Services\DichVuService::STATES[$item['trang_thai']] ?? 
         </section>
         <section class="detail-card" aria-labelledby="service-price-stock">
             <h2 id="service-price-stock">Giá &amp; tồn kho</h2>
-            <div class="detail-highlight"><span>Đơn giá</span><strong><?= e($formatMoney($item['don_gia'])) ?></strong><span>/<?= e($item['don_vi_tinh']) ?></span></div>
+            <div class="detail-highlight"><span>Đơn giá</span><strong><?= e($formatMoney($item['don_gia']) . '/' . $item['don_vi_tinh']) ?></strong></div>
             <dl class="detail-fields">
                 <div><dt>Đơn vị tính</dt><dd><?= e($item['don_vi_tinh']) ?></dd></div>
-                <div><dt><?= $item['loai_dich_vu'] === 'CHO_THUE' ? 'Số lượng quản lý' : 'Số lượng tồn' ?></dt><dd><?= $item['so_luong_ton'] === null ? 'Không theo dõi tồn' : e($item['so_luong_ton']) ?></dd></div>
+                <div><dt><?= $item['loai_dich_vu'] === 'CHO_THUE' ? 'Số lượng quản lý' : 'Số lượng tồn' ?></dt><dd><?= $item['so_luong_ton'] === null ? 'Không theo dõi tồn' : e((int) $item['so_luong_ton']) ?></dd></div>
                 <div class="detail-field--wide"><dt>Trạng thái tồn</dt><dd>
                     <?php if ($item['so_luong_ton'] === null): ?><span class="service-stock">Không theo dõi tồn</span>
                     <?php elseif ($item['loai_dich_vu'] === 'CHO_THUE'): ?><span class="service-stock">Theo dõi số lượng quản lý</span>
@@ -36,7 +36,7 @@ $detailStatusLabel = App\Services\DichVuService::STATES[$item['trang_thai']] ?? 
             </dl>
             <?php if ($item['loai_dich_vu'] === 'CHO_THUE'): ?><p class="form-hint">Số lượng quản lý chưa phản ánh số dụng cụ sẵn sàng cho thuê, đang thuê hoặc đã trả.</p><?php endif; ?>
         </section>
-        <section class="detail-card detail-card--wide" aria-labelledby="service-related">
+        <section class="detail-card detail-card--wide module-related" aria-labelledby="service-related">
             <h2 id="service-related">Dữ liệu tham chiếu</h2>
             <dl class="detail-fields">
                 <div><dt>Chi tiết dịch vụ đặt</dt><dd><?= e($related['total']) ?> tham chiếu</dd></div>
