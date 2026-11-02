@@ -84,8 +84,6 @@ $displayName = $user['ten_nhan_vien'] ?? $user['ten_dang_nhap'] ?? 'Nhân viên'
                 <?php endif; ?>
             </div>
         </section>
-            </div>
-        </section>
 
         <!-- KHỐI 3: THÔNG TIN CƠ SỞ & PHÂN CÔNG -->
         <?php if ($facilityName || !empty($user['ten_cong_ty'])): ?>
