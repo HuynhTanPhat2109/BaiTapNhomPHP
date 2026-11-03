@@ -13,8 +13,10 @@ slots + services + note. A retry returns the original booking, including expired
 - BookingService::confirm(customerId, serverDraftKey, selection, extras, acceptedQuoteHash):
   transaction; authenticated caller derives customerId, never HTTP input. Returns booking ID.
 - owned(id, customerId): enforces ownership and lazily expires an overdue pending booking (POST/job use).
-- inspect(id, customerId): read-only owned view for GET; projects overdue holds as HET_HAN without database writes.
-- expirePending(): optionally run via `php bin/expire-bookings.php --run` every minute.
+- inspect(id, customerId): read-only owned view for GET; projects overdue holds as HET_HAN without database writes, except protected THANH_CONG/CAN_DOI_SOAT anomalies.
+- expirePending(): run via `php bin/expire-bookings.php --run` every minute; bounded batches and database-scoped job lock. See [scheduler setup](booking-expiry-scheduler.md).
+- expiryReport(): last bulk run's count/batches, overlap/backlog flags and bounded reconciliation ID sample.
+- Booking::history() / effectiveStatusSql(): shared GET projection for cards, counts, filters and pages; never persist expiry on GET. Admin booking list is not yet implemented and must reuse this rule.
 - lockPayable(id): **requires a caller-owned transaction**, locks booking and rejects anything
   except CHO_THANH_TOAN with expiry strictly after server time. It performs no payment writes.
 
@@ -66,10 +68,14 @@ Displayed quotes are provisional. Changed prices require a new review before con
   payments are not reactivated. Missing bank configuration returns bank=null; technical failures
   are caught by the handoff, with no SQL details exposed.
 - Cancellation and expiry lock booking then payment and update only pending payments to HUY
-  or HET_HAN. THANH_CONG/CAN_DOI_SOAT are preserved. Received money with an unconfirmed/expired
-  booking requires Duy's reconciliation; the frontend must never infer booking confirmation.
-- The optional expiry job must be scheduled (for example, every minute) to persist HET_HAN
-  for unattended bookings/payments. GET projections and availability release expired holds
+  or HET_HAN. THANH_CONG/CAN_DOI_SOAT payment records are preserved. Expiry additionally leaves
+  pending bookings with either protected payment state unchanged and logs them for reconciliation.
+  This exception does not extend hold/virtual stock or authorize a late confirmation. The frontend
+  must never infer booking confirmation from payment alone. Cancellation semantics remain unchanged.
+- Schedule the expiry job every minute to persist HET_HAN for unattended bookings/payments.
+  Each booking commits independently; up to 200 rows/batch, 10 batches or roughly 45 seconds/run.
+  Protected rows do not starve normal backlog. Monitor daily logs for failures/backlog/anomalies.
+  GET projection uses the same protected-payment rule as expiry. Availability releases overdue holds
   immediately even before cleanup. GET refresh/retry never resets the deadline.
 - Payment proof selection is local preview only until Duy implements upload/verification;
   the UI does not claim an image was sent. No real bank transfer was tested by this PR.

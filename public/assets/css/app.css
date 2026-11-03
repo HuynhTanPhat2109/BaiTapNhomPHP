@@ -116,7 +116,6 @@ a:hover { color: var(--primary); }
 .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #d5dcd2; }
 .optional { color: var(--muted); font-weight: 400; font-size: 11px; }
 .form-control { width: 100%; min-width: 0; min-height: 48px; background: var(--surface-input); color: var(--text); border: 1px solid #3a443b; border-radius: 4px; padding: 11px 13px; font-size: 14px; outline: none; transition: border-color 180ms, background 180ms; }
-.form-control::placeholder { color: #8e9b90; opacity: 1; font-size: 13px; }
 .form-control:focus { border-color: var(--primary); background: #202921; box-shadow: 0 0 0 1px var(--primary); }
 .form-control[aria-invalid='true'] { border-color: var(--danger); }
 .form-control[aria-invalid='true']:focus { box-shadow: 0 0 0 1px var(--danger); }

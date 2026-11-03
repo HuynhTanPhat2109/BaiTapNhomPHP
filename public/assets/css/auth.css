@@ -61,7 +61,7 @@
     border: 0;
     border-bottom: 1px solid #ffffff55;
     border-radius: 0;
-    padding-left: 2px;
+    padding-left: 6px;
 }
 .auth-standalone .form-control::placeholder { color: #b1c0b4; }
 .auth-standalone .form-control:focus {

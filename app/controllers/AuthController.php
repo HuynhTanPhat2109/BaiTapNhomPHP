@@ -72,7 +72,8 @@ final class AuthController extends Controller
                 return;
             }
             try {
-                // Preserve only booking drafts; credentials/CSRF/session identity are rotated normally.
+                // Capture allowed navigation before authentication rotates and clears the session.
+                $authReturn = $_SESSION['auth_return'] ?? null;
                 $bookingDrafts = $_SESSION['booking_drafts'] ?? [];
                 $bookingReturn = $_SESSION['booking_return'] ?? null;
                 if ($this->app->auth()->attempt($username, $password)) {
@@ -87,6 +88,10 @@ final class AuthController extends Controller
                         if (is_string($bookingReturn) && isset($_SESSION['booking_drafts'][$bookingReturn])) {
                             header('Location: '.url('/booking/details').'&draft='.rawurlencode($bookingReturn), true, 303);
                             exit;
+                        }
+                        // Strict allowlist; consumed by Session::authenticate(), never restored.
+                        if ($authReturn === '/booking/history') {
+                            $this->redirect('/booking/history');
                         }
                     }
                     $this->redirect($this->roleHome($user['ten_vai_tro'] ?? null));

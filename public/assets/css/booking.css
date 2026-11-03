@@ -1072,24 +1072,9 @@
 
 
 
-#booking-next button {
-    display: block;
+#booking-next .stryke-action-btn {
     width: 100%;
-    min-height: 44px;
-
-    border: 0;
-    border-radius: 10px;
-    background: #c8f36b;
-    color: #17241b;
-
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-#booking-next button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
+    min-height: 48px;
 }
 
 .booking-schedule {
@@ -1373,19 +1358,9 @@
     box-sizing: border-box;
 }
 
-.booking-details .booking-action .booking-confirm {
-    display: block;
+.booking-details .booking-action .stryke-action-btn {
     width: 100%;
     min-height: 44px;
-
-    border: 0;
-    border-radius: 10px;
-    background: #c8f36b;
-    color: #17241b;
-
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
 }
 .booking-details .booking-sidebar h2{font-size:18px;font-weight:600;margin:0 0 22px}
 .booking-details .booking-summary-rows>div{margin-bottom:15px}

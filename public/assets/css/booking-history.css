@@ -1,0 +1,334 @@
+/* Customer history only; shared layouts remain untouched. */
+/* Additive cost accordion: does not restyle the existing card content. */
+.booking-history-costs { grid-column:1/-1; min-width:0; border-top:1px solid #304b36; }
+.booking-history-costs>summary { display:flex; align-items:center; justify-content:center; gap:8px; padding:12px 8px; color:var(--primary); font-size:13px; font-weight:650; cursor:pointer; list-style:none; }
+.booking-history-costs>summary::-webkit-details-marker { display:none; }
+.booking-history-costs>summary:hover { color:#d4f6ad; }
+.booking-history-costs>summary:focus-visible { outline:2px solid var(--primary); outline-offset:2px; border-radius:4px; }
+.booking-history-costs .booking-history-costs-chevron { width:16px; height:16px; fill: #ffffff;stroke: none}
+.booking-history-costs-hide,.booking-history-costs[open] .booking-history-costs-show { display:none; }
+.booking-history-costs[open] .booking-history-costs-hide { display:inline; }
+.booking-history-costs[open] .booking-history-costs-chevron { transform:rotate(180deg)}
+.booking-history-costs-body { padding:20px 24px; border-top:1px solid #304b36; border-radius:0 0 6px 6px; background:#0b1b1359; }
+.booking-history-costs-row,.booking-history-costs-total,.booking-history-costs-services li { display:flex; justify-content:space-between; align-items:baseline; gap:12px 24px; font-size:14px; }
+.booking-history-costs-row { margin-bottom:8px; }
+.booking-history-costs-row>:first-child,.booking-history-costs-total>:first-child { min-width:0; }
+.booking-history-costs-row>:last-child,.booking-history-costs-total>:last-child,.booking-history-costs-services li>span { text-align:right; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.booking-history-costs-services { display:grid; gap:12px; list-style:none; margin: 0 0 0 10px; padding:0; }
+.booking-history-costs-services li { align-items:flex-end; color:#b6c9bd; }
+.booking-history-costs-service { display:grid; gap:4px; min-width:0; overflow-wrap:anywhere; }
+.booking-history-costs-service small { font-size:13px; color:#9fb4a4; }
+.booking-history-costs-note { margin:0; color:#a8bdad; font-size:13px; }
+.booking-history-costs-total { margin-top:16px; padding-top:12px; border-top:1px solid #304b36; align-items:center; }
+.booking-history-costs-total>:last-child { color:var(--primary); font-size:19px; }
+@media(max-width:600px) {
+    .booking-history-costs-body { padding:16px; }
+    .booking-history-costs-row,.booking-history-costs-total,.booking-history-costs-services li { font-size:13px; gap:8px 12px; }
+    .booking-history-costs-total>:last-child { font-size:18px; }
+}
+.booking-history { width:min(1280px,calc(100% - 64px)); margin:0 auto; padding:28px 0 48px; }
+.booking-history svg { width:18px; height:18px; flex-shrink:0; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.booking-history-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: 24px 26px 26px;
+    margin-bottom: 18px;
+    border-radius: 14px;
+    background-color: #0d2118;
+
+    background-image:
+        linear-gradient(
+            90deg,
+            rgba(10, 29, 21, 0.98) 0%,
+            rgba(10, 29, 21, 0.96) 30%,
+            rgba(10, 29, 21, 0.78) 48%,
+            rgba(10, 29, 21, 0.18) 76%,
+            rgba(10, 29, 21, 0.08) 100%
+        ),
+        url("../images/bg-lsds-3.png");
+
+    background-position: center, center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.booking-history-hero::before,
+.booking-history-hero::after {
+    content: none;
+}
+
+.booking-history-intro,
+.booking-history-stats {
+    position: relative;
+    z-index: 1;
+}
+
+.booking-history-intro h1 { font-size:clamp(30px,3vw,42px); letter-spacing:-.04em; margin-bottom:10px; }
+.booking-history-intro h1 span { color:var(--primary); }
+.booking-history-intro p { color:#b4c3b7; font-size:14px; max-width:630px; }
+.booking-history-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; max-width:660px; margin:22px 0 0; }
+.booking-history-stats>div { display:flex; align-items:center; gap:13px; min-width:0; padding:13px 16px; border:1px solid #304b36; border-radius:10px; background:#14271dcf; }
+.booking-history-stat-icon { display:grid; place-items:center; width:42px; height:42px; flex-shrink:0; border-radius:50%; background:#253d26; color:#b9ef79; }
+.booking-history-stat-icon svg { width:24px; height:24px; }
+.booking-history-stats dt { font-size:11px; color:#b8c8ba; }
+.booking-history-stats dd { margin:2px 0 0; font-size:25px; font-weight:700; line-height:1.15; font-variant-numeric:tabular-nums; }
+.booking-history-filterbar { display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px; padding:12px; border:1px solid #304735; border-radius:10px; background:#122119; }
+.booking-history-filters { display:flex; flex-wrap:wrap; align-items:center; gap:5px; flex:1 1 580px; }
+.booking-history-filters a { display:inline-flex; align-items:center; gap:4px; min-height:40px; padding:9px 10px; font-size:11px; border-radius:7px; color:#c1cec2; white-space:nowrap; }
+.booking-history-filters a span { opacity:.8; font-variant-numeric:tabular-nums; }
+.booking-history-filters a:hover { background:#243b29; color:#e6f4df; }
+.booking-history-filters a[aria-current] { background:var(--primary); color:#1c2b12; font-weight:700; }
+/* Form lọc lịch sử */
+.booking-history-query {
+    display: flex;
+    flex: 1 1 540px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px;
+    margin: 0;
+}
+
+/* Nhóm chọn ngày */
+.booking-history-dates {
+    flex: 1 1 260px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.booking-history-dates > div {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+/* Đồng bộ label của ngày và sắp xếp */
+.booking-history-dates label {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    color: #9fb2a2;
+    font-size: 12px;
+    line-height: 16px;
+}
+
+/* Label sắp xếp */
+.booking-history-sort {
+    display: flex;
+    flex: 0 0 104px;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    color: #9fb2a2;
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.booking-history-dates label {
+    flex: 1;
+}
+
+.booking-history-sort {
+    flex: 0 0 104px;
+}
+/* Dropdown */
+.booking-history-select {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+
+/* Ẩn icon mặc định */
+.booking-history-select select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 32px;
+    cursor: pointer;
+}
+
+/* Icon Font Awesome màu trắng */
+.booking-history-select svg {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    width: 14px;
+    height: 14px;
+    transform: translateY(-50%);
+    fill: #ffffff;
+    pointer-events: none;
+}
+
+/* Đồng bộ input và select */
+.booking-history-query input[type="date"],
+.booking-history-query select {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 36px;
+    margin: 0;
+    padding: 6px 8px;
+    box-sizing: border-box;
+    border: 1px solid #35503b;
+    border-radius: 6px;
+    background: #101e16;
+    color: #e4eddf;
+    font-family: inherit;
+    font-size: 13px;
+}
+
+/* Icon lịch */
+.booking-history-query input[type="date"]::-webkit-calendar-picker-indicator {
+    padding: 0;
+    margin: 0 0 0 2px;
+}
+
+/* Dấu gạch ngang giữa hai ô ngày */
+.booking-history-date-divider {
+    align-self: flex-end;
+    padding-bottom: 10px;
+    color: #829784;
+    line-height: 16px;
+}
+.booking-history-apply { min-height:36px; padding:6px 12px; border:1px solid #8fbd63; border-radius:6px; background:#21351e; color:#cfefa9; font-size:12px; font-weight:600; }
+.booking-history-apply:hover { background:#304c27; }
+/* Nhóm nút lọc */
+.booking-history-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Nút xóa bộ lọc */
+.booking-history-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid #35503b;
+    border-radius: 6px;
+    background: transparent;
+    color: #c8d8c7;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color .2s, border-color .2s;
+}
+
+.booking-history-reset:hover {
+    background: #1b3022;
+    border-color: #85b95c;
+    color: #ffffff;
+}
+/* Khoảng cách giữa thanh lọc và danh sách */
+.booking-history-filterbar {
+    margin-bottom: 18px;
+}
+.booking-history-list { display:grid; gap:18px; }
+.booking-history-card { display:grid; grid-template-columns:144px minmax(0,1fr) 190px; align-items:center; gap:22px; padding:16px 20px 2px 20px; border:1px solid #2c4433; border-radius:11px; background:linear-gradient(105deg,#14251b,#101e17); transition:border-color 160ms; }
+.booking-history-card:hover { border-color:#4b6848; }
+.booking-history-thumbnail { width:144px; height:100px; border-radius:7px; overflow:hidden; background:#1d3525; }
+.booking-history-thumbnail img { display:block; width:100%; height:100%; object-fit:cover; }
+.booking-history-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:5px; background:linear-gradient(140deg,#2e4e32,#162d21); color:#adcc93; }
+.booking-history-placeholder svg { width:43px; height:43px; opacity:.8; stroke-width:1; }
+.booking-history-placeholder span { font-size:10px; letter-spacing:.12em; font-weight:700; }
+.booking-history-card-main { min-width:0; }
+.booking-history-reference { display:inline-block; padding:1px 6px; border-radius:3px; background:#2a402d; color:#c5dab8; font-size:9px; font-weight:650; letter-spacing:.04em; }
+.booking-history-card h2 { margin:5px 0 8px; font-size:20px; line-height:1.2; letter-spacing:-.02em; overflow-wrap:anywhere; }
+.booking-history-slots { display:grid; gap:6px; list-style:none; margin:0; padding:0; }
+.booking-history-slots li { display:flex; flex-wrap:wrap; align-items:flex-start; gap:5px 16px; font-size:13px; color:#d5e1d3; }
+.booking-history-slots time,.booking-history-court,.booking-history-times { display:inline-flex; align-items:center; gap:6px; min-width:0; }
+.booking-history-slots svg { color:#b9e87d; width:15px; height:15px}
+.booking-history-slots time { white-space:nowrap; }
+.booking-history-court strong { font-weight:500; overflow-wrap:anywhere; }
+.booking-history-times>span { display:flex; flex-wrap:wrap; gap:3px 12px; font-variant-numeric:tabular-nums; }
+.booking-history-times>span>span { white-space:nowrap; }
+.booking-history-created { margin-top:6px; font-size:12px; color:#9bae9e; }
+.booking-history-card-aside { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:12px; min-width:0; padding-left:24px; border-left:1px solid #2a3b2d; }
+.booking-history-badge { display:inline-flex; align-items:center; padding:5px 10px; border-radius:20px; font-size:12px; font-weight:600; background:#303d33; color:#bdcbbd; white-space:nowrap; }
+.booking-history-badge--pending { background:#40371f; color:#f0d28d; }
+.booking-history-badge--confirmed { background:#2d4425; color:#c5ee9e; }
+.booking-history-badge--completed { background:#203e32; color:#98dfc0; }
+.booking-history-badge--cancelled { background:#402d2c; color:#eab0ab; }
+.booking-history-badge--expired { background:#303731; color:#bfc8be; }
+.booking-history-amount>span { display:block; font-size:11px; color:#aabdaa; }
+.booking-history-amount strong { display:block; color:#b9ed7c; font-size:20px; line-height:1.25; margin-top:4px; letter-spacing:-.025em; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.booking-history-amount small { font-size:16px; }
+.booking-history-bottom { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px 24px; margin-top:22px; }
+.booking-history-bottom>p { color:#96aa99; font-size:11px; }
+.booking-history-pagination { display:flex; gap:6px; }
+.booking-history-pagination a,.booking-history-pagination>span { display:grid; place-items:center; width:34px; height:34px; border-radius:6px; font-size:12px; background:#1b2c20; }
+.booking-history-pagination [aria-disabled] { opacity:.4; }
+.booking-history-pagination a[aria-current] { background:var(--primary); color:#15250f; font-weight:700; }
+.booking-history-pagination a:hover { box-shadow:inset 0 0 0 1px #a5cb77; }
+.booking-history-empty { padding:48px 20px; text-align:center; border:1px dashed #36503b; border-radius:10px; background:#14231a; }
+.booking-history-empty>svg { width:42px; height:42px; color:var(--primary); margin-bottom:16px; }
+.booking-history-empty h2 { font-size:23px; letter-spacing:-.025em; }
+.booking-history-empty p { color:#a7b9aa; font-size:13px; margin:12px 0 24px; }
+@media(min-width:1200px) { .booking-history-query { flex-grow:0; } }
+@media(max-width:900px) {
+    .booking-history { width:calc(100% - 40px); }
+    .booking-history-card { grid-template-columns:104px minmax(0,1fr) 150px; gap:16px; padding:14px; }
+    .booking-history-thumbnail { width:104px; height:96px; }
+    .booking-history-card-aside { padding-left:16px; }
+    .booking-history-card h2 { font-size:18px; }
+    .booking-history-amount strong { font-size:22px; }
+}
+@media(max-width:600px) {
+    .booking-history { width:calc(100% - 28px); padding-top:18px; }
+    .booking-history-hero {
+        padding: 20px 14px;
+        background-image:
+            linear-gradient(
+                rgba(10, 29, 21, 0.92),
+                rgba(10, 29, 21, 0.88)
+            ),
+            url("../images/bg-lsds-3.png");
+
+        background-position: center, 72% center;
+    }
+    .booking-history-intro p { font-size:12px; }
+    .booking-history-stats { gap:6px; margin-top:20px; }
+    .booking-history-stats>div { flex-direction:column; align-items:flex-start; gap:8px; padding:10px 8px; border-radius:7px; }
+    .booking-history-stat-icon { width:28px; height:28px; }
+    .booking-history-stat-icon svg { width:18px; height:18px; }
+    .booking-history-stats dt { font-size:9px; }
+    .booking-history-stats dd { font-size:23px; }
+    .booking-history-filterbar { padding:10px; }
+    .booking-history-filters { gap:4px; }
+    .booking-history-filters a { padding:8px; font-size:10px; }
+    .booking-history-query { gap:10px; }
+    .booking-history-dates { flex-basis:100%; }
+    .booking-history-sort { flex:1; }
+    .booking-history-apply { min-width:100px; }
+    .booking-history-card { grid-template-columns:64px minmax(0,1fr); align-items:start; gap:12px; }
+    .booking-history-thumbnail { width:64px; height:64px; margin-top:3px; }
+    .booking-history-placeholder svg { width:28px; height:28px; }
+    .booking-history-placeholder span { font-size:7px; }
+    .booking-history-card h2 { font-size:17px; }
+    .booking-history-slots li { gap:5px 10px; font-size:11px; }
+    .booking-history-slots svg { width:14px; height:14px; }
+    .booking-history-times { flex-basis:100%; }
+    .booking-history-created { line-height:1.5; }
+    .booking-history-card-aside { grid-column:1/-1; flex-direction:row; align-items:center; justify-content:space-between; padding:12px 0 0; border-left:0; border-top:1px solid #283c2d; }
+    .booking-history-amount { text-align:right; }
+    .booking-history-amount strong { font-size:21px; margin-top:2px; }
+    .booking-history-empty h2 { font-size:20px; }
+}
+@media(prefers-reduced-motion:reduce) { .booking-history-card { transition:none; } }
+/* Chỉ áp dụng cho bộ lọc trang Lịch sử đặt sân */
+.booking-history-query input[type="date"]:focus,
+.booking-history-query input[type="date"]:focus-visible,
+.booking-history-query select:focus,
+.booking-history-query select:focus-visible {
+    outline: none;
+    box-shadow: none;
+    border-color: #35503b;
+}

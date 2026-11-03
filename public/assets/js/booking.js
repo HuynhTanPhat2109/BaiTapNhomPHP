@@ -85,7 +85,23 @@
         const quantities=()=>Object.fromEntries(rows().map(row=>[row.dataset.serviceRow,Number(row.querySelector('input').value)||0]));
         let applied=quantities(), busy=false, synchronized=true, timer;
         let acceptedNote=note?.value || '';
-        const confirm=()=>form.querySelector('[data-confirm-booking]');
+        const confirm = () => form.querySelector('[data-confirm-booking]');
+
+        const loginButton = () =>
+            form.querySelector('button[name="action"][value="login"]');
+
+        function updateActionButtons() {
+            const confirmButton = confirm();
+            const login = loginButton();
+
+            if (confirmButton) {
+                confirmButton.disabled = busy || !synchronized;
+            }
+
+            if (login) {
+                login.disabled = busy;
+            }
+        }
         const feedback=message=>{
             for(const node of form.querySelectorAll('[data-booking-feedback], [data-service-feedback]')) {
                 node.textContent=message;node.hidden=!message;
@@ -228,26 +244,74 @@
                 feedback(error.name==='AbortError'?'Máy chủ phản hồi quá lâu. Chưa áp dụng thay đổi; vui lòng thử lại.':error.message);
             } finally {
                 clearTimeout(timeout);busy=false;form.removeAttribute('aria-busy');
-                controls.forEach(([node,disabled])=>{if(node.isConnected)node.disabled=disabled;});
-                form.querySelectorAll('[data-remove-applied]').forEach(node=>node.disabled=false);
-                if(confirm())confirm().disabled=!synchronized;
+                controls.forEach(([node, disabled]) => {
+                    if (node.isConnected) {
+                        node.disabled = disabled;
+                    }
+                });
+
+                form.querySelectorAll('[data-remove-applied]').forEach(node => {
+                    node.disabled = false;
+                });
+
+                updateActionButtons();
             }
         }
-        note?.addEventListener('input',()=>{
-            if(busy)return;clearTimeout(timer);synchronized=false;if(confirm())confirm().disabled=true;
-            timer=setTimeout(()=>review({...applied},false),300);
-        });
-        form.addEventListener('submit',event=>{
-            if(busy||dialog?.open){event.preventDefault();return;}
-            if(event.submitter?.hasAttribute('data-confirm-booking')&&!synchronized){
-                event.preventDefault();review({...applied},false);return;
-            }
-            restore();
-            if(!form.reportValidity()){event.preventDefault();return;}
+        note?.addEventListener('input', () => {
+            if (busy) return;
+
             clearTimeout(timer);
-            setTimeout(()=>form.querySelectorAll('button[type=submit],button[name=action],[data-confirm-booking]').forEach(button=>button.disabled=true),0);
+
+            synchronized = false;
+            updateActionButtons();
+
+            timer = setTimeout(() => {
+                review({...applied}, false);
+            }, 300);
         });
+        form.addEventListener('submit', event => {
+        if (busy || dialog?.open) {
+            event.preventDefault();
+            return;
+        }
+
+        const submitter = event.submitter;
+
+        const isConfirm = submitter?.hasAttribute('data-confirm-booking');
+        const isLogin = submitter?.matches(
+            'button[name="action"][value="login"]'
+        );
+
+        // Xác nhận thanh toán chỉ khi báo giá đã đồng bộ
+        if (isConfirm && !synchronized) {
+            event.preventDefault();
+            review({...applied}, false);
+            return;
+        }
+
+        // Giữ nguyên dữ liệu dịch vụ đã áp dụng
+        restore();
+
+        if (!form.reportValidity()) {
+            event.preventDefault();
+            return;
+        }
+
+        clearTimeout(timer);
+
+        // Khóa các nút sau khi form được gửi.
+        // Dùng setTimeout để trình duyệt kịp ghi nhận submitter,
+        // đặc biệt là name/value của nút đăng nhập.
+        setTimeout(() => {
+            form.querySelectorAll(
+                'button[type="submit"], button[name="action"], [data-confirm-booking]'
+            ).forEach(button => {
+                button.disabled = true;
+            });
+        }, 0);
+    });
         renderSelected();
+        updateActionButtons();
     }
     const waiting=document.querySelector('[data-booking-wait]');
     if(!waiting) return;

@@ -52,6 +52,9 @@ if (in_array($template, ['auth/account', 'auth/settings', 'services/page'], true
             <?php else: ?>
                 <a href="<?= e(url('/')) ?>">Trang chủ</a>
                 <a href="<?= e(url('/courts')) ?>">Đặt sân</a>
+                <?php if (!$navAuthenticated || ($app->auth()->user()['ten_vai_tro'] ?? '') === 'KHACH_HANG'): ?>
+                    <a href="<?= e(url('/booking/history')) ?>">Lịch sử đặt sân</a>
+                <?php endif; ?>
                 <a href="<?= e(url('/') . '#about') ?>">Về STRYKE</a>
             <?php endif; ?>
             <span class="nav-divider" aria-hidden="true"></span>

@@ -48,6 +48,25 @@ final class CourtBrowser
         return $this->pdo->query("SELECT ma_bo_mon, ten_bo_mon FROM bo_mon WHERE trang_thai='HOAT_DONG' ORDER BY ten_bo_mon")->fetchAll();
     }
 
+    public function priceList(int $facility, string $date): array
+    {
+        $stmt = $this->pdo->prepare("SELECT DISTINCT b.ma_bo_mon, b.ten_bo_mon, l.ma_loai_san, l.ten_loai_san,
+            g.ma_bang_gia, g.loai_ngay, g.gio_bat_dau, g.gio_ket_thuc, g.don_gia, g.ngay_bat_dau, g.ngay_ket_thuc
+            FROM san s JOIN loai_san l ON l.ma_loai_san=s.ma_loai_san
+            JOIN bo_mon b ON b.ma_bo_mon=l.ma_bo_mon
+            JOIN co_so f ON f.ma_co_so=s.ma_co_so
+            JOIN cong_ty_nhuong_quyen c ON c.ma_cong_ty=f.ma_cong_ty
+            LEFT JOIN bang_gia g ON g.ma_co_so=s.ma_co_so AND g.ma_loai_san=l.ma_loai_san
+                AND g.trang_thai='DANG_AP_DUNG' AND g.ngay_bat_dau<=:first
+                AND (g.ngay_ket_thuc IS NULL OR g.ngay_ket_thuc>=:last)
+            WHERE s.ma_co_so=:facility AND s.trang_thai='HOAT_DONG'
+                AND l.trang_thai='HOAT_DONG' AND b.trang_thai='HOAT_DONG'
+                AND f.trang_thai='HOAT_DONG' AND c.trang_thai='HOAT_DONG'
+            ORDER BY b.ten_bo_mon, l.ten_loai_san, g.gio_bat_dau, g.gio_ket_thuc, g.loai_ngay");
+        $stmt->execute(['facility'=>$facility, 'first'=>$date, 'last'=>$date]);
+        return $stmt->fetchAll();
+    }
+
     public function intervals(int $facility, string $date): array
     {
         // Public schedule deliberately excludes identities, contact information and money.

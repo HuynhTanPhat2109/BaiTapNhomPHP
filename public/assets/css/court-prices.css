@@ -1,0 +1,18 @@
+.court-prices { padding:46px 8px 32px; color:#e5ede6; }
+.court-prices-table { width:100%; table-layout:fixed; border-collapse:collapse; margin:0 0 28px; background:#10251b; font-variant-numeric:tabular-nums; }
+.court-prices-table caption { padding:12px; background:#21452f; color:#c5ef8f; font-size:18px; font-weight:700; border:1px solid #365740; border-bottom:0; letter-spacing: 0.5px}
+.court-prices-table th,.court-prices-table td { padding:10px 16px; border:1px solid #365740; text-align:center; vertical-align:middle; overflow-wrap:anywhere; }
+.court-prices-table thead { background:#192f22; }
+.court-prices-amount { color:#c5ef8f; font-weight:700; }
+.court-prices-type { background:#1b3827; font-weight:600; }
+.court-prices-table tbody+tbody { border-top:2px solid #63846a; }
+.court-prices-type-col { width:24%; }
+.court-prices-day-col { width:18%; }
+.court-prices-time-col { width:32%; }
+.court-prices-money-col { width:26%; }
+.court-prices-empty { color:#acc0b1; font-size:14px; }
+@media(max-width:600px) {
+    .court-prices-table th,.court-prices-table td { padding:12px 6px; font-size:13px; }
+    .court-prices-table caption { font-size:18px; }
+    .court-prices-note { font-size:12px; line-height:1.6; }
+}

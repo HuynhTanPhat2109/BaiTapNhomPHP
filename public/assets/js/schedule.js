@@ -142,9 +142,24 @@
 
     nextForm?.addEventListener('submit', event => {
         expire();
-        const button = nextForm.querySelector('button');
-        if (button.disabled || !fresh()) { event.preventDefault(); syncSchedule(); return; }
-        button.disabled = true; button.textContent = 'Đang kiểm tra…';
+
+        const button = nextForm.querySelector('button[type="submit"]');
+
+        if (!button) return;
+
+        if (button.disabled || !fresh()) {
+            event.preventDefault();
+            syncSchedule();
+            return;
+        }
+
+        button.disabled = true;
+
+        const buttonText = button.querySelector('.stryke-action-btn__text');
+
+        if (buttonText) {
+            buttonText.textContent = 'Đang kiểm tra…';
+        }
     });
 
     /** Stable key: courtId|date|start|end */
