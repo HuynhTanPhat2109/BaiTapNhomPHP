@@ -26,9 +26,11 @@ final class SanController extends Controller
     {
         $filters = AdminListService::filters($_GET, ['ma_co_so', 'ma_loai_san'],
             ['trang_thai' => ['HOAT_DONG', 'BAO_TRI', 'TAM_NGUNG']]);
+        $result = (new San($this->app->pdo()))->page($filters);
+        if ($result['page'] !== $filters['page']) admin_list_redirect('/admin/san', array_replace($filters, ['page' => $result['page']]));
         $notice = $_SESSION['facility_notice'] ?? null;
         unset($_SESSION['facility_notice']);
-        $this->render('admin/san/index', (new San($this->app->pdo()))->page($filters) + [
+        $this->render('admin/san/index', $result + [
             'title' => 'Quản lý sân', 'filters' => $filters, 'notice' => $notice,
             'facilities' => (new CoSo($this->app->pdo()))->all(), 'types' => (new LoaiSan($this->app->pdo()))->all(),
         ]);
@@ -60,7 +62,7 @@ final class SanController extends Controller
         try {
             (new SanService($this->app->pdo()))->save($_POST, $id);
             $_SESSION['facility_notice'] = 'Đã lưu sân.';
-            $this->redirect('/admin/san');
+            admin_list_redirect('/admin/san');
         } catch (ValidationException $e) {
             $old = [];
             foreach (['ma_co_so', 'ma_loai_san', 'ten_san', 'vi_tri', 'mo_ta', 'trang_thai'] as $field) {
@@ -102,7 +104,7 @@ final class SanController extends Controller
         try {
             (new SanService($this->app->pdo()))->delete($id);
             $_SESSION['facility_notice'] = 'Đã xóa sân.';
-            $this->redirect('/admin/san');
+            admin_list_redirect('/admin/san');
         } catch (HttpException $e) {
             if ($e->status !== 409) {
                 throw $e;

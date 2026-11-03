@@ -19,8 +19,8 @@ $id = $contract['ma_hop_dong'] ?? '';
     <header class="account-page__intro catalog-heading module-heading"><div>
         <p class="eyebrow">Quản trị tập đoàn / Hợp đồng nhượng quyền</p>
         <h1 class="account-h1">Sửa hợp đồng</h1><p class="module-subtitle">Thời hạn, điều khoản và trạng thái nhượng quyền.</p>
-    </div><a class="btn btn--outline workspace-back" href="<?= e(url('/admin/contracts')) ?>">Quay lại</a></header>
-    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(url('/admin/contracts/update') . '&id=' . rawurlencode((string) $id)) ?>">
+    </div><a class="btn btn--outline workspace-back admin-back-link" href="<?= e(admin_context_url('/admin/contracts')) ?>">Quay lại danh sách</a></header>
+    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(admin_context_url('/admin/contracts/update') . '&id=' . rawurlencode((string) $id)) ?>">
         <?= csrf_field() ?>
                 <section class="module-form-card">
         <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">1</span>Thông tin hợp đồng</h2>
@@ -66,7 +66,7 @@ $id = $contract['ma_hop_dong'] ?? '';
         <div class="module-fields">
         <div class="form-group">
             <label for="phi_nhuong_quyen">Phí nhượng quyền</label>
-            <input class="form-control" id="phi_nhuong_quyen" name="phi_nhuong_quyen" type="number" required min="0" step="0.01" value="<?= e($value($old, $contract, 'phi_nhuong_quyen')) ?>"<?= field_error_attributes('phi_nhuong_quyen', $errors) ?>>
+            <input class="form-control" id="phi_nhuong_quyen" data-money-input name="phi_nhuong_quyen" type="number" required min="0" step="0.01" value="<?= e($value($old, $contract, 'phi_nhuong_quyen')) ?>"<?= field_error_attributes('phi_nhuong_quyen', $errors) ?>>
             <?= field_error('phi_nhuong_quyen', $errors) ?>
         </div>
         <div class="form-group">
@@ -90,6 +90,6 @@ $id = $contract['ma_hop_dong'] ?? '';
         </div>
         </div></section>
         <div class="catalog-actions"><button class="btn btn--primary" type="submit">Lưu thay đổi</button>
-        <a class="btn btn--outline" href="<?= e(url('/admin/contracts')) ?>">Quay lại</a></div>
+        <a class="btn btn--outline admin-back-link" href="<?= e(admin_context_url('/admin/contracts')) ?>">Quay lại danh sách</a></div>
     </form>
 </section>

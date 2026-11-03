@@ -23,9 +23,11 @@ final class LoaiSanController extends Controller
     public function index(): void
     {
         $filters = AdminListService::filters($_GET, ['ma_bo_mon'], ['trang_thai' => ['HOAT_DONG', 'NGUNG']]);
+        $result = (new LoaiSan($this->app->pdo()))->page($filters);
+        if ($result['page'] !== $filters['page']) admin_list_redirect('/admin/loai-san', array_replace($filters, ['page' => $result['page']]));
         $notice = $_SESSION['catalog_notice'] ?? null;
         unset($_SESSION['catalog_notice']);
-        $this->render('admin/loai-san/index', (new LoaiSan($this->app->pdo()))->page($filters) + [
+        $this->render('admin/loai-san/index', $result + [
             'title' => 'Quản lý loại sân', 'filters' => $filters, 'notice' => $notice,
             'sports' => (new BoMon($this->app->pdo()))->all(),
         ]);
@@ -57,7 +59,7 @@ final class LoaiSanController extends Controller
         try {
             (new LoaiSanService($this->app->pdo()))->save($_POST, $id);
             $_SESSION['catalog_notice'] = 'Đã lưu loại sân.';
-            $this->redirect('/admin/loai-san');
+            admin_list_redirect('/admin/loai-san');
         } catch (ValidationException $e) {
             $old = [];
             foreach (['ma_bo_mon', 'ten_loai_san', 'mo_ta', 'trang_thai'] as $field) {
@@ -98,7 +100,7 @@ final class LoaiSanController extends Controller
         try {
             (new LoaiSanService($this->app->pdo()))->delete($id);
             $_SESSION['catalog_notice'] = 'Đã xóa loại sân.';
-            $this->redirect('/admin/loai-san');
+            admin_list_redirect('/admin/loai-san');
         } catch (HttpException $e) {
             if ($e->status !== 409) {
                 throw $e;

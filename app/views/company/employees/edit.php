@@ -14,8 +14,8 @@ $selectedFacility = $value($old, $employee, 'ma_co_so');
 $id = $employee['ma_nhan_vien'] ?? '';
 ?>
 <section class="container account-page catalog-page catalog-workspace workspace-page">
-    <header class="account-page__intro catalog-heading module-heading"><div><p class="eyebrow">Công ty / Nhân viên</p><h1 class="account-h1">Sửa nhân viên</h1><p class="module-subtitle">Thông tin nhân sự, phân công và tài khoản làm việc.</p></div><a class="btn btn--outline workspace-back" href="<?= e(url('/company/employees')) ?>">Quay lại</a></header>
-    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(url('/company/employees/update')) ?>">
+    <header class="account-page__intro catalog-heading module-heading"><div><p class="eyebrow">Công ty / Nhân viên</p><h1 class="account-h1">Sửa nhân viên</h1><p class="module-subtitle">Thông tin nhân sự, phân công và tài khoản làm việc.</p></div><a class="btn btn--outline workspace-back admin-back-link" href="<?= e(admin_context_url('/company/employees')) ?>">Quay lại danh sách</a></header>
+    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(admin_context_url('/company/employees/update')) ?>">
         <?= csrf_field() ?><input type="hidden" name="id" value="<?= e($id) ?>">
                 <section class="module-form-card">
         <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">1</span>Thông tin nhân sự</h2>
@@ -35,6 +35,6 @@ $id = $employee['ma_nhan_vien'] ?? '';
         <div class="form-group"><label for="ngay_vao_lam">Ngày vào làm</label><input class="form-control" id="ngay_vao_lam" name="ngay_vao_lam" type="date" value="<?= e($value($old, $employee, 'ngay_vao_lam')) ?>"<?= field_error_attributes('ngay_vao_lam', $errors) ?>><?= field_error('ngay_vao_lam', $errors) ?></div>
         <div class="form-group"><label for="trang_thai">Trạng thái</label><select class="form-control" id="trang_thai" name="trang_thai" required<?= field_error_attributes('trang_thai', $errors) ?>><option value="DANG_LAM" <?= $status === 'DANG_LAM' ? 'selected' : '' ?>>Đang làm</option><option value="DA_NGHI" <?= $status === 'DA_NGHI' ? 'selected' : '' ?>>Đã nghỉ</option></select><?= field_error('trang_thai', $errors) ?></div>
         </div></section>
-        <div class="catalog-actions"><button class="btn btn--primary" type="submit">Lưu thay đổi</button><a class="btn btn--outline" href="<?= e(url('/company/employees')) ?>">Quay lại</a></div>
+        <div class="catalog-actions"><button class="btn btn--primary" type="submit">Lưu thay đổi</button><a class="btn btn--outline admin-back-link" href="<?= e(admin_context_url('/company/employees')) ?>">Quay lại danh sách</a></div>
     </form>
 </section>

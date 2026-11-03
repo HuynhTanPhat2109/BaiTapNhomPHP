@@ -22,6 +22,17 @@ class CongTyNhuongQuyen
         return $stmt->fetchAll();
     }
 
+    public function page(array $filters): array
+    {
+        $order = match ($filters['sort']) {
+            'name_asc' => 'ct.ten_cong_ty ASC, ct.ma_cong_ty DESC',
+            'name_desc' => 'ct.ten_cong_ty DESC, ct.ma_cong_ty DESC',
+            default => 'ct.ma_cong_ty DESC',
+        };
+        return AdminList::page($this->pdo, ' FROM cong_ty_nhuong_quyen ct', 'ct.*', 'ct.ma_cong_ty',
+            ['q' => ['ct.ten_cong_ty', 'CAST(ct.ma_cong_ty AS CHAR)'], 'trang_thai' => 'ct.trang_thai'], $filters, [], [], $order);
+    }
+
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare(

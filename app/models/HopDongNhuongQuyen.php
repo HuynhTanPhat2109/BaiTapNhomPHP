@@ -39,6 +39,22 @@ class HopDongNhuongQuyen
         return $stmt->fetchAll();
     }
 
+    public function page(array $filters): array
+    {
+        $where = []; $params = [];
+        // Include contracts whose validity period intersects the selected date window.
+        if ($filters['tu_ngay'] !== '') { $where[] = 'hd.ngay_ket_thuc >= :from_date'; $params['from_date'] = $filters['tu_ngay']; }
+        if ($filters['den_ngay'] !== '') { $where[] = 'hd.ngay_bat_dau <= :to_date'; $params['to_date'] = $filters['den_ngay']; }
+        $order = match ($filters['sort']) {
+            'start_asc' => 'hd.ngay_bat_dau ASC, hd.ma_hop_dong DESC', 'start_desc' => 'hd.ngay_bat_dau DESC, hd.ma_hop_dong DESC',
+            'end_asc' => 'hd.ngay_ket_thuc ASC, hd.ma_hop_dong DESC', 'end_desc' => 'hd.ngay_ket_thuc DESC, hd.ma_hop_dong DESC',
+            default => 'hd.ma_hop_dong DESC',
+        };
+        return AdminList::page($this->pdo, ' FROM hop_dong_nhuong_quyen hd JOIN cong_ty_nhuong_quyen ct ON ct.ma_cong_ty=hd.ma_cong_ty',
+            'hd.*, ct.ten_cong_ty', 'hd.ma_hop_dong', ['q' => ['hd.so_hop_dong', 'CAST(hd.ma_hop_dong AS CHAR)'],
+                'ma_cong_ty' => 'hd.ma_cong_ty', 'trang_thai' => 'hd.trang_thai'], $filters, $where, $params, $order);
+    }
+
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare(

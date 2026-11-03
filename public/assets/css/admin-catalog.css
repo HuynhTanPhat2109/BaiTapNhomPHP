@@ -47,6 +47,7 @@
 .page-admin .admin-catalog .module-subtitle, .page-admin .admin-catalog .module-heading .form-hint { max-width: 650px; margin-top: 8px; color: var(--muted); font-size: 15px; line-height: 1.5; }
 .page-admin .admin-catalog .btn { min-height: 44px; gap: 8px; padding: 10px 16px; border-radius: 9px; font-size: 15px; font-weight: 600; }
 .page-admin .admin-catalog .btn--primary { border-color: #a9de75; }
+.page-admin .admin-catalog .admin-back-link { min-height: 44px; padding: 10px 16px; border: 1px solid #bbcfbf; border-radius: 9px; background: #fff; font-size: 15px; font-weight: 600; white-space: nowrap; }
 .page-admin .admin-catalog .module-back { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 16px; color: var(--primary); font-size: 14px; font-weight: 600; }
 .page-admin .admin-catalog .module-back svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .page-admin .admin-catalog .list-toolbar { gap: 12px; margin-bottom: 18px; padding: 18px; border-radius: 14px; box-shadow: 0 2px 12px #17332303; }
@@ -55,6 +56,44 @@
 .page-admin .admin-catalog .list-toolbar .list-toolbar__size { flex: 0 1 120px; }
 .page-admin .admin-catalog .list-toolbar label { font-size: 14px; font-weight: 500; }
 .page-admin .admin-catalog .list-toolbar .form-control, .page-admin .admin-catalog .list-toolbar__actions .btn { height: 42px; min-height: 42px; font-size: 15px; }
+/* These three filters share the court toolbar styling, with rows sized to the content area. */
+.page-admin .admin-catalog .management-filters { container: management-filters / inline-size; width: 100%; min-width: 0; }
+.page-admin .admin-catalog .management-filters .list-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; max-width: none; align-items: end; }
+.page-admin .admin-catalog .management-filters .list-toolbar__actions { min-width: 0; width: 100%; }
+.page-admin .admin-catalog .management-filters .list-toolbar__actions .btn { flex: 1; }
+@container management-filters (min-width: 560px) {
+    .page-admin .admin-catalog .management-filters .list-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .page-admin .admin-catalog .management-filters .list-toolbar__actions { grid-column: 1 / -1; width: auto; justify-self: end; }
+    .page-admin .admin-catalog .management-filters .list-toolbar__actions .btn { flex: none; }
+    .page-admin .admin-catalog .management-filters--contracts .list-toolbar__actions { grid-column: auto; }
+}
+@container management-filters (min-width: 1000px) {
+    .page-admin .admin-catalog .management-filters [data-filter="q"] { grid-area: search; }
+    .page-admin .admin-catalog .management-filters [data-filter="trang_thai"] { grid-area: status; }
+    .page-admin .admin-catalog .management-filters [data-filter="sort"] { grid-area: sort; }
+    .page-admin .admin-catalog .management-filters .list-toolbar__size { grid-area: size; }
+    .page-admin .admin-catalog .management-filters .list-toolbar__actions { grid-area: actions; }
+    .page-admin .admin-catalog .management-filters--companies .list-toolbar {
+        grid-template-columns: minmax(180px, 1.6fr) minmax(125px, 1fr) minmax(135px, 1fr) minmax(112px, .75fr) auto;
+        grid-template-areas: "search status sort size actions";
+    }
+    .page-admin .admin-catalog .management-filters [data-filter="ma_cong_ty"] { grid-area: company; }
+    .page-admin .admin-catalog .management-filters [data-filter="vai_tro"] { grid-area: role; }
+    .page-admin .admin-catalog .management-filters [data-filter="tu_ngay"] { grid-area: from; }
+    .page-admin .admin-catalog .management-filters [data-filter="den_ngay"] { grid-area: to; }
+    .page-admin .admin-catalog .management-filters--contracts .list-toolbar,
+    .page-admin .admin-catalog .management-filters--employees .list-toolbar { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+    .page-admin .admin-catalog .management-filters--contracts .list-toolbar {
+        grid-template-areas: "search search search search company company company company status status status status"
+                             "from from to to sort sort sort size size actions actions actions";
+    }
+    .page-admin .admin-catalog .management-filters--employees .list-toolbar {
+        grid-template-areas: "search search search search company company company company role role role role"
+                             "status status status sort sort sort sort size size actions actions actions";
+    }
+    .page-admin .admin-catalog .management-filters--contracts .list-toolbar__size,
+    .page-admin .admin-catalog .management-filters--employees .list-toolbar__size { width: 100%; max-width: 150px; }
+}
 .page-admin .admin-catalog .module-table-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 18px 20px; border: 1px solid var(--border); border-bottom: 0; border-radius: 14px 14px 0 0; background: #fff; }
 .page-admin .admin-catalog .module-table-heading h2 { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; letter-spacing: -.02em; }
 .page-admin .admin-catalog .module-table-heading h2 span { min-width: 26px; padding: 3px 8px; border-radius: 6px; background: #edf5e8; color: #36673d; font-size: 13px; text-align: center; }

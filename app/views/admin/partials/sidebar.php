@@ -32,7 +32,7 @@ $icons = [
     'invoice' => 'M5 3h14v18l-3-2-4 2-4-2-3 2zM8 7h8M8 11h8M8 15h4',
 ];
 ?>
-<aside class="admin-sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị">
+<aside class="admin-sidebar" id="admin-sidebar" data-scroll-scope="<?= e($role ?? '') ?>" aria-label="Điều hướng quản trị">
     <div class="admin-sidebar__brand">
         <a class="navbar__brand" href="<?= e(url($brandHome ?? $workspaceHome ?? '/admin')) ?>" aria-label="STRYKE — Khu vực của bạn">
             <svg class="brand-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true"><rect x="3" y="5" width="30" height="26" rx="1"/><path d="M18 5v26M3 11h7v14H3m30-14h-7v14h7"/><circle cx="18" cy="18" r="5"/></svg>

@@ -19,9 +19,11 @@ final class BangGiaController extends Controller
     {
         $filters = BangGiaService::filters($_GET);
         $model = new BangGia($this->app->pdo());
+        $result = $model->page($filters);
+        if ($result['page'] !== $filters['page']) admin_list_redirect('/admin/bang-gia', array_replace($filters, ['page' => $result['page']]));
         $notice = $_SESSION['pricing_notice'] ?? null;
         unset($_SESSION['pricing_notice']);
-        $this->render('admin/bang-gia/index', $model->page($filters) + [
+        $this->render('admin/bang-gia/index', $result + [
             'title' => 'Quản lý bảng giá', 'filters' => $filters, 'notice' => $notice,
             'facilities' => (new CoSo($this->app->pdo()))->all(), 'types' => $model->types(true),
         ]);
@@ -53,7 +55,7 @@ final class BangGiaController extends Controller
         try {
             (new BangGiaService($this->app->pdo()))->save($_POST, $item ? (int) $item['ma_bang_gia'] : null);
             $_SESSION['pricing_notice'] = 'Đã lưu bảng giá.';
-            $this->redirect('/admin/bang-gia');
+            admin_list_redirect('/admin/bang-gia');
         } catch (ValidationException $e) {
             $old = [];
             foreach (['ma_co_so', 'ma_loai_san', 'ten_bang_gia', 'loai_ngay', 'gio_bat_dau', 'gio_ket_thuc',
@@ -89,7 +91,7 @@ final class BangGiaController extends Controller
             }
             (new BangGiaService($this->app->pdo()))->changeStatus((int) $item['ma_bang_gia'], $status);
             $_SESSION['pricing_notice'] = $status === 'NGUNG' ? 'Đã ngừng áp dụng bảng giá.' : 'Đã kích hoạt bảng giá.';
-            $this->redirect('/admin/bang-gia');
+            admin_list_redirect('/admin/bang-gia');
         } catch (ValidationException $e) {
             $this->details($this->record((string) $item['ma_bang_gia']), $e->errors, true, 422);
         }

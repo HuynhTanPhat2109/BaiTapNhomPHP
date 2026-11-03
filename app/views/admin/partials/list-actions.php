@@ -1,16 +1,17 @@
 <?php
 $recordQuery = '&id=' . rawurlencode((string) $recordId);
 $serviceActions = str_ends_with($listPath, '/dich-vu');
-$buttons = [['view', 'Chi tiết', url($listPath . '/show') . $recordQuery]];
-if (!$serviceActions || $canWrite) $buttons[] = ['edit', 'Sửa', url($listPath . '/edit') . $recordQuery];
+$actionFilters = array_replace($filters, ['page' => $page]);
+$buttons = [['view', 'Chi tiết', admin_context_url($listPath . '/show', $actionFilters) . $recordQuery]];
+if (!$serviceActions || $canWrite) $buttons[] = ['edit', 'Sửa', admin_context_url($listPath . '/edit', $actionFilters) . $recordQuery];
 if ($serviceActions) {
-    if ($canWrite) $buttons[] = [$row['trang_thai'] === 'DANG_CUNG_CAP' ? 'stop' : 'activate', $row['trang_thai'] === 'DANG_CUNG_CAP' ? 'Ngừng cung cấp' : 'Kích hoạt', url($listPath . '/show') . $recordQuery . '&confirm=1#status-confirmation'];
+    if ($canWrite) $buttons[] = [$row['trang_thai'] === 'DANG_CUNG_CAP' ? 'stop' : 'activate', $row['trang_thai'] === 'DANG_CUNG_CAP' ? 'Ngừng cung cấp' : 'Kích hoạt', admin_context_url($listPath . '/show', $actionFilters) . $recordQuery . '&confirm=1#status-confirmation'];
 } elseif ($listPath === '/admin/bang-gia') {
     $activePrice = $row['trang_thai'] === 'DANG_AP_DUNG';
     $buttons[] = [$activePrice ? 'stop' : 'activate', $activePrice ? 'Ngừng áp dụng' : 'Kích hoạt',
-        url($listPath . '/show') . $recordQuery . '&confirm=1#status-confirmation'];
+        admin_context_url($listPath . '/show', $actionFilters) . $recordQuery . '&confirm=1#status-confirmation'];
 } else {
-    $buttons[] = ['delete', 'Xóa', url($listPath . '/delete') . $recordQuery];
+    $buttons[] = ['delete', 'Xóa', admin_context_url($listPath . '/delete', $actionFilters) . $recordQuery];
 }
 $icons = [
     'view' => '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',

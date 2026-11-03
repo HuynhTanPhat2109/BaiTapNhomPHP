@@ -16,10 +16,10 @@ $detailStatusLabel = ['HOAT_DONG' => 'Hoạt động', 'BAO_TRI' => 'Bảo trì'
             <dl class="detail-fields">
                 <div><dt>Tên sân</dt><dd><?= e($item['ten_san']) ?></dd></div>
                 <div><dt>Mã sân</dt><dd>#<?= e($item['ma_san']) ?></dd></div>
-                <div class="detail-field--wide"><dt>Cơ sở</dt><dd><a href="<?= e(url('/admin/co-so/show') . '&id=' . $item['ma_co_so']) ?>"><?= e($item['ten_co_so']) ?></a></dd></div>
+                <div class="detail-field--wide"><dt>Cơ sở</dt><dd><a href="<?= e(admin_context_url('/admin/co-so/show') . '&id=' . $item['ma_co_so']) ?>"><?= e($item['ten_co_so']) ?></a></dd></div>
                 <div class="detail-field--wide"><dt>Công ty</dt><dd><?= e($item['ten_cong_ty']) ?></dd></div>
-                <div><dt>Bộ môn</dt><dd><a href="<?= e(url('/admin/bo-mon/show') . '&id=' . $item['ma_bo_mon']) ?>"><?= e($item['ten_bo_mon']) ?></a></dd></div>
-                <div><dt>Loại sân</dt><dd><a href="<?= e(url('/admin/loai-san/show') . '&id=' . $item['ma_loai_san']) ?>"><?= e($item['ten_loai_san']) ?></a></dd></div>
+                <div><dt>Bộ môn</dt><dd><a href="<?= e(admin_context_url('/admin/bo-mon/show') . '&id=' . $item['ma_bo_mon']) ?>"><?= e($item['ten_bo_mon']) ?></a></dd></div>
+                <div><dt>Loại sân</dt><dd><a href="<?= e(admin_context_url('/admin/loai-san/show') . '&id=' . $item['ma_loai_san']) ?>"><?= e($item['ten_loai_san']) ?></a></dd></div>
             </dl>
         </section>
         <section class="detail-card" aria-labelledby="court-extra">
@@ -36,7 +36,7 @@ $detailStatusLabel = ['HOAT_DONG' => 'Hoạt động', 'BAO_TRI' => 'Bảo trì'
     <footer class="detail-action-panel" aria-labelledby="san-delete-heading">
         <div class="detail-action-panel__row">
             <div><h2 id="san-delete-heading">Xóa sân</h2><p>Chỉ có thể xóa khi không còn dữ liệu tham chiếu. Bạn sẽ được yêu cầu xác nhận ở bước tiếp theo.</p></div>
-            <a class="btn btn--outline detail-delete" href="<?= e(url('/admin/san/delete') . '&id=' . $item['ma_san']) ?>">Xóa sân…</a>
+            <a class="btn btn--outline detail-delete" href="<?= e(admin_context_url('/admin/san/delete') . '&id=' . $item['ma_san']) ?>">Xóa sân…</a>
         </div>
     </footer>
 </section>

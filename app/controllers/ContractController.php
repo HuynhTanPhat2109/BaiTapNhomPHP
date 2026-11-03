@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Services\ContractService;
+use App\Services\AdminListService;
+use App\Models\HopDongNhuongQuyen;
 use App\Services\ValidationException;
 use Core\Application;
 use Core\Controller;
@@ -12,16 +14,20 @@ final class ContractController extends Controller
 {
     private ContractService $contracts;
 
-    public function __construct(Application $app)
+    public function __construct(private Application $app)
     {
         $this->contracts = new ContractService($app->pdo());
     }
 
     public function index(): void
     {
-        $this->render('admin/contracts/index', [
+        $filters = AdminListService::managementFilters('/admin/contracts', $_GET);
+        $result = (new HopDongNhuongQuyen($this->app->pdo()))->page($filters);
+        if ($result['page'] !== $filters['page']) admin_list_redirect('/admin/contracts', array_replace($filters, ['page' => $result['page']]));
+        $notice = $_SESSION['contract_notice'] ?? null; unset($_SESSION['contract_notice']);
+        $this->render('admin/contracts/index', $result + [
             'title' => 'Quản lý hợp đồng nhượng quyền',
-            'contracts' => $this->contracts->all(),
+            'contracts' => $result['items'], 'filters' => $filters, 'notice' => $notice, 'companies' => $this->contracts->companies(),
         ]);
     }
 
@@ -39,7 +45,8 @@ final class ContractController extends Controller
 
         try {
             $this->contracts->create($data);
-            $this->redirect('/admin/contracts');
+            $_SESSION['contract_notice'] = 'Đã thêm hợp đồng.';
+            admin_list_redirect('/admin/contracts');
         } catch (ValidationException $e) {
             $this->render('admin/contracts/create', [
                 'title' => 'Thêm hợp đồng nhượng quyền',
@@ -76,7 +83,8 @@ final class ContractController extends Controller
 
         try {
             $this->contracts->update($id, $data);
-            $this->redirect('/admin/contracts');
+            $_SESSION['contract_notice'] = 'Đã cập nhật hợp đồng.';
+            admin_list_redirect('/admin/contracts');
         } catch (ValidationException $e) {
             $this->render('admin/contracts/edit', [
                 'title' => 'Cập nhật hợp đồng nhượng quyền',
@@ -99,7 +107,8 @@ final class ContractController extends Controller
 
         try {
             $this->contracts->changeStatus($id, is_string($status) ? $status : '');
-            $this->redirect('/admin/contracts');
+            $_SESSION['contract_notice'] = 'Đã cập nhật trạng thái hợp đồng.';
+            admin_list_redirect('/admin/contracts');
         } catch (ValidationException $e) {
             $this->render('admin/contracts/edit', [
                 'title' => 'Cập nhật hợp đồng nhượng quyền',

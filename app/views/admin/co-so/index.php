@@ -12,7 +12,7 @@ $filterFields = [
 <section class="container catalog-page catalog-workspace admin-list workspace-page">
     <header class="catalog-heading module-heading">
         <div><p class="eyebrow">STRYKE / Cơ sở thể thao</p><h1>Quản lý cơ sở</h1><p class="module-subtitle">Thông tin cơ sở, liên hệ và giờ hoạt động.</p></div>
-        <a class="btn btn--primary" href="<?= e(url('/admin/co-so/create')) ?>">Thêm cơ sở</a>
+        <a class="btn btn--primary" href="<?= e(admin_context_url('/admin/co-so/create')) ?>">Thêm cơ sở</a>
     </header>
     <?php if (!empty($notice)): ?><p class="alert alert--success" role="status"><?= e($notice) ?></p><?php endif; ?>
     <?php require __DIR__ . '/../partials/list-toolbar.php'; ?>

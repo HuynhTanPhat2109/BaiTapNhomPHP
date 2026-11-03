@@ -80,3 +80,58 @@ function field_error(string $field, array $errors): string
     return '<small class="field-error" id="' . e($field . '-error') . '" role="alert">'
         . '<span aria-hidden="true">!</span> ' . e($errors[$field]) . '</small>';
 }
+
+// Preserve list context only for the existing paginated Admin catalogs.
+// Rebuild the destination from a fixed module and validated filters, never a client URL.
+function admin_context_url(string $path, ?array $filters = null): string
+{
+    if (!preg_match('~\A(/admin/(?:bo-mon|loai-san|co-so|san|bang-gia|dich-vu|companies|contracts|employees)|/company/employees)(?:/(?:create|store|show|edit|update|delete|status))?\z~', $path, $match)) {
+        return url($path);
+    }
+    $listPath = $match[1];
+    $module = basename($listPath);
+    if ($filters === null) {
+        $return = $_POST['return_to'] ?? $_GET['return_to'] ?? null;
+        if ($return !== null) {
+            $parts = is_string($return) && strlen($return) <= 4096 ? parse_url($return) : false;
+            if (!$parts || isset($parts['scheme']) || isset($parts['host'])
+                || isset($parts['fragment']) || ($parts['path'] ?? '') !== base_path() . '/index.php') return url($path);
+            parse_str($parts['query'] ?? '', $filters);
+            if (($filters['route'] ?? null) !== $listPath) return url($path);
+        } else {
+            $filters = ($_GET['route'] ?? null) === $listPath ? $_GET : [];
+        }
+    }
+    [$links, $options] = match ($module) {
+        'bo-mon' => [[], ['trang_thai' => ['HOAT_DONG', 'NGUNG']]],
+        'loai-san' => [['ma_bo_mon'], ['trang_thai' => ['HOAT_DONG', 'NGUNG']]],
+        'co-so' => [['ma_cong_ty'], ['trang_thai' => ['HOAT_DONG', 'TAM_NGUNG']]],
+        'san' => [['ma_co_so', 'ma_loai_san'], ['trang_thai' => ['HOAT_DONG', 'BAO_TRI', 'TAM_NGUNG']]],
+        'bang-gia' => [['ma_co_so', 'ma_loai_san'], ['loai_ngay' => ['NGAY_THUONG', 'CUOI_TUAN'], 'trang_thai' => ['DANG_AP_DUNG', 'NGUNG']]],
+        'dich-vu' => [['ma_co_so'], ['loai_dich_vu' => array_keys(App\Services\DichVuService::TYPES), 'trang_thai' => array_keys(App\Services\DichVuService::STATES)]],
+        default => [[], []],
+    };
+    try {
+        $filters = array_map(static fn($value) => is_int($value) ? (string) $value : $value, $filters);
+        $query = in_array($module, ['companies', 'contracts', 'employees'], true)
+            ? App\Services\AdminListService::managementFilters($listPath, $filters)
+            : App\Services\AdminListService::filters($filters, $links, $options);
+        if ($module === 'dich-vu') {
+            $unit = $filters['don_vi_tinh'] ?? '';
+            if (!is_string($unit) || !mb_check_encoding($unit, 'UTF-8') || mb_strlen($unit) > 30 || preg_match('/\p{C}/u', $unit)) return url($path);
+            $query['don_vi_tinh'] = trim($unit);
+        }
+    } catch (Core\HttpException $e) {
+        return url($path);
+    }
+    $query = array_filter($query, static fn($value, $key) => $value !== '' && !($key === 'page' && $value === 1) && !($key === 'per_page' && $value === 10) && !($key === 'sort' && $value === 'newest'), ARRAY_FILTER_USE_BOTH);
+    if (!$query) return url($path);
+    $return = url($listPath) . '&' . http_build_query($query);
+    return $path === $listPath ? $return : url($path) . '&return_to=' . rawurlencode($return);
+}
+
+function admin_list_redirect(string $path, ?array $filters = null): void
+{
+    header('Location: ' . admin_context_url($path, $filters), true, 303);
+    exit;
+}

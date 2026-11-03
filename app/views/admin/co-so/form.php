@@ -1,9 +1,9 @@
 <?php $bodyClass = 'page-catalog'; ?>
 <section class="container catalog-page catalog-workspace workspace-page">
-    <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Cơ sở thể thao</p><h1><?= e($title) ?></h1><p class="module-subtitle">Thông tin cơ sở, liên hệ và giờ hoạt động.</p></div><a class="btn btn--outline workspace-back" href="<?= e(url('/admin/co-so')) ?>">Quay lại</a></header>
-    <?php if (!$companies): ?><p class="alert alert--danger" role="alert">Chưa có công ty đang hoạt động. Kiểm tra <a href="<?= e(url('/admin/companies')) ?>">Quản lý Công ty</a> trước khi thêm cơ sở.</p><?php endif; ?>
+    <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Cơ sở thể thao</p><h1><?= e($title) ?></h1><p class="module-subtitle">Thông tin cơ sở, liên hệ và giờ hoạt động.</p></div><a class="btn btn--outline workspace-back admin-back-link" href="<?= e(admin_context_url('/admin/co-so')) ?>">Quay lại danh sách</a></header>
+    <?php if (!$companies): ?><p class="alert alert--danger" role="alert">Chưa có công ty đang hoạt động. Kiểm tra <a href="<?= e(admin_context_url('/admin/companies')) ?>">Quản lý Công ty</a> trước khi thêm cơ sở.</p><?php endif; ?>
     <?php if (($item['trang_thai_cong_ty'] ?? 'HOAT_DONG') !== 'HOAT_DONG'): ?><p class="alert" role="status">Công ty hiện tại đã ngừng. Cơ sở chỉ được giữ ở trạng thái Tạm ngừng hoặc chuyển sang công ty hoạt động khi chưa có dữ liệu tham chiếu.</p><?php endif; ?>
-    <form class="catalog-form module-form workspace-form" method="post" enctype="multipart/form-data" action="<?= e(url('/admin/co-so/' . ($item ? 'update' : 'store'))) ?>" novalidate>
+    <form class="catalog-form module-form workspace-form" method="post" enctype="multipart/form-data" action="<?= e(admin_context_url('/admin/co-so/' . ($item ? 'update' : 'store'))) ?>" novalidate>
         <?= csrf_field() ?>
         <?php if ($item): ?><input type="hidden" name="id" value="<?= e($item['ma_co_so']) ?>"><?php endif; ?>
                 <section class="module-form-card">
@@ -119,7 +119,7 @@
             <?= field_error('trang_thai', $errors) ?>
         </div>
         </div></section>
-        <div class="catalog-actions"><button class="btn btn--primary" type="submit" <?= !$companies ? 'disabled' : '' ?>>Lưu cơ sở</button><a class="btn btn--outline" href="<?= e(url('/admin/co-so')) ?>">Hủy</a></div>
+        <div class="catalog-actions"><button class="btn btn--primary" type="submit" <?= !$companies ? 'disabled' : '' ?>>Lưu cơ sở</button><a class="btn btn--outline" href="<?= e(admin_context_url('/admin/co-so')) ?>">Hủy</a></div>
     </form>
 </section>
 

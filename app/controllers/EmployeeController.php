@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Services\EmployeeService;
+use App\Services\AdminListService;
+use App\Models\{NhanVien, CoSo};
 use App\Services\ValidationException;
 use Core\Application;
 use Core\Controller;
@@ -20,9 +22,20 @@ final class EmployeeController extends Controller
     public function index(): void
     {
         [$role, $companyId, $basePath, $viewPrefix] = $this->context();
-        $this->render($viewPrefix . '/index', [
+        $options = $this->employees->getOptions($role, $companyId);
+        $filters = AdminListService::managementFilters($basePath . '/employees', $_GET);
+        if ($companyId !== null) {
+            $options['facilities'] = (new CoSo($this->app->pdo()))->byCompany((int) $companyId);
+            if ($filters['ma_co_so'] !== '' && !in_array((int) $filters['ma_co_so'], array_map('intval', array_column($options['facilities'], 'ma_co_so')), true)) {
+                throw new HttpException(403, 'Cơ sở nằm ngoài phạm vi công ty của bạn.');
+            }
+        }
+        $result = (new NhanVien($this->app->pdo()))->page($filters, $companyId === null ? null : (int) $companyId);
+        if ($result['page'] !== $filters['page']) admin_list_redirect($basePath . '/employees', array_replace($filters, ['page' => $result['page']]));
+        $notice = $_SESSION['employee_notice'] ?? null; unset($_SESSION['employee_notice']);
+        $this->render($viewPrefix . '/index', $result + [
             'title' => 'Quản lý nhân viên',
-            'employees' => $this->employees->listEmployees($role, $companyId),
+            'employees' => $result['items'], 'filters' => $filters, 'notice' => $notice, 'options' => $options,
         ]);
     }
 
@@ -43,7 +56,8 @@ final class EmployeeController extends Controller
 
         try {
             $this->employees->createEmployee($role, $companyId, $data, $account);
-            $this->redirect($basePath . '/employees');
+            $_SESSION['employee_notice'] = 'Đã thêm nhân viên.';
+            admin_list_redirect($basePath . '/employees');
         } catch (ValidationException $e) {
             $old = $data;
             $old['cap_tai_khoan'] = $account !== null;
@@ -85,7 +99,8 @@ final class EmployeeController extends Controller
 
         try {
             $this->employees->updateEmployee($role, $companyId, $id, $data);
-            $this->redirect($basePath . '/employees');
+            $_SESSION['employee_notice'] = 'Đã cập nhật nhân viên.';
+            admin_list_redirect($basePath . '/employees');
         } catch (ValidationException $e) {
             $this->render($viewPrefix . '/edit', [
                 'title' => 'Cập nhật nhân viên',
@@ -99,11 +114,19 @@ final class EmployeeController extends Controller
 
     public function changeStatus(): void
     {
-        [$role, $companyId, $basePath] = $this->context();
+        [$role, $companyId, $basePath, $viewPrefix] = $this->context();
         $id = $_POST['id'] ?? null;
         $status = $_POST['trang_thai'] ?? '';
-        $this->employees->changeStatus($role, $companyId, $id, $status);
-        $this->redirect($basePath . '/employees');
+        try {
+            $this->employees->changeStatus($role, $companyId, $id, $status);
+            $_SESSION['employee_notice'] = 'Đã cập nhật trạng thái nhân viên.';
+            admin_list_redirect($basePath . '/employees');
+        } catch (ValidationException $e) {
+            $employee = $this->employees->getEmployee($role, $companyId, $id);
+            $this->render($viewPrefix . '/edit', ['title' => 'Cập nhật nhân viên', 'employee' => $employee,
+                'options' => $this->employees->getOptions($role, $companyId, $employee['ma_co_so'] ?? null),
+                'errors' => $e->errors, 'old' => ['trang_thai' => $status]], 422);
+        }
     }
 
     private function context(): array

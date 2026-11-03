@@ -193,7 +193,17 @@ try {
                 checkList($previousQuery['page'] === '1' && $previousQuery['per_page'] === '10', "$slug previous page URL");
                 $id = $data['items'][0][$key];
                 foreach (['show', 'edit', $slug === 'bang-gia' ? 'show' : 'delete'] as $action) {
-                    checkList(str_contains($html, e(url('/admin/' . $slug . '/' . $action) . '&id=' . $id)), "$slug action keeps database ID");
+                    $document = new DOMDocument();
+                    $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+                    $found = false;
+                    foreach ($document->getElementsByTagName('a') as $link) {
+                        parse_str(parse_url($link->getAttribute('href'), PHP_URL_QUERY) ?? '', $actionQuery);
+                        if (($actionQuery['route'] ?? '') !== '/admin/' . $slug . '/' . $action || ($actionQuery['id'] ?? '') !== (string) $id) continue;
+                        parse_str(parse_url($actionQuery['return_to'] ?? '', PHP_URL_QUERY) ?? '', $returnQuery);
+                        $found = ($returnQuery['route'] ?? '') === '/admin/' . $slug && ($returnQuery['page'] ?? '') === '2';
+                        if ($found) break;
+                    }
+                    checkList($found, "$slug action keeps database ID and list page");
                 }
                 checkList(str_contains($html, 'list-action--view') && str_contains($html, 'list-action--edit') && str_contains($html, '<svg viewBox="0 0 24 24"'), "$slug SVG actions");
             }

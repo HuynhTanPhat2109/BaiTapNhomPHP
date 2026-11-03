@@ -6,6 +6,37 @@ use Core\HttpException;
 
 final class AdminListService
 {
+    public const NAME_SORTS = ['newest' => 'Mới nhất', 'name_asc' => 'Tên A–Z', 'name_desc' => 'Tên Z–A'];
+    public const CONTRACT_SORTS = ['newest' => 'Mới nhất', 'start_asc' => 'Bắt đầu tăng dần', 'start_desc' => 'Bắt đầu giảm dần', 'end_asc' => 'Kết thúc tăng dần', 'end_desc' => 'Kết thúc giảm dần'];
+
+    public static function managementFilters(string $path, array $query): array
+    {
+        [$links, $options] = match ($path) {
+            '/admin/companies' => [[], ['trang_thai' => ['HOAT_DONG', 'NGUNG_HOAT_DONG']]],
+            '/admin/contracts' => [['ma_cong_ty'], ['trang_thai' => ['HIEU_LUC', 'HET_HAN', 'CHAM_DUT']]],
+            '/admin/employees' => [['ma_cong_ty'], ['trang_thai' => ['DANG_LAM', 'DA_NGHI'], 'vai_tro' => ['QUAN_LY_CONG_TY']]],
+            '/company/employees' => [['ma_co_so'], ['trang_thai' => ['DANG_LAM', 'DA_NGHI'], 'vai_tro' => ['QUAN_LY_CO_SO', 'NHAN_VIEN']]],
+            default => throw new \LogicException('Unknown management list'),
+        };
+        $sorts = $path === '/admin/contracts' ? self::CONTRACT_SORTS : self::NAME_SORTS;
+        $filters = self::filters($query, $links, $options + ['sort' => array_keys($sorts)]);
+        if ($filters['sort'] === '') $filters['sort'] = 'newest';
+        if ($path === '/admin/contracts') {
+            foreach (['tu_ngay', 'den_ngay'] as $field) {
+                $date = $query[$field] ?? '';
+                if (!is_string($date) || ($date !== '' && (!preg_match('/\A[0-9]{4}-[0-9]{2}-[0-9]{2}\z/', $date)
+                    || !($parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date)) || $parsed->format('Y-m-d') !== $date))) {
+                    throw new HttpException(422, 'Khoảng ngày lọc không hợp lệ.');
+                }
+                $filters[$field] = $date;
+            }
+            if ($filters['tu_ngay'] !== '' && $filters['den_ngay'] !== '' && $filters['den_ngay'] < $filters['tu_ngay']) {
+                throw new HttpException(422, 'Ngày đến phải bằng hoặc sau ngày từ.');
+            }
+        }
+        return $filters;
+    }
+
     public static function filters(array $query, array $links, array $options): array
     {
         $filters = [];
