@@ -1,0 +1,107 @@
+.facility-hero {
+    padding:clamp(24px,3.5vw,54px);
+    border-radius:14px;
+    background:#163c29;
+    background-image:linear-gradient(90deg,rgba(5,25,17,.82),rgba(5,25,17,.4) 55%,rgba(5,25,17,.12)),linear-gradient(0deg,rgba(7,29,19,.85),transparent 60%),url('../images/booking-hero.png');
+    background-size:cover;
+    background-position:center;
+    animation:facility-hero-enter .4s ease-out both;
+}
+.facility-hero-copy { max-width:720px; margin-bottom:32px; }
+.facility-hero-copy h1 { margin:0 0 16px; color:#f3f8ef; font-size:clamp(26px,3vw,42px); line-height:1.18; letter-spacing:-.035em; }
+.facility-hero-copy h1 span { color:#c8f36b; }
+.facility-hero-copy p { margin:0; color:#e0eadd; font-size:15px; line-height:1.65; }
+.facility-hero-tools { display:flex; align-items:center; gap:20px; }
+.facility-hero .directory-search { flex:1 1 620px; min-width:0; margin:0; padding:7px; gap:8px; border:1px solid #91b663; border-radius:40px; background:#0c261dcc; backdrop-filter:blur(6px); transition:border-color .2s,box-shadow .2s; }
+.facility-hero .directory-search:focus-within { border-color:#c8f36b; box-shadow:0 0 0 3px #c8f36b20,0 0 22px #c8f36b16; }
+.facility-hero .search-input-wrap input { border:0; background:transparent; border-radius:24px; padding:8px 8px 8px 40px; font-size:15px; }
+.facility-hero .search-input-icon { fill:#c8f36b; left:12px; }
+.facility-hero .directory-search .btn--primary { order:3; border-radius:28px; min-height:40px; padding:8px 22px; background:#c8f36b; color:#132214; transition:box-shadow .2s,background .2s; }
+.facility-hero .directory-search .btn--primary:hover { background:#d8ff88; box-shadow:0 0 18px #c8f36b35; }
+.facility-hero .directory-search .filter-icon-btn { order:2; width:42px; height:42px; min-height:40px; padding:8px; border-radius:50%; background:#ffffff07; border:1px solid #a8c7a62e; color:#dce8d9; }
+.facility-hero .filter-icon-btn svg { width:22px; height:22px; }
+.facility-hero-shortcuts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; flex:0 1 450px; min-width:0; }
+.facility-hero .facility-hero-shortcut { display:flex; align-items:center; justify-content:center; gap:10px; padding:13px 14px; border:1px solid #adccb54d; border-radius:32px; background:#254d3c80; color:#c5d3c8; opacity:1; cursor:not-allowed; backdrop-filter:blur(5px); font:inherit; white-space:nowrap; }
+.facility-hero-shortcut svg { width:22px; height:22px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.facility-hero-shortcut span { font-size:13px; font-weight:600; }
+@keyframes facility-hero-enter { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+@media(max-width:1200px) {
+    .facility-hero-tools { flex-wrap:wrap; gap:14px; }
+    .facility-hero .directory-search { flex-basis:100%; }
+    .facility-hero-shortcuts { flex-basis:450px; }
+}
+@media(max-width:600px) {
+    .facility-hero { padding:24px 14px; background-position:62% center; }
+    .facility-hero-copy { margin-bottom:24px; }
+    .facility-hero-copy p { font-size:13px; }
+    .facility-hero .directory-search { display:grid; grid-template-columns:minmax(0,1fr) 42px; border-radius:20px; }
+    .facility-hero .directory-search .btn--primary { grid-column:1/-1; width:100%; min-height:42px; padding:10px; }
+    .facility-hero .directory-search .filter-icon-btn { width:42px; }
+    .facility-hero-shortcuts { flex-basis:100%; gap:6px; }
+    .facility-hero .facility-hero-shortcut { flex-direction:column; gap:6px; padding:12px 4px; border-radius:14px; }
+    .facility-hero-shortcut span { font-size:11px; }
+    .facility-hero .directory-search .filter-icon-btn {
+        width: 42px;
+        min-width: 42px;
+        height: 42px;
+    }
+}
+@media(prefers-reduced-motion:reduce) {
+    .facility-hero { animation:none; }
+    .facility-hero .directory-search,.facility-hero .directory-search .btn--primary { transition:none; }
+}
+/* =========================================
+   ACTIVE SHORTCUT - SÂN ĐÃ ĐẶT
+========================================= */
+
+.facility-hero .facility-hero-shortcut--active {
+    text-decoration: none;
+    cursor: pointer;
+
+    border: 1px solid rgba(173, 204, 181, .3);
+    background: rgba(37, 77, 60, .5);
+    color: #c5d3c8;
+
+    transition:
+        background .25s ease,
+        border-color .25s ease,
+        color .25s ease,
+        box-shadow .25s ease,
+        transform .25s ease;
+}
+
+/* Hover: sáng nhẹ, không quá chói */
+.facility-hero .facility-hero-shortcut--active:hover {
+    background: rgba(75, 105, 89, .78);
+    border-color: rgba(200, 243, 107, .55);
+    color: #f1f8eb;
+
+    box-shadow:
+        0 6px 20px rgba(0, 0, 0, .18),
+        0 0 14px rgba(200, 243, 107, .10);
+
+    transform: translateY(-2px);
+}
+
+/* Nhấn nút */
+.facility-hero .facility-hero-shortcut--active:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+}
+
+/* Điều hướng bằng bàn phím */
+.facility-hero .facility-hero-shortcut--active:focus-visible {
+    outline: 2px solid #c8f36b;
+    outline-offset: 4px;
+}
+
+/* Giảm chuyển động nếu người dùng yêu cầu */
+@media (prefers-reduced-motion: reduce) {
+    .facility-hero .facility-hero-shortcut--active {
+        transition: none;
+    }
+
+    .facility-hero .facility-hero-shortcut--active:hover {
+        transform: none;
+    }
+}

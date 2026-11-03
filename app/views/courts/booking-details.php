@@ -3,6 +3,10 @@
 use App\Services\BookingPricingService as Money;
 ?>
 <link rel="stylesheet" href="<?= e(base_path().'/assets/css/booking.css') ?>">
+<link
+    rel="stylesheet"
+    href="<?= e(base_path() . '/assets/css/action-button.css') ?>"
+>
 <script src="<?= e(base_path().'/assets/js/booking.js') ?>" defer></script>
 
 <section class="booking-page booking-details"
@@ -256,22 +260,41 @@ use App\Services\BookingPricingService as Money;
                                 </strong>
                             </div>
                         </section>
-                        <div class="booking-action"><?php if ($user): ?>
-                        <button class="btn btn--primary booking-confirm"
-                                type="submit"
-                                formaction="<?= e(url('/booking/confirm')) ?>"
-                                data-confirm-booking>
-                            Xác nhận &amp; Thanh toán
-                        </button>
-                    <?php else: ?>
-                        <button class="btn btn--primary booking-confirm"
-                                type="submit"
-                                name="action"
-                                value="login">
-                            Đăng nhập để xác nhận
-                        </button>
-                    <?php endif; ?>
-                    </div>
+                        <div class="booking-action">
+                            <?php if ($user): ?>
+
+                                <?php
+                                $buttonText = 'XÁC NHẬN & THANH TOÁN';
+                                $buttonType = 'submit';
+                                $buttonDisabled = false;
+                                $buttonClass = 'booking-confirm';
+
+                                $buttonAttributes = [
+                                    'formaction' => url('/booking/confirm'),
+                                    'data-confirm-booking' => true,
+                                ];
+
+                                require __DIR__ . '/../components/action-button.php';
+                                ?>
+
+                            <?php else: ?>
+
+                                <?php
+                                $buttonText = 'ĐĂNG NHẬP ĐỂ XÁC NHẬN';
+                                $buttonType = 'submit';
+                                $buttonDisabled = false;
+                                $buttonClass = 'booking-confirm';
+
+                                $buttonAttributes = [
+                                    'name' => 'action',
+                                    'value' => 'login',
+                                ];
+
+                                require __DIR__ . '/../components/action-button.php';
+                                ?>
+
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <section class="booking-booker">
                         <h2>Thông tin người đặt</h2>

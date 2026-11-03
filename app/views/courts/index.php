@@ -1,29 +1,71 @@
 <script src="<?= e(base_path() . '/assets/js/courts-search.js') ?>" defer></script>
+<link rel="stylesheet" href="<?= e(base_path() . '/assets/css/facility-hero.css') ?>">
 <section class="courts-page courts-directory">
-    <form method="get" action="<?= e(base_path() . '/index.php') ?>" id="court-filters" class="directory-search">
-        <input type="hidden" name="route" value="/courts">
-        <div class="search-input-wrap">
-            <svg class="search-input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M480 272C480 317.9 465.1 360.3 440 394.7L566.6 521.4C579.1 533.9 579.1 554.2 566.6 566.7C554.1 579.2 533.8 579.2 521.3 566.7L394.7 440C360.3 465.1 317.9 480 272 480C157.1 480 64 386.9 64 272C64 157.1 157.1 64 272 64C386.9 64 480 157.1 480 272zM272 416C351.5 416 416 351.5 416 272C416 192.5 351.5 128 272 128C192.5 128 128 192.5 128 272C128 351.5 192.5 416 272 416z"/></svg>
-            <input
-                id="court-search"
-                name="q"
-                value="<?= e($filters['q']) ?>"
-                maxlength="200"
-                aria-label="Tìm tên cơ sở"
-                placeholder="Tìm tên sân thể thao…">
+    <section class="facility-hero" aria-labelledby="facility-hero-title">
+        <div class="facility-hero-copy">
+            <h1 id="facility-hero-title">Đặt sân thể thao dễ dàng<br> cùng <span>STRYKE.</span></h1>
+            <p>Tìm kiếm, đặt lịch và trải nghiệm sân thể thao phù hợp với bạn.</p>
         </div>
-        <button class="btn btn--primary">Tìm kiếm</button>
-        <button
-            class="btn filter-icon-btn"
-            type="button"
-            data-open-filter
-            aria-controls="filter-drawer"
-            aria-haspopup="dialog"
-            aria-label="Bộ lọc nâng cao"
-            title="Bộ lọc nâng cao">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M96 128C78.3 128 64 142.3 64 160C64 177.7 78.3 192 96 192L182.7 192C195 220.3 223.2 240 256 240C288.8 240 317 220.3 329.3 192L544 192C561.7 192 576 177.7 576 160C576 142.3 561.7 128 544 128L329.3 128C317 99.7 288.8 80 256 80C223.2 80 195 99.7 182.7 128L96 128zM96 288C78.3 288 64 302.3 64 320C64 337.7 78.3 352 96 352L342.7 352C355 380.3 383.2 400 416 400C448.8 400 477 380.3 489.3 352L544 352C561.7 352 576 337.7 576 320C576 302.3 561.7 288 544 288L489.3 288C477 259.7 448.8 240 416 240C383.2 240 355 259.7 342.7 288L96 288zM96 448C78.3 448 64 462.3 64 480C64 497.7 78.3 512 96 512L150.7 512C163 540.3 191.2 560 224 560C256.8 560 285 540.3 297.3 512L544 512C561.7 512 576 497.7 576 480C576 462.3 561.7 448 544 448L297.3 448C285 419.7 256.8 400 224 400C191.2 400 163 419.7 150.7 448L96 448z"/></svg>
-        </button>   
-    </form>
+        <div class="facility-hero-tools">
+        <form method="get" action="<?= e(base_path() . '/index.php') ?>" id="court-filters" class="directory-search">
+            <input type="hidden" name="route" value="/courts">
+            <div class="search-input-wrap">
+                <svg class="search-input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M480 272C480 317.9 465.1 360.3 440 394.7L566.6 521.4C579.1 533.9 579.1 554.2 566.6 566.7C554.1 579.2 533.8 579.2 521.3 566.7L394.7 440C360.3 465.1 317.9 480 272 480C157.1 480 64 386.9 64 272C64 157.1 157.1 64 272 64C386.9 64 480 157.1 480 272zM272 416C351.5 416 416 351.5 416 272C416 192.5 351.5 128 272 128C192.5 128 128 192.5 128 272C128 351.5 192.5 416 272 416z"/></svg>
+                <input
+                    id="court-search"
+                    name="q"
+                    value="<?= e($filters['q']) ?>"
+                    maxlength="200"
+                    aria-label="Tìm tên cơ sở"
+                    placeholder="Tìm tên sân thể thao…">
+            </div>
+            <button type="submit" class="btn btn--primary">Tìm kiếm</button>
+            <button
+                class="btn filter-icon-btn"
+                type="button"
+                data-open-filter
+                aria-controls="filter-drawer"
+                aria-haspopup="dialog"
+                aria-label="Bộ lọc nâng cao"
+                title="Bộ lọc nâng cao">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M96 128C78.3 128 64 142.3 64 160C64 177.7 78.3 192 96 192L182.7 192C195 220.3 223.2 240 256 240C288.8 240 317 220.3 329.3 192L544 192C561.7 192 576 177.7 576 160C576 142.3 561.7 128 544 128L329.3 128C317 99.7 288.8 80 256 80C223.2 80 195 99.7 182.7 128L96 128zM96 288C78.3 288 64 302.3 64 320C64 337.7 78.3 352 96 352L342.7 352C355 380.3 383.2 400 416 400C448.8 400 477 380.3 489.3 352L544 352C561.7 352 576 337.7 576 320C576 302.3 561.7 288 544 288L489.3 288C477 259.7 448.8 240 416 240C383.2 240 355 259.7 342.7 288L96 288zM96 448C78.3 448 64 462.3 64 480C64 497.7 78.3 512 96 512L150.7 512C163 540.3 191.2 560 224 560C256.8 560 285 540.3 297.3 512L544 512C561.7 512 576 497.7 576 480C576 462.3 561.7 448 544 448L297.3 448C285 419.7 256.8 400 224 400C191.2 400 163 419.7 150.7 448L96 448z"/></svg>
+            </button>   
+        </form>
+            <div class="facility-hero-shortcuts" aria-label="Tiện ích STRYKE">
+
+                <!-- Sân đã đặt: đã hoạt động -->
+                <a
+                    href="<?= e(url('/booking/history')) ?>"
+                    class="facility-hero-shortcut facility-hero-shortcut--active"
+                    aria-label="Xem sân đã đặt"
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3" y="5" width="18" height="16" rx="2"/>
+                        <path d="M16 3v4M8 3v4M3 11h18M8 15h2M14 15h2"/>
+                    </svg>
+                    <span>Sân đã đặt</span>
+                </a>
+
+                <!-- Yêu thích: phát triển sau -->
+                <button type="button" disabled class="facility-hero-shortcut">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>
+                    </svg>
+                    <span>Yêu thích</span>
+                </button>
+
+                <!-- Bản đồ: phát triển sau -->
+                <button type="button" disabled class="facility-hero-shortcut">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span>Bản đồ</span>
+                </button>
+
+            </div>
+        </div>
+    </section>
     <dialog id="filter-drawer" class="court-drawer drawer-right" aria-labelledby="filter-title">
         <header class="drawer-header"><h2 id="filter-title">Bộ lọc nâng cao</h2><button type="button" class="drawer-close" data-close-drawer aria-label="Đóng bộ lọc"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M183.1 137.4C170.6 124.9 150.3 124.9 137.8 137.4C125.3 149.9 125.3 170.2 137.8 182.7L275.2 320L137.9 457.4C125.4 469.9 125.4 490.2 137.9 502.7C150.4 515.2 170.7 515.2 183.2 502.7L320.5 365.3L457.9 502.6C470.4 515.1 490.7 515.1 503.2 502.6C515.7 490.1 515.7 469.8 503.2 457.3L365.8 320L503.1 182.6C515.6 170.1 515.6 149.8 503.1 137.3C490.6 124.8 470.3 124.8 457.8 137.3L320.5 274.7L183.1 137.4z"/></svg></button></header>
         <div class="drawer-body">

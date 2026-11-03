@@ -2,8 +2,10 @@
 $backRoute = $template === 'courts/index' ? '/' : '/courts';
 $backLabel = $template === 'courts/index' ? 'Trang chủ' : '';
 $backUrl = $bookingBackUrl ?? url($backRoute);
+if ($template === 'courts/prices') $backUrl = $priceBackUrl;
 $cancelHold = $template === 'courts/booking-wait' && ($booking['trang_thai_dat_san'] ?? '') === 'CHO_THANH_TOAN';
 $backAccessibleLabel = isset($bookingBackUrl) ? 'Về lịch sân' : ($template === 'courts/index' ? 'Về trang chủ' : 'Về danh sách cơ sở');
+if ($template === 'courts/prices') $backAccessibleLabel = 'Về lịch sân';
 ?>
 <!doctype html>
 <html lang="vi">
@@ -33,11 +35,16 @@ $backAccessibleLabel = isset($bookingBackUrl) ? 'Về lịch sân' : ($template 
     $isVisualBooking = in_array($template, [
         'courts/schedule',
         'courts/booking-details',
-        'courts/booking-wait',
     ], true);
     ?>
 
-    <?php if ($isVisualBooking): ?>
+    <?php if ($template === 'courts/prices'): ?>
+        <span class="court-flow-title">XEM BẢNG GIÁ SÂN</span>
+
+    <?php elseif ($template === 'courts/booking-wait'): ?>
+        <span class="court-flow-title">THANH TOÁN</span>
+        
+    <?php elseif ($isVisualBooking): ?>
         <span class="court-flow-title">ĐẶT LỊCH THEO SÂN - TRỰC QUAN</span>
     <?php else: ?>
         <a class="court-flow-brand" href="<?= e(url('/')) ?>" aria-label="STRYKE — Trang chủ">

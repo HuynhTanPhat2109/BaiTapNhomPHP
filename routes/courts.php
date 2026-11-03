@@ -4,8 +4,11 @@ $router->get('/courts', [$courtBrowser, 'index']);
 $router->get('/courts/show', [$courtBrowser, 'show']);
 $router->get('/courts/panel', [$courtBrowser, 'panel']);
 $router->get('/courts/schedule', [$courtBrowser, 'schedule']);
+$router->get('/courts/prices', [$courtBrowser, 'prices']);
 
 $booking = new App\Controllers\BookingController($app);
+$bookingHistory = new App\Controllers\BookingHistoryController($app);
+$router->get('/booking/history', [$bookingHistory, 'index'], [new App\Middleware\RoleMiddleware($app, ['KHACH_HANG'])]);
 $router->post('/booking/quote', [$booking, 'quote']);
 $router->post('/booking/start', [$booking, 'start']);
 $router->get('/booking/details', [$booking, 'details']);

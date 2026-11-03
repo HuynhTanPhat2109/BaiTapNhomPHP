@@ -87,4 +87,15 @@ final class CourtBrowserController extends Controller
         unset($_SESSION['booking_notice']);
         $this->render('courts/schedule', compact('facility', 'date', 'now', 'schedule', 'selection', 'error', 'bookingNotice') + ['title' => 'Lịch sân'], $error ? 422 : 200);
     }
+
+    public function prices(): void
+    {
+        $facility = $this->facility();
+        $now = CourtScheduleService::now();
+        $date = $this->input('date', $now->format('Y-m-d'));
+        CourtScheduleService::validateDate($date, $now);
+        $sports = \App\Services\CourtPriceList::group($this->model()->priceList((int)$facility['ma_co_so'], $date));
+        $priceBackUrl = url('/courts/schedule') . '&id=' . $facility['ma_co_so'] . '&date=' . rawurlencode($date);
+        $this->render('courts/prices', compact('facility', 'date', 'sports', 'priceBackUrl') + ['title'=>'Xem bảng giá sân']);
+    }
 }

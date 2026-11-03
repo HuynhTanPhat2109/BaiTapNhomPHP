@@ -5,7 +5,36 @@ use PDO;
 
 final class Booking
 {
+    private array $expiryReport = [];
+
     public function __construct(private PDO $pdo) {}
+
+    /** Internal SQL fragment: b is always the booking alias; the caller binds server time. */
+    public static function effectiveStatusSql(): string
+    {
+        return "CASE WHEN b.trang_thai_dat_san='CHO_THANH_TOAN'
+            AND b.het_han_giu_san_luc <= ? AND " . self::unprotectedSql() . "
+            THEN 'HET_HAN' ELSE b.trang_thai_dat_san END";
+    }
+
+    private static function unprotectedSql(): string
+    {
+        return "NOT EXISTS (SELECT 1 FROM thanh_toan p WHERE p.ma_dat_san=b.ma_dat_san
+            AND p.trang_thai IN ('THANH_CONG','CAN_DOI_SOAT'))";
+    }
+
+    public function findEffective(int $id): ?array
+    {
+        return $this->rows('SELECT b.*, ' . self::effectiveStatusSql() . ' AS trang_thai_dat_san
+            FROM dat_san b WHERE b.ma_dat_san=?', [$this->serverTime(), $id])[0] ?? null;
+    }
+
+    private function serverTime(): string
+    {
+        return (string) $this->pdo->query('SELECT CURRENT_TIMESTAMP')->fetchColumn();
+    }
+
+    public function expiryReport(): array { return $this->expiryReport; }
 
     private function rows(string $sql, array $params = []): array
     {
@@ -17,6 +46,77 @@ final class Booking
     public function byKey(string $key): ?array
     {
         return $this->rows('SELECT * FROM dat_san WHERE khoa_yeu_cau = ?', [$key])[0] ?? null;
+    }
+
+    /** Read-only effective status; never persist expiry, visit checkout or recalculate prices here. */
+    public function history(int $customer, string $status = '', int $page = 1, string $from = '', string $to = '', string $sort = 'newest'): array
+    {
+        if ($customer < 1) throw new \InvalidArgumentException('Customer required.');
+        $now = $this->serverTime();
+        // One cutoff for cards, counts, filters and pages; no expiry writes on GET.
+        $source = '(SELECT b.ma_dat_san,b.ma_khach_hang,b.ma_co_so,b.ngay_tao,
+            b.tong_tien_san,b.tong_tien_dich_vu,b.tong_tien_tam_tinh,' . self::effectiveStatusSql() . ' AS trang_thai_dat_san FROM dat_san b) h';
+        $dateWhere = '';
+        $dateParams = [];
+        if ($from !== '') { $dateWhere .= ' AND h.ngay_tao>=?'; $dateParams[] = $from . ' 00:00:00'; }
+        // ngay_tao is DATETIME without fractional seconds: include the entire last day.
+        if ($to !== '') { $dateWhere .= ' AND h.ngay_tao<=?'; $dateParams[] = $to . ' 23:59:59'; }
+        $counts = [];
+        foreach ($this->rows('SELECT h.trang_thai_dat_san, COUNT(*) AS total FROM ' . $source . '
+            WHERE h.ma_khach_hang=?' . $dateWhere . ' GROUP BY h.trang_thai_dat_san', [$now, $customer, ...$dateParams]) as $row) {
+            $counts[$row['trang_thai_dat_san']] = (int) $row['total'];
+        }
+        // Overview is lifetime totals; tab counts reflect the selected creation-date range.
+        $stats = $counts;
+        if ($dateWhere !== '') {
+            $stats = [];
+            foreach ($this->rows('SELECT h.trang_thai_dat_san,COUNT(*) AS total FROM ' . $source . '
+                WHERE h.ma_khach_hang=? GROUP BY h.trang_thai_dat_san', [$now, $customer]) as $row) {
+                $stats[$row['trang_thai_dat_san']] = (int)$row['total'];
+            }
+        }
+        $total = $status === '' ? array_sum($counts) : ($counts[$status] ?? 0);
+        $perPage = 6;
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = max(1, min($page, $pages));
+        $offset = ($page - 1) * $perPage;
+        $params = [$now, $customer, ...$dateParams];
+        $where = 'h.ma_khach_hang=?' . $dateWhere;
+        if ($status !== '') { $where .= ' AND h.trang_thai_dat_san=?'; $params[] = $status; }
+        // LIMIT/OFFSET are internal integers; all request values are bound parameters.
+        $direction = $sort === 'oldest' ? 'ASC' : 'DESC';
+        $items = $this->rows("SELECT h.ma_dat_san, h.ngay_tao, h.trang_thai_dat_san,
+            h.tong_tien_san, h.tong_tien_dich_vu, h.tong_tien_tam_tinh, c.ten_co_so, c.anh_dai_dien
+            FROM $source JOIN co_so c ON c.ma_co_so=h.ma_co_so
+            WHERE $where ORDER BY h.ngay_tao $direction, h.ma_dat_san $direction LIMIT $perPage OFFSET $offset", $params);
+        $lines = [];
+        $serviceLines = [];
+        if ($items) {
+            $ids = array_column($items, 'ma_dat_san');
+            $marks = implode(',', array_fill(0, count($ids), '?'));
+            foreach ($this->rows("SELECT d.ma_dat_san, d.ma_san, d.ten_san_snapshot,
+                d.ngay_choi, d.gio_bat_dau, d.gio_ket_thuc
+                FROM chi_tiet_dat_san d JOIN dat_san b ON b.ma_dat_san=d.ma_dat_san
+                WHERE b.ma_khach_hang=? AND d.ma_dat_san IN ($marks)
+                ORDER BY d.ngay_choi, d.ma_san, d.gio_bat_dau, d.ma_chi_tiet", [$customer, ...$ids]) as $line) {
+                $lines[$line['ma_dat_san']][] = $line;
+            }
+            // One batch for the current page, independent of court rows (no fan-out / N+1).
+            // Only stored service snapshots; never join current catalog prices.
+            foreach ($this->rows("SELECT d.ma_dat_san, d.ten_dich_vu_snapshot,
+                d.don_vi_tinh_snapshot, d.so_luong, d.don_gia, d.thanh_tien
+                FROM chi_tiet_dich_vu_dat d JOIN dat_san b ON b.ma_dat_san=d.ma_dat_san
+                WHERE b.ma_khach_hang=? AND d.ma_dat_san IN ($marks)
+                ORDER BY d.ma_dat_san,d.ma_chi_tiet_dv", [$customer, ...$ids]) as $line) {
+                $serviceLines[$line['ma_dat_san']][] = $line;
+            }
+        }
+        foreach ($items as &$item) {
+            $item['lines'] = $lines[$item['ma_dat_san']] ?? [];
+            $item['service_lines'] = $serviceLines[$item['ma_dat_san']] ?? [];
+        }
+        unset($item);
+        return compact('items', 'counts', 'stats', 'total', 'page', 'pages', 'perPage');
     }
 
     public function find(int $id, bool $lock = false): ?array
@@ -116,28 +216,68 @@ final class Booking
 
     public function expire(?int $id = null): int
     {
-        $ids = $id === null ? array_column($this->rows("SELECT ma_dat_san FROM dat_san
-            WHERE trang_thai_dat_san='CHO_THANH_TOAN' AND het_han_giu_san_luc <= CURRENT_TIMESTAMP
-            ORDER BY ma_dat_san"), 'ma_dat_san') : [$id];
-        $count = 0;
-        foreach ($ids as $bookingId) {
-            $ownsTransaction = !$this->pdo->inTransaction();
-            if ($ownsTransaction) $this->pdo->beginTransaction();
-            try {
-                $this->find((int)$bookingId, true);
-                $this->rows('SELECT ma_thanh_toan FROM thanh_toan WHERE ma_dat_san=? FOR UPDATE', [$bookingId]);
-                $stmt = $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san='HET_HAN'
-                    WHERE ma_dat_san=? AND trang_thai_dat_san='CHO_THANH_TOAN'
-                    AND het_han_giu_san_luc <= CURRENT_TIMESTAMP");
-                $stmt->execute([$bookingId]);
-                $count += $stmt->rowCount();
-                $this->syncEndedPayment((int)$bookingId);
-                if ($ownsTransaction) $this->pdo->commit();
-            } catch (\Throwable $e) {
-                if ($ownsTransaction && $this->pdo->inTransaction()) $this->pdo->rollBack();
-                throw $e;
-            }
+        if ($id !== null) return $this->expireOne($id);
+        if ($this->pdo->inTransaction()) throw new \LogicException('Bulk expiry requires independent transactions');
+        $this->expiryReport = ['expired'=>0, 'batches'=>0, 'protected_sample'=>[], 'overlap_skipped'=>false, 'more_pending'=>false];
+        // Database-scoped lock works across CLI instances / hosts connected to this MySQL.
+        $lock = 'stryke_expiry_' . hash('sha1', (string)$this->pdo->query('SELECT DATABASE()')->fetchColumn());
+        $acquired = $this->rows('SELECT GET_LOCK(?,0) AS acquired', [$lock])[0]['acquired'];
+        if ($acquired === null) throw new \RuntimeException('Cannot acquire expiry job lock');
+        if ((int)$acquired !== 1) {
+            $this->expiryReport['overlap_skipped'] = true;
+            return 0;
         }
-        return $count;
+        $eligible = "b.trang_thai_dat_san='CHO_THANH_TOAN' AND b.het_han_giu_san_luc<=CURRENT_TIMESTAMP AND " . self::unprotectedSql();
+        $deadline = microtime(true) + 45;
+        try {
+            $this->expiryReport['protected_sample'] = array_column($this->rows("SELECT b.ma_dat_san FROM dat_san b
+                WHERE b.trang_thai_dat_san='CHO_THANH_TOAN' AND b.het_han_giu_san_luc<=CURRENT_TIMESTAMP
+                AND NOT (" . self::unprotectedSql() . ") ORDER BY b.het_han_giu_san_luc,b.ma_dat_san LIMIT 100"), 'ma_dat_san');
+            if ($this->expiryReport['protected_sample']) {
+                error_log('Booking expiry reconciliation required; booking_ids=' . implode(',', $this->expiryReport['protected_sample']));
+            }
+            // Indexed deadline range, capped memory and runtime; next invocation picks up remaining rows.
+            for ($batch = 0; $batch < 10 && microtime(true) < $deadline; $batch++) {
+                $ids = array_column($this->rows("SELECT b.ma_dat_san FROM dat_san b WHERE $eligible
+                    ORDER BY b.het_han_giu_san_luc,b.ma_dat_san LIMIT 200"), 'ma_dat_san');
+                if (!$ids) break;
+                $this->expiryReport['batches']++;
+                foreach ($ids as $bookingId) {
+                    if (microtime(true) >= $deadline) break;
+                    $this->expiryReport['expired'] += $this->expireOne((int)$bookingId);
+                }
+            }
+            $this->expiryReport['more_pending'] = (bool)$this->rows("SELECT b.ma_dat_san FROM dat_san b WHERE $eligible LIMIT 1");
+            return $this->expiryReport['expired'];
+        } finally {
+            $this->rows('SELECT RELEASE_LOCK(?)', [$lock]);
+        }
+    }
+
+    private function expireOne(int $bookingId): int
+    {
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) $this->pdo->beginTransaction();
+        try {
+            $booking = $this->find($bookingId, true);
+            $payment = $this->rows('SELECT trang_thai FROM thanh_toan WHERE ma_dat_san=? FOR UPDATE', [$bookingId])[0] ?? null;
+            if ($booking && $booking['trang_thai_dat_san']==='CHO_THANH_TOAN'
+                && in_array($payment['trang_thai'] ?? '', ['THANH_CONG','CAN_DOI_SOAT'], true)) {
+                error_log('Booking expiry skipped for reconciliation; booking_id=' . $bookingId);
+                if ($ownsTransaction) $this->pdo->commit();
+                return 0;
+            }
+            $stmt = $this->pdo->prepare("UPDATE dat_san b SET b.trang_thai_dat_san='HET_HAN'
+                WHERE b.ma_dat_san=? AND b.trang_thai_dat_san='CHO_THANH_TOAN'
+                AND b.het_han_giu_san_luc <= CURRENT_TIMESTAMP AND " . self::unprotectedSql());
+            $stmt->execute([$bookingId]);
+            $count = $stmt->rowCount();
+            $this->syncEndedPayment($bookingId);
+            if ($ownsTransaction) $this->pdo->commit();
+            return $count;
+        } catch (\Throwable $e) {
+            if ($ownsTransaction && $this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $e;
+        }
     }
 }
