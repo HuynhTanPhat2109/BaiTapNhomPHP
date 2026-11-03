@@ -1,0 +1,308 @@
+/* ==========================================================================
+   STRYKE - CSS HÓA ĐƠN & PHIẾU TÍNH TIỀN CHUẨN POS QUÁN CAFE (80MM / K80)
+   Tuân thủ nghiêm ngặt Content Security Policy (style-src self)
+   ========================================================================== */
+
+/* 1. KHÔNG GIAN HIỂN THỊ TỜ BILL */
+.pos-bill-workspace {
+    background: #e2e8f0;
+    padding: 24px 14px 50px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 2. THANH ĐIỀU KHIỂN TRÊN CÙNG KHI MỞ TRANG IN */
+.print-control-bar {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 16px auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-sizing: border-box;
+}
+
+.btn-print-action {
+    background: #16a34a;
+    color: #ffffff;
+    border: 1px solid #15803d;
+    padding: 9px 20px;
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    transition: background 150ms ease;
+}
+.btn-print-action:hover {
+    background: #15803d;
+}
+
+.btn-close-action {
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    transition: all 150ms ease;
+}
+.btn-close-action:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+/* 3. TỜ HÓA ĐƠN CHUẨN POS QUÁN CAFE / IN NHIỆT */
+.pos-receipt-paper {
+    background: #ffffff !important;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 34px 26px;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    color: #111827;
+    font-family: 'SF Mono', ui-monospace, Menlo, Monaco, Consolas, 'Courier New', Courier, monospace;
+    font-size: 12.5px;
+    line-height: 1.5;
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* Mép răng cưa giả lập mép xé giấy in nhiệt */
+.pos-receipt-paper::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: radial-gradient(circle, transparent, transparent 50%, #ffffff 50%, #ffffff 100%);
+    background-size: 12px 12px;
+}
+
+/* Header cơ sở */
+.pos-receipt-header {
+    text-align: center;
+    margin-bottom: 14px;
+}
+.pos-brand-name {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: #0f172a;
+    line-height: 1;
+    margin-bottom: 3px;
+}
+.pos-brand-name span {
+    color: #16a34a;
+}
+.pos-brand-slogan {
+    font-size: 10px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.pos-facility-info {
+    font-size: 12px;
+    color: #334155;
+    line-height: 1.4;
+    margin-bottom: 3px;
+}
+
+/* Các đường kẻ phân cách */
+.pos-divider-dash {
+    border: none;
+    border-top: 1px dashed #475569;
+    margin: 12px 0;
+}
+.pos-divider-double {
+    border: none;
+    border-top: 2px double #0f172a;
+    margin: 12px 0;
+}
+
+/* Tiêu đề phiếu thu */
+.pos-bill-title {
+    text-align: center;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #0f172a;
+    margin: 4px 0 2px 0;
+}
+.pos-bill-subtitle {
+    text-align: center;
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 12px;
+}
+
+/* Hàng thông tin định danh */
+.pos-meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #334155;
+    margin-bottom: 3px;
+}
+.pos-meta-row strong {
+    color: #0f172a;
+}
+
+/* Bảng danh sách món / sân */
+.pos-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin: 12px 0;
+}
+.pos-items-table th {
+    padding: 6px 0;
+    text-align: left;
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 11px;
+    border-top: 1px dashed #475569;
+    border-bottom: 1px dashed #475569;
+    text-transform: uppercase;
+}
+.pos-items-table td {
+    padding: 6px 0;
+    vertical-align: top;
+    color: #1e293b;
+}
+.pos-item-name {
+    font-weight: 700;
+    color: #0f172a;
+}
+.pos-item-sub {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 1px;
+}
+
+/* Khối tổng kết */
+.pos-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+    color: #334155;
+    margin-bottom: 4px;
+}
+.pos-grand-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15.5px;
+    font-weight: 900;
+    color: #0f172a;
+    padding: 8px 0;
+    border-top: 2px dashed #0f172a;
+    border-bottom: 2px dashed #0f172a;
+    margin: 10px 0;
+}
+.pos-grand-amount {
+    font-size: 18px;
+    color: #15803d;
+    font-weight: 900;
+}
+
+/* Chân hóa đơn */
+.pos-footer-box {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 11.5px;
+    color: #475569;
+    line-height: 1.5;
+}
+.pos-thank-you {
+    font-weight: 700;
+    font-size: 13px;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+.pos-barcode-simulation {
+    font-family: monospace;
+    font-size: 18px;
+    letter-spacing: 4px;
+    margin: 8px 0 2px 0;
+    color: #334155;
+}
+
+/* ==========================================================================
+   CSS TỐI ƯU HÓA HOÀN HẢO CHO MÁY IN BILL 80MM / KHỔ A4
+   ========================================================================== */
+@media print {
+    /* Ẩn toàn bộ giao diện quản trị và thanh điều khiển */
+    .print-control-bar, .catalog-nav, .catalog-heading, .invoice-actions, 
+    .admin-sidebar, .admin-topbar, .admin-backdrop, .admin-footer, 
+    .skip-link, .alert, nav, footer, header {
+        display: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    html, body, .page-admin, .admin-shell, .admin-main, main, .catalog-page, .container {
+        background: #ffffff !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .pos-bill-workspace {
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+    }
+
+    /* Hiển thị duy nhất tờ bill chuẩn quán cafe */
+    .pos-receipt-paper {
+        display: block !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 6px !important;
+        margin: 0 auto !important;
+        width: 100% !important;
+        max-width: 360px !important;
+    }
+    .pos-receipt-paper::before {
+        display: none !important;
+    }
+
+    @page {
+        size: 80mm auto; /* Tự động hỗ trợ máy in bill nhiệt K80 hoặc A4 */
+        margin: 4mm;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}

@@ -11,13 +11,18 @@ $isAuthPage = ($bodyClass ?? '') === 'page-auth';
 $isAdminArea = str_starts_with($template ?? '', 'admin/');
 $navAuthenticated = Core\Session::accountId() !== null;
 $navUsername = is_string($_SESSION['username'] ?? null) ? $_SESSION['username'] : 'Tài khoản';
+$navUser = $data['user'] ?? null;
+if ($navUser === null && $navAuthenticated && isset($GLOBALS['app']) && $GLOBALS['app'] instanceof Core\Application) {
+    $navUser = $GLOBALS['app']->auth()->user();
+}
+$navRole = $navUser['ten_vai_tro'] ?? null;
 $accountArea = null;
-if (in_array($template, ['auth/account', 'auth/settings', 'services/page'], true)) {
+if (in_array($template, ['auth/account', 'auth/settings', 'services/page', 'auth/role', 'facility/bank/index', 'facility/bank/form'], true)) {
     $accountArea = [
         'QUAN_LY_CONG_TY' => ['/company', 'Quản lý công ty'],
         'QUAN_LY_CO_SO' => ['/facility', 'Quản lý cơ sở'],
         'NHAN_VIEN' => ['/staff', 'Nhân viên'],
-    ][$data['user']['ten_vai_tro'] ?? ''] ?? null;
+    ][$navRole] ?? null;
 }
 ?>
 <!doctype html>
@@ -28,10 +33,10 @@ if (in_array($template, ['auth/account', 'auth/settings', 'services/page'], true
     <meta name="theme-color" content="#101411">
     <meta name="description" content="STRYKE — Hệ thống sân thể thao đa bộ môn tại Việt Nam, dành cho các môn thể thao có nhu cầu đặt sân.">
     <title><?= e($title ?? 'Quản lý sân thể thao') ?> — STRYKE</title>
-    <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/app.css') ?>">
+    <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/app.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/app.css')) ?>">
     <?php if (($bodyClass ?? '') === 'page-catalog'): ?>
         <link rel="stylesheet"
-              href="<?= e(base_path() . '/assets/css/catalog.css') ?>">
+              href="<?= e(base_path() . '/assets/css/catalog.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/catalog.css')) ?>">
     <?php endif; ?>
     <script src="<?= e(base_path() . '/assets/js/app.js') ?>" defer></script>
     <?php if ($template === 'services/page'): ?><link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/admin.css')) ?>"><?php endif; ?>
@@ -52,6 +57,10 @@ if (in_array($template, ['auth/account', 'auth/settings', 'services/page'], true
         <div class="navbar__links" id="nav-menu">
             <?php if ($accountArea !== null): ?>
                 <a href="<?= e(url($accountArea[0])) ?>"><?= e($accountArea[1]) ?></a>
+                <?php if (in_array($navRole, ['QUAN_LY_CO_SO', 'NHAN_VIEN', 'QUAN_LY_CONG_TY'], true)): ?>
+                    <a href="<?= e(url('/admin/bookings')) ?>">Duyệt booking</a>
+                    <a href="<?= e(url('/admin/invoices')) ?>">Hóa đơn</a>
+                <?php endif; ?>
                 <a href="<?= e(url('/account')) ?>">Thông tin cá nhân</a>
             <?php elseif ($isAdminArea): ?>
                 <a href="<?= e(url('/admin')) ?>">Tổng quan</a>
@@ -72,6 +81,19 @@ if (in_array($template, ['auth/account', 'auth/settings', 'services/page'], true
                     </summary>
                     <div class="account-menu__panel">
                         <a href="<?= e(url('/account')) ?>">Thông tin cá nhân</a>
+                        <?php if ($navRole === 'KHACH_HANG'): ?>
+                            <a href="<?= e(url('/invoices')) ?>">Lịch sử hóa đơn</a>
+                        <?php elseif (in_array($navRole, ['QUAN_LY_CO_SO', 'NHAN_VIEN'], true)): ?>
+                            <a href="<?= e(url('/admin/bookings')) ?>">Quản lý đặt sân</a>
+                            <a href="<?= e(url('/admin/invoices')) ?>">Hóa đơn cơ sở</a>
+                        <?php elseif ($navRole === 'QUAN_LY_CONG_TY'): ?>
+                            <a href="<?= e(url('/admin/bookings')) ?>">Quản lý đặt sân</a>
+                            <a href="<?= e(url('/admin/invoices')) ?>">Hóa đơn công ty</a>
+                        <?php elseif ($navRole === 'QUAN_TRI_TAP_DOAN'): ?>
+                            <a href="<?= e(url('/admin')) ?>">Bảng quản trị</a>
+                            <a href="<?= e(url('/admin/bookings')) ?>">Quản lý booking</a>
+                            <a href="<?= e(url('/admin/invoices')) ?>">Quản lý hóa đơn</a>
+                        <?php endif; ?>
                         <a href="<?= e(url('/account/settings')) ?>">Cài đặt tài khoản</a>
                         <form method="post" action="<?= e(url('/logout')) ?>">
                             <?= csrf_field() ?>

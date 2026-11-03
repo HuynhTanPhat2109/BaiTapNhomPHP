@@ -12,7 +12,7 @@ $workspaceHome = ['QUAN_TRI_TAP_DOAN' => '/admin', 'QUAN_LY_CONG_TY' => '/compan
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#13251B">
     <title><?= e($title ?? 'Quản trị') ?> — STRYKE</title>
-    <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/app.css') ?>">
+    <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/app.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/app.css')) ?>">
     <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/catalog.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/catalog.css')) ?>">
     <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/admin.css')) ?>">
     <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin-catalog.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/admin-catalog.css')) ?>">
@@ -42,6 +42,13 @@ $workspaceHome = ['QUAN_TRI_TAP_DOAN' => '/admin', 'QUAN_LY_CONG_TY' => '/compan
                 </summary>
                 <div class="account-menu__panel">
                     <a href="<?= e(url('/account')) ?>">Thông tin cá nhân</a>
+                    <?php if (($role ?? '') === 'QUAN_LY_CO_SO'): ?>
+                        <a href="<?= e(url('/facility')) ?>">Khu vực cơ sở</a>
+                    <?php elseif (($role ?? '') === 'NHAN_VIEN'): ?>
+                        <a href="<?= e(url('/staff')) ?>">Khu vực nhân viên</a>
+                    <?php elseif (($role ?? '') === 'QUAN_LY_CONG_TY'): ?>
+                        <a href="<?= e(url('/company')) ?>">Khu vực công ty</a>
+                    <?php endif; ?>
                     <a href="<?= e(url('/account/settings')) ?>">Cài đặt tài khoản</a>
                     <form method="post" action="<?= e(url('/logout')) ?>">
                         <?= csrf_field() ?>

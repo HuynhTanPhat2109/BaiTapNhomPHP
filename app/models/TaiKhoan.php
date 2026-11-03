@@ -29,6 +29,7 @@ class TaiKhoan
                 kh.ngay_tao AS ngay_tao_khach, kh.trang_thai AS trang_thai_khach,
                 nv.ma_nhan_vien, nv.ho_ten AS ten_nhan_vien, nv.trang_thai AS trang_thai_nhan_vien,
                 nv.ma_cong_ty, nv.ma_co_so, cs.ma_cong_ty AS cong_ty_cua_co_so,
+                ct.ten_cong_ty, cs.ten_co_so,
                 ct.trang_thai AS trang_thai_cong_ty, cs.trang_thai AS trang_thai_co_so
              FROM tai_khoan tk
              JOIN vai_tro vt ON vt.ma_vai_tro = tk.ma_vai_tro

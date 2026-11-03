@@ -18,7 +18,17 @@ function base_path(): string
 function url(string $path): string
 {
     // Works on XAMPP without requiring mod_rewrite.
-    return base_path() . '/index.php?route=' . rawurlencode($path);
+    $fragment = '';
+    if (strpos($path, '#') !== false) {
+        [$path, $fragment] = explode('#', $path, 2);
+        $fragment = '#' . $fragment;
+    }
+    $parts = explode('?', $path, 2);
+    $route = base_path() . '/index.php?route=' . rawurlencode($parts[0]);
+    if (isset($parts[1]) && $parts[1] !== '') {
+        $route .= '&' . $parts[1];
+    }
+    return $route . $fragment;
 }
 
 function request_path(): string

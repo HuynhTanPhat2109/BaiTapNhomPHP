@@ -292,6 +292,14 @@
             if (data.now) epoch=Date.parse(data.now);
             start=performance.now();
             if (data.state) state=data.state;
+            if (data.receipt_submitted) waiting.dataset.receiptSubmitted = '1';
+            if (data.payment_status) waiting.dataset.paymentStatus = data.payment_status;
+            if (data.payment_note !== undefined && data.payment_note !== null) {
+                const reasonEl = waiting.querySelector('[data-reconcile-reason]');
+                if (reasonEl && data.payment_note.trim() !== '') {
+                    reasonEl.textContent = data.payment_note;
+                }
+            }
             tick();
             if (isTerminal(state)) {
                 stopAllTimers();
@@ -306,10 +314,27 @@
     }
 
     function tick() {
-        const seconds=Number.isFinite(deadline)?Math.max(0,Math.ceil((deadline-epoch-(performance.now()-start))/1000)):0;
-        const isConfirmed=(state==='DA_XAC_NHAN' || state==='HOAN_THANH');
-        const isEnded=(state==='DA_HUY' || state==='HET_HAN');
-        const isWaiting=(state==='CHO_THANH_TOAN' && seconds>0);
+        const paymentStatus = waiting.dataset.paymentStatus;
+        const isReconcile = (paymentStatus === 'CAN_DOI_SOAT');
+        const hasReceipt = (waiting.dataset.receiptSubmitted === '1');
+
+        // Khi ở trạng thái CẦN ĐỐI SOÁT: Dừng hẳn timer đếm giây, không trừ giây và không hủy đơn
+        if (isReconcile) {
+            if (tickTimer !== null) {
+                clearInterval(tickTimer);
+                tickTimer = null;
+            }
+        }
+
+        const seconds = (!isReconcile && !hasReceipt && Number.isFinite(deadline))
+            ? Math.max(0, Math.ceil((deadline - epoch - (performance.now() - start)) / 1000))
+            : 0;
+
+        const isConfirmed = (state==='DA_XAC_NHAN' || state==='HOAN_THANH' || paymentStatus === 'THANH_CONG') && !isReconcile;
+        // Khi khách đã nộp biên lai, đơn chuyển sang chờ xác nhận và KHÔNG bao giờ bị hủy tự động hay hết hạn
+        const isReceiptWaiting = (hasReceipt && !isConfirmed && !isReconcile && state!=='DA_HUY');
+        const isEnded = (!hasReceipt && !isReconcile && (state==='DA_HUY' || state==='HET_HAN'));
+        const isWaiting = (state==='CHO_THANH_TOAN' && seconds>0 && !hasReceipt && !isReconcile);
 
         if (counter) {
             counter.textContent = isWaiting
@@ -318,8 +343,12 @@
         }
 
         if (message) {
-            if (isConfirmed) {
+            if (isReconcile) {
+                message.textContent='Giao dịch cần đối soát với chủ sân qua Zalo';
+            } else if (isConfirmed) {
                 message.textContent=labels[state] || 'Booking đã được xác nhận';
+            } else if (isReceiptWaiting) {
+                message.textContent='Đã gửi yêu cầu thanh toán (Đang chờ nhân viên xác nhận)';
             } else if (isEnded) {
                 message.textContent=labels[state] || 'Đã hết thời gian giữ sân';
             } else if (seconds===0) {
@@ -329,7 +358,31 @@
             }
         }
 
-        // Cập nhật hiển thị giao diện: ẩn/hiện pending, success, expired
+        // Cập nhật hiển thị giao diện: ẩn/hiện pending, success, receipt-waiting, reconcile, expired
+        const eyebrowEl=waiting.querySelector('[data-booking-eyebrow]');
+        const titleEl=waiting.querySelector('[data-booking-title]');
+        const toastError=waiting.querySelector('.stryke-toast-error');
+
+        if (isReconcile) {
+            if (eyebrowEl) eyebrowEl.textContent = 'CẦN ĐỐI SOÁT';
+            if (titleEl) titleEl.textContent = 'Giao dịch cần đối soát thanh toán';
+            document.title = 'Cần đối soát thanh toán — STRYKE';
+            if (toastError) toastError.style.display = 'none';
+        } else if (isConfirmed) {
+            if (eyebrowEl) eyebrowEl.textContent = 'THÀNH CÔNG';
+            if (titleEl) titleEl.textContent = 'Đặt sân & Thanh toán thành công';
+            document.title = 'Đặt sân & Thanh toán thành công — STRYKE';
+            if (toastError) toastError.style.display = 'none';
+        } else if (isReceiptWaiting) {
+            if (eyebrowEl) eyebrowEl.textContent = 'THANH TOÁN';
+            if (titleEl) titleEl.textContent = 'Chờ xác nhận thanh toán';
+            document.title = 'Chờ xác nhận thanh toán — STRYKE';
+        } else if (isEnded) {
+            if (eyebrowEl) eyebrowEl.textContent = 'ĐẶT SÂN';
+            if (titleEl) titleEl.textContent = 'Đã hết thời gian giữ sân';
+            document.title = 'Đã hết thời gian giữ sân — STRYKE';
+        }
+
         const pendingEls=waiting.querySelectorAll('[data-payment-pending]');
         pendingEls.forEach(el => { el.hidden = !isWaiting; });
 
@@ -339,9 +392,44 @@
         const successEl=waiting.querySelector('[data-payment-success]');
         if (successEl) successEl.hidden = !isConfirmed;
 
+        const receiptEl=waiting.querySelector('[data-receipt-waiting]');
+        if (receiptEl) receiptEl.hidden = !isReceiptWaiting;
+
+        const reconcileEl=waiting.querySelector('[data-payment-reconcile]');
+        if (reconcileEl) reconcileEl.hidden = !isReconcile;
+
+        const countdownBanner=waiting.querySelector('.stryke-countdown-banner');
+        if (countdownBanner) {
+            countdownBanner.hidden = (isConfirmed || hasReceipt || isReceiptWaiting || isReconcile);
+            if (isReconcile) countdownBanner.style.display = 'none';
+        }
+
         const expiredEl=waiting.querySelector('[data-payment-expired]');
         if (expiredEl) {
-            expiredEl.hidden = !(isEnded || (!isConfirmed && seconds===0));
+            if (isReconcile || isConfirmed || hasReceipt || isReceiptWaiting) {
+                expiredEl.hidden = true;
+                expiredEl.style.display = 'none';
+            } else {
+                expiredEl.hidden = (!isEnded && seconds>0);
+                expiredEl.style.display = expiredEl.hidden ? 'none' : '';
+            }
+        }
+
+        // TH2: Tự động gửi request hủy đơn khi hết giờ - TUYỆT ĐỐI KHÔNG HỦY KHI ĐANG ĐỐI SOÁT HOẶC ĐÃ GỬI BIÊN LAI
+        if (seconds === 0 && !isReconcile && !hasReceipt && state === 'CHO_THANH_TOAN' && !waiting.dataset.expiredAutoSent) {
+            waiting.dataset.expiredAutoSent = '1';
+            const expireFormData = new FormData();
+            expireFormData.append('id', waiting.dataset.bookingId || '');
+            fetch(waiting.dataset.expireUrl || '/booking/expire', {
+                method: 'POST',
+                body: expireFormData,
+                headers: { 'Accept': 'application/json' }
+            }).then(r => r.json()).then(d => {
+                if (d.state) {
+                    state = d.state;
+                    tick();
+                }
+            }).catch(() => {});
         }
 
         if (cancelButtonForState()) {
@@ -353,6 +441,11 @@
 
         if (isTerminal(state)) {
             stopAllTimers();
+        } else if (isReconcile) {
+            if (tickTimer !== null) {
+                clearInterval(tickTimer);
+                tickTimer = null;
+            }
         } else if (seconds===0) {
             if (tickTimer !== null) {
                 clearInterval(tickTimer);
@@ -366,7 +459,12 @@
 
     tick();
     if (!isTerminal(state)) {
-        tickTimer=setInterval(tick,1000);
+        const initPaymentStatus = waiting.dataset.paymentStatus;
+        const initHasReceipt = (waiting.dataset.receiptSubmitted === '1');
+        // Không bắt đầu tick đếm giây nếu đang ở trạng thái CAN_DOI_SOAT hoặc đã nộp biên lai
+        if (initPaymentStatus !== 'CAN_DOI_SOAT' && !initHasReceipt) {
+            tickTimer=setInterval(tick,1000);
+        }
         pollTimer=setInterval(refresh,5000);
     }
     document.addEventListener('visibilitychange',()=>{

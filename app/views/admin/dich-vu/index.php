@@ -1,5 +1,5 @@
 <?php
-$bodyClass = 'page-catalog';
+$bodyClass = 'page-catalog page-services';
 $listLabel = 'dịch vụ';
 $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
 $filterFields = [

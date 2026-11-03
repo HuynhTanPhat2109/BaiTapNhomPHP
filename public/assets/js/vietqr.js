@@ -160,11 +160,27 @@
         }
     });
 
-    // 5. NÚT TIẾP TỤC THANH TOÁN
+    // 5. NÚT TIẾP TỤC THANH TOÁN (TH1: BẮT BUỘC CHỌN ẢNH BIÊN LAI MỚI ĐƯỢC XÁC NHẬN)
     const submitBtn = document.querySelector('[data-submit-payment]');
+    const receiptForm = document.getElementById('form-submit-receipt');
+
     if (submitBtn) {
-        submitBtn.addEventListener('click', () => {
-            showToast('Chức năng gửi ảnh và xác minh thanh toán đang được tích hợp. Chưa có ảnh nào được gửi lên hệ thống.');
+        submitBtn.addEventListener('click', (e) => {
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                e.preventDefault();
+                showToast('Vui lòng chọn ảnh chụp biên lai chuyển khoản trước khi bấm xác nhận.');
+                if (dropzone) {
+                    dropzone.style.borderColor = '#ef4444';
+                    dropzone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => { dropzone.style.borderColor = ''; }, 2500);
+                }
+                return false;
+            }
+            if (receiptForm) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Đang tải ảnh biên lai lên...';
+                receiptForm.submit();
+            }
         });
     }
 
@@ -185,12 +201,14 @@
         }, 3000);
     }
 
-    // 7. KIỂM TRA HẾT GIỜ ĐỂ HIỂN THỊ NÚT QUAY LẠI TRANG CHỦ Ở CHÍNH GIỮA
+    // 7. KIỂM TRA HẾT GIỜ ĐỂ TỰ ĐỘNG HỦY VÀ HIỂN THỊ NÚT QUAY LẠI TRANG CHỦ (TH2)
     const expiredCard = document.querySelector('[data-payment-expired]');
     const bottomBar = document.querySelector('.stryke-bottom-bar');
     const counterEl = document.querySelector('[data-countdown]');
     const waitMsgEl = document.querySelector('[data-wait-message]');
+    const waitingRoot = document.querySelector('[data-booking-wait]');
     let expiredInterval = null;
+    let autoExpireSent = false;
 
     function checkExpiredState() {
         if (!expiredCard) {
@@ -204,6 +222,12 @@
             return;
         }
 
+        const receiptWaitingCard = document.querySelector('[data-receipt-waiting]');
+        if (receiptWaitingCard && !receiptWaitingCard.hidden) {
+            if (expiredInterval) { clearInterval(expiredInterval); expiredInterval = null; }
+            return;
+        }
+
         const timeText = counterEl ? counterEl.textContent.trim() : '';
         const msgText = (waitMsgEl ? waitMsgEl.textContent : '').toLowerCase();
 
@@ -213,6 +237,18 @@
         if (isTimeUp || isExpiredState) {
             expiredCard.hidden = false;
             if (bottomBar) bottomBar.hidden = true;
+
+            // TH2: Tự động gửi request cập nhật Database sang trạng thái HỦY ngay lập tức
+            if (!autoExpireSent && waitingRoot && waitingRoot.dataset.bookingId && waitingRoot.dataset.receiptSubmitted !== '1') {
+                autoExpireSent = true;
+                const fd = new FormData();
+                fd.append('id', waitingRoot.dataset.bookingId);
+                fetch(waitingRoot.dataset.expireUrl || '/booking/expire', {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 'Accept': 'application/json' }
+                }).catch(() => {});
+            }
 
             // Chuyển nút quay lại ở header thành link điều hướng trực tiếp nếu đang là form hủy
             const cancelFormEl = document.querySelector('form[data-booking-cancel]');
