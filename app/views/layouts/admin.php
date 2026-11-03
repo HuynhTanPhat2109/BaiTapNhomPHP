@@ -65,7 +65,7 @@ $workspaceHome = ['QUAN_TRI_TAP_DOAN' => '/admin', 'QUAN_LY_CONG_TY' => '/compan
             <nav class="workspace-breadcrumb" aria-label="Đường dẫn">
                 <a href="<?= e(url($workspaceHome)) ?>"><?= e($workspaceRoleLabel) ?></a>
                 <?php if (str_starts_with($template, 'facility/bank/')): ?><span aria-hidden="true">/</span><a href="<?= e(url('/facility/bank') . '&facility_id=' . (int) $data['facility']['ma_co_so']) ?>">Ngân hàng cơ sở</a><?php endif; ?>
-                <?php if ($workspaceSection && $workspaceSection['route'] !== $workspaceHome): ?><span aria-hidden="true">/</span><a href="<?= e(url($workspaceSection['route'])) ?>"><?= e($workspaceSection['label']) ?></a><?php endif; ?>
+                <?php if ($workspaceSection && $workspaceSection['route'] !== $workspaceHome): ?><span aria-hidden="true">/</span><a href="<?= e(admin_context_url($workspaceSection['route'])) ?>"><?= e($workspaceSection['label']) ?></a><?php endif; ?>
                 <?php if ($workspaceLeafLabel): ?><span aria-hidden="true">/</span><span aria-current="page"><?= e($workspaceLeafLabel) ?></span><?php endif; ?>
             </nav>
             <div class="admin-workspace catalog-workspace admin-catalog"><?= $content /* Trusted templates escape dynamic values. */ ?></div>

@@ -35,8 +35,12 @@ final class DichVuController extends Controller
     {
         [$user, $service, $model] = $this->context();
         $filters = $service->filters($_GET);
+        $result = $model->page($filters, $service->scope);
+        if ($user['ten_vai_tro'] === 'QUAN_TRI_TAP_DOAN' && $result['page'] !== $filters['page']) {
+            admin_list_redirect('/admin/dich-vu', array_replace($filters, ['page' => $result['page']]));
+        }
         $notice = $_SESSION['service_notice'] ?? null; unset($_SESSION['service_notice']);
-        $this->page('index', $user, $service, $model->page($filters, $service->scope) + [
+        $this->page('index', $user, $service, $result + [
             'filters' => $filters, 'facilities' => $model->facilities($service->scope),
             'units' => $model->units($service->scope), 'notice' => $notice,
         ]);
@@ -69,7 +73,7 @@ final class DichVuController extends Controller
         try {
             $service->save($_POST, $editing ? (int) $item['ma_dich_vu'] : null);
             $_SESSION['service_notice'] = 'Đã lưu dịch vụ.';
-            $this->redirect(DichVuService::basePath($user['ten_vai_tro']));
+            admin_list_redirect(DichVuService::basePath($user['ten_vai_tro']));
         } catch (ValidationException $e) {
             $this->form($user, $service, $model, $item, $old, $e->errors, 422);
         } catch (HttpException $e) {
@@ -101,7 +105,7 @@ final class DichVuController extends Controller
         try {
             $service->changeStatus((int) $item['ma_dich_vu'], $_POST['trang_thai'] ?? null, $_POST['version'] ?? null, ($_POST['confirmed'] ?? null) === '1');
             $_SESSION['service_notice'] = 'Đã cập nhật trạng thái dịch vụ.';
-            $this->redirect(DichVuService::basePath($user['ten_vai_tro']));
+            admin_list_redirect(DichVuService::basePath($user['ten_vai_tro']));
         } catch (ValidationException $e) {
             $this->details($user, $service, $model, $item, $e->errors, true, 422);
         } catch (HttpException $e) {

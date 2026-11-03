@@ -16,7 +16,7 @@ $filterFields = [
     </nav>
     <header class="catalog-heading module-heading">
         <div><p class="eyebrow">STRYKE / Danh mục</p><h1>Bộ môn thể thao</h1><p class="module-subtitle">Danh mục bộ môn và các loại sân liên kết.</p></div>
-        <a class="btn btn--primary" href="<?= e(url('/admin/bo-mon/create')) ?>">Thêm bộ môn</a>
+        <a class="btn btn--primary" href="<?= e(admin_context_url('/admin/bo-mon/create')) ?>">Thêm bộ môn</a>
     </header>
     <?php if (!empty($notice)): ?><p class="alert alert--success" role="status"><?= e($notice) ?></p><?php endif; ?>
     <?php require __DIR__ . '/../partials/list-toolbar.php'; ?>

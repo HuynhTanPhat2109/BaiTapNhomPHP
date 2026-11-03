@@ -1,13 +1,15 @@
 <form class="list-toolbar" method="get" action="<?= e(base_path() . '/index.php') ?>" aria-label="Tìm kiếm và lọc <?= e($listLabel) ?>">
     <input type="hidden" name="route" value="<?= e($listPath) ?>">
     <?php foreach ($filterFields as $field => $definition): ?>
-        <div class="form-group list-toolbar__<?= e(match ($field) { 'q' => 'search', 'loai_ngay' => 'day', 'trang_thai' => 'status', default => 'field' }) ?>">
+        <div class="form-group list-toolbar__<?= e(match ($field) { 'q' => 'search', 'loai_ngay' => 'day', 'trang_thai' => 'status', default => 'field' }) ?>"<?php if (!empty($managementLayout)): ?> data-filter="<?= e($field) ?>"<?php endif; ?>>
             <label for="filter-<?= e($field) ?>"><?= e($definition['label']) ?></label>
             <?php if ($field === 'q'): ?>
                 <input class="form-control" id="filter-q" type="search" name="q" maxlength="150" placeholder="<?= e($definition['label']) ?>…" value="<?= e($filters['q']) ?>">
+            <?php elseif (($definition['type'] ?? '') === 'date'): ?>
+                <input class="form-control" id="filter-<?= e($field) ?>" type="date" name="<?= e($field) ?>" value="<?= e($filters[$field]) ?>">
             <?php else: ?>
                 <select class="form-control" id="filter-<?= e($field) ?>" name="<?= e($field) ?>">
-                    <option value="">Tất cả</option>
+                    <?php if ($field !== 'sort'): ?><option value="">Tất cả</option><?php endif; ?>
                     <?php foreach ($definition['options'] as $value => $label): ?>
                         <option value="<?= e($value) ?>" <?= $filters[$field] === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
                     <?php endforeach; ?>

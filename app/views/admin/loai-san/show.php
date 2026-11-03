@@ -12,7 +12,7 @@ $detailStatusLabel = $item['trang_thai'] === 'HOAT_DONG' ? 'Hoạt động' : 'N
             <dl class="detail-fields">
                 <div><dt>Tên loại sân</dt><dd><?= e($item['ten_loai_san']) ?></dd></div>
                 <div><dt>Mã loại sân</dt><dd>#<?= e($item['ma_loai_san']) ?></dd></div>
-                <div class="detail-field--wide"><dt>Bộ môn</dt><dd><a href="<?= e(url('/admin/bo-mon/show') . '&id=' . $item['ma_bo_mon']) ?>"><?= e($item['ten_bo_mon']) ?></a><span class="detail-inline-note"><?= $item['trang_thai_bo_mon'] === 'HOAT_DONG' ? 'Hoạt động' : 'Ngừng' ?></span></dd></div>
+                <div class="detail-field--wide"><dt>Bộ môn</dt><dd><a href="<?= e(admin_context_url('/admin/bo-mon/show') . '&id=' . $item['ma_bo_mon']) ?>"><?= e($item['ten_bo_mon']) ?></a><span class="detail-inline-note"><?= $item['trang_thai_bo_mon'] === 'HOAT_DONG' ? 'Hoạt động' : 'Ngừng' ?></span></dd></div>
                 <div class="detail-field--wide"><dt>Mô tả</dt><dd class="catalog-description"><?= e($item['mo_ta'] ?? 'Chưa có mô tả') ?></dd></div>
             </dl>
         </section>
@@ -29,7 +29,7 @@ $detailStatusLabel = $item['trang_thai'] === 'HOAT_DONG' ? 'Hoạt động' : 'N
     <footer class="detail-action-panel" aria-labelledby="loai-san-delete-heading">
         <div class="detail-action-panel__row">
             <div><h2 id="loai-san-delete-heading">Xóa loại sân</h2><p>Chỉ có thể xóa khi không còn dữ liệu tham chiếu. Bạn sẽ được yêu cầu xác nhận ở bước tiếp theo.</p></div>
-            <a class="btn btn--outline detail-delete" href="<?= e(url('/admin/loai-san/delete') . '&id=' . $item['ma_loai_san']) ?>">Xóa loại sân…</a>
+            <a class="btn btn--outline detail-delete" href="<?= e(admin_context_url('/admin/loai-san/delete') . '&id=' . $item['ma_loai_san']) ?>">Xóa loại sân…</a>
         </div>
     </footer>
 </section>

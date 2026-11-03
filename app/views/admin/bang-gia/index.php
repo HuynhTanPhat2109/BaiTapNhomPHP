@@ -16,7 +16,7 @@ $filterFields = [
 <section class="container catalog-page catalog-workspace admin-list pricing-list data-list data-list--admin workspace-page">
     <header class="catalog-heading module-heading">
         <div class="module-heading__copy"><span class="module-heading__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12V4h8l10 10-8 8L3 12Z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg></span><div><p class="eyebrow">STRYKE / Giá sân thể thao</p><h1>Quản lý bảng giá</h1><p class="module-subtitle">Thiết lập đơn giá theo cơ sở, loại sân và thời gian áp dụng.</p></div></div>
-        <a class="btn btn--primary" href="<?= e(url('/admin/bang-gia/create')) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Thêm bảng giá</a>
+        <a class="btn btn--primary" href="<?= e(admin_context_url('/admin/bang-gia/create')) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Thêm bảng giá</a>
     </header>
     <?php if ($notice): ?><p class="alert alert--success" role="status"><?= e($notice) ?></p><?php endif; ?>
     <?php require __DIR__ . '/../partials/list-toolbar.php'; ?>

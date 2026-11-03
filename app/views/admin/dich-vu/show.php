@@ -48,15 +48,15 @@ $detailStatusLabel = App\Services\DichVuService::STATES[$item['trang_thai']] ?? 
         <section class="account-card detail-action-panel" data-action="<?= $active ? 'stop' : 'activate' ?>" id="status-confirmation" aria-labelledby="service-status-heading">
             <h2 id="service-status-heading"><?= $active ? 'Ngừng cung cấp' : 'Kích hoạt lại' ?></h2>
             <p class="form-hint">Giữ nguyên tồn, giá và snapshot của booking/hóa đơn cũ. Không xóa dịch vụ.</p>
-            <?php if (!$confirm): ?><a class="btn btn--outline" href="<?= e(url($listPath . '/show') . '&id=' . $item['ma_dich_vu'] . '&confirm=1#status-confirmation') ?>"><?= $active ? 'Xác nhận ngừng cung cấp…' : 'Xác nhận kích hoạt…' ?></a>
+            <?php if (!$confirm): ?><a class="btn btn--outline" href="<?= e(admin_context_url($listPath . '/show') . '&id=' . $item['ma_dich_vu'] . '&confirm=1#status-confirmation') ?>"><?= $active ? 'Xác nhận ngừng cung cấp…' : 'Xác nhận kích hoạt…' ?></a>
             <?php else: ?>
-                <form method="post" action="<?= e(url($listPath . '/status')) ?>">
+                <form method="post" action="<?= e(admin_context_url($listPath . '/status')) ?>">
                     <?= csrf_field() ?><input type="hidden" name="id" value="<?= e($item['ma_dich_vu']) ?>"><input type="hidden" name="version" value="<?= e(App\Services\DichVuService::version($item)) ?>"><input type="hidden" name="trang_thai" value="<?= $active ? 'NGUNG' : 'DANG_CUNG_CAP' ?>">
                     <div class="form-group"><label><input type="checkbox" name="confirmed" value="1" required<?= field_error_attributes('confirmed', $errors) ?>> Tôi xác nhận <?= $active ? 'ngừng cung cấp' : 'kích hoạt lại' ?> dịch vụ.</label><?= field_error('confirmed', $errors) ?></div>
-                    <div class="catalog-actions"><button class="btn btn--primary" type="submit"><?= $active ? 'Ngừng cung cấp' : 'Kích hoạt lại' ?></button><a class="btn btn--outline" href="<?= e(url($listPath . '/show') . '&id=' . $item['ma_dich_vu']) ?>">Hủy</a></div>
+                    <div class="catalog-actions"><button class="btn btn--primary" type="submit"><?= $active ? 'Ngừng cung cấp' : 'Kích hoạt lại' ?></button><a class="btn btn--outline" href="<?= e(admin_context_url($listPath . '/show') . '&id=' . $item['ma_dich_vu']) ?>">Hủy</a></div>
                 </form>
             <?php endif; ?>
         </section>
     <?php endif; ?>
-    <a class="btn btn--outline" href="<?= e(url($listPath)) ?>">Quay lại danh sách</a>
+    <a class="btn btn--outline admin-back-link" href="<?= e(admin_context_url($listPath)) ?>">Quay lại danh sách</a>
 </section>

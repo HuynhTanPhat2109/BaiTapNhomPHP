@@ -24,9 +24,11 @@ final class CoSoController extends Controller
     {
         $filters = AdminListService::filters($_GET, ['ma_cong_ty'], ['trang_thai' => ['HOAT_DONG', 'TAM_NGUNG']]);
         $model = new CoSo($this->app->pdo());
+        $result = $model->page($filters);
+        if ($result['page'] !== $filters['page']) admin_list_redirect('/admin/co-so', array_replace($filters, ['page' => $result['page']]));
         $notice = $_SESSION['facility_notice'] ?? null;
         unset($_SESSION['facility_notice']);
-        $this->render('admin/co-so/index', $model->page($filters) + [
+        $this->render('admin/co-so/index', $result + [
             'title' => 'Quản lý cơ sở', 'filters' => $filters, 'notice' => $notice,
             'companies' => $model->filterCompanies(),
         ]);
@@ -62,7 +64,7 @@ final class CoSoController extends Controller
                 $id, isset($_FILES['anh_dai_dien']) && is_array($_FILES['anh_dai_dien']) ? $_FILES['anh_dai_dien'] : null,
                 isset($_FILES['logo_clb']) && is_array($_FILES['logo_clb']) ? $_FILES['logo_clb'] : null);
             $_SESSION['facility_notice'] = 'Đã lưu cơ sở.';
-            $this->redirect('/admin/co-so');
+            admin_list_redirect('/admin/co-so');
         } catch (ValidationException $e) {
             $old = [];
             foreach (['ma_tinh', 'ma_phuong_xa', 'xoa_anh', 'xoa_logo', 'ma_cong_ty', 'ten_co_so', 'dia_chi', 'so_dien_thoai', 'email', 'gio_mo_cua', 'gio_dong_cua', 'mo_ta', 'trang_thai'] as $field) {
@@ -104,7 +106,7 @@ final class CoSoController extends Controller
         try {
             (new CoSoService($this->app->pdo()))->delete($id);
             $_SESSION['facility_notice'] = 'Đã xóa cơ sở.';
-            $this->redirect('/admin/co-so');
+            admin_list_redirect('/admin/co-so');
         } catch (HttpException $e) {
             if ($e->status !== 409) {
                 throw $e;

@@ -1,4 +1,4 @@
-<?php $bodyClass = 'page-catalog'; $contracts = $contracts ?? []; $formatDate = require dirname(__DIR__) . '/partials/format-date.php';
+<?php $listPath = '/admin/contracts'; $bodyClass = 'page-catalog'; $contracts = $contracts ?? []; $formatDate = require dirname(__DIR__) . '/partials/format-date.php';
 $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
 ?>
 <section class="container account-page catalog-page admin-list catalog-workspace workspace-page">
@@ -6,11 +6,12 @@ $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
         <p class="eyebrow">Quản trị tập đoàn / Hợp đồng nhượng quyền</p>
         <h1 class="account-h1">Quản lý hợp đồng nhượng quyền</h1>
         <p>Danh sách hợp đồng nhượng quyền trong hệ thống.</p>
-    </div><a class="btn btn--primary" href="<?= e(url('/admin/contracts/create')) ?>">Thêm hợp đồng</a></header>
+    </div><a class="btn btn--primary" href="<?= e(admin_context_url('/admin/contracts/create')) ?>">Thêm hợp đồng</a></header>
 
 
-    <?php $tableLabel = 'Hợp đồng nhượng quyền'; $tableTotal = count($contracts); require dirname(__DIR__) . '/partials/list-summary.php'; ?>
-    <?php if (!$contracts): ?><div class="workspace-empty" role="status"><h2>Chưa có hợp đồng</h2><p>Các hợp đồng đã tạo sẽ hiển thị tại đây cùng thời hạn và trạng thái.</p></div>
+    <?php require dirname(__DIR__) . '/partials/management-toolbar.php'; ?>
+    <?php $tableLabel = 'Hợp đồng nhượng quyền'; $total ??= count($contracts); $tableTotal = $total; require dirname(__DIR__) . '/partials/list-summary.php'; ?>
+    <?php if (!$contracts): ?><div class="workspace-empty" role="status"><h2>Không tìm thấy hợp đồng phù hợp</h2><p>Các hợp đồng đã tạo sẽ hiển thị tại đây cùng thời hạn và trạng thái.</p></div>
     <?php else: ?>
     <div class="catalog-table-wrap" tabindex="0" role="region" aria-label="Danh sách hợp đồng">
         <table class="catalog-table workspace-table">
@@ -26,8 +27,8 @@ $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
                     <td class="workspace-number" data-label="Trạng thái"><span class="catalog-status" data-status="<?= e($status) ?>"><?= e(['HIEU_LUC' => 'Hiệu lực', 'HET_HAN' => 'Hết hạn', 'CHAM_DUT' => 'Chấm dứt'][$status] ?? 'Không xác định') ?></span></td>
                     <td data-label="Thao tác">
                         <?php ob_start(); ?>
-                        <a class="list-action list-action--edit" href="<?= e(url('/admin/contracts/edit') . '&id=' . rawurlencode((string) $id)) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m16 3 5 5M3 21l5-1L21 7a2.1 2.1 0 0 0-5-3L3 17v4Z"/></svg>Sửa</a>
-                        <form class="contract-actions" method="post" action="<?= e(url('/admin/contracts/status') . '&id=' . rawurlencode((string) $id)) ?>" data-confirm="Xác nhận cập nhật trạng thái hợp đồng này?">
+                        <a class="list-action list-action--edit" href="<?= e(admin_context_url('/admin/contracts/edit') . '&id=' . rawurlencode((string) $id)) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m16 3 5 5M3 21l5-1L21 7a2.1 2.1 0 0 0-5-3L3 17v4Z"/></svg>Sửa</a>
+                        <form class="contract-actions" method="post" action="<?= e(admin_context_url('/admin/contracts/status') . '&id=' . rawurlencode((string) $id)) ?>" data-confirm="Xác nhận cập nhật trạng thái hợp đồng này?">
                             <?= csrf_field() ?>
                             <label for="trang_thai_<?= e((string) $id) ?>">Trạng thái hợp đồng</label>
                             <select class="contract-actions__select" id="trang_thai_<?= e((string) $id) ?>" name="trang_thai" aria-label="Trạng thái hợp đồng" required>
@@ -44,4 +45,5 @@ $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
         </table>
     </div>
     <?php endif; ?>
+    <?php require dirname(__DIR__) . '/partials/pagination.php'; ?>
 </section>

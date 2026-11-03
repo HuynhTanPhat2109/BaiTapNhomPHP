@@ -23,9 +23,11 @@ final class BoMonController extends Controller
     public function index(): void
     {
         $filters = AdminListService::filters($_GET, [], ['trang_thai' => ['HOAT_DONG', 'NGUNG']]);
+        $result = (new BoMon($this->app->pdo()))->page($filters);
+        if ($result['page'] !== $filters['page']) admin_list_redirect('/admin/bo-mon', array_replace($filters, ['page' => $result['page']]));
         $notice = $_SESSION['catalog_notice'] ?? null;
         unset($_SESSION['catalog_notice']);
-        $this->render('admin/bo-mon/index', (new BoMon($this->app->pdo()))->page($filters) + [
+        $this->render('admin/bo-mon/index', $result + [
             'title' => 'Quản lý bộ môn', 'filters' => $filters, 'notice' => $notice,
         ]);
     }
@@ -56,7 +58,7 @@ final class BoMonController extends Controller
         try {
             (new BoMonService($this->app->pdo()))->save($_POST, $id);
             $_SESSION['catalog_notice'] = 'Đã lưu bộ môn.';
-            $this->redirect('/admin/bo-mon');
+            admin_list_redirect('/admin/bo-mon');
         } catch (ValidationException $e) {
             $old = [];
             foreach (['ten_bo_mon', 'mo_ta', 'trang_thai'] as $field) {
@@ -97,7 +99,7 @@ final class BoMonController extends Controller
         try {
             (new BoMonService($this->app->pdo()))->delete($id);
             $_SESSION['catalog_notice'] = 'Đã xóa bộ môn.';
-            $this->redirect('/admin/bo-mon');
+            admin_list_redirect('/admin/bo-mon');
         } catch (HttpException $e) {
             if ($e->status !== 409) {
                 throw $e;

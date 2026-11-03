@@ -14,8 +14,8 @@ $formAction = $isEdit ? url('/facility/bank/update') : url('/facility/bank/store
             <p class="eyebrow">STRYKE / <?= e($facility['ten_co_so']) ?></p>
             <h1><?= $isEdit ? 'Chỉnh sửa tài khoản ngân hàng' : 'Thêm tài khoản ngân hàng nhận tiền' ?></h1>
         </div>
-        <a class="btn btn--outline" href="<?= e(url('/facility/bank') . '&facility_id=' . $facilityId) ?>">
-            Quay lại
+        <a class="btn btn--outline admin-back-link" href="<?= e(url('/facility/bank') . '&facility_id=' . $facilityId) ?>">
+            Quay lại danh sách
         </a>
     </header>
 
@@ -98,7 +98,7 @@ $formAction = $isEdit ? url('/facility/bank/update') : url('/facility/bank/store
 
             </div></section>
             <div class="catalog-actions">
-                <a class="btn btn--outline" href="<?= e(url('/facility/bank') . '&facility_id=' . $facilityId) ?>">
+                <a class="btn btn--outline admin-back-link" href="<?= e(url('/facility/bank') . '&facility_id=' . $facilityId) ?>">
                     Hủy bỏ
                 </a>
                 <button type="submit" class="btn btn--primary">

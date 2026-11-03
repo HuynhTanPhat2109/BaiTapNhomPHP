@@ -15,7 +15,7 @@ $home = substr($listPath, 0, -strlen('/dich-vu'));
     <p class="service-breadcrumb"><a class="admin-table-link" href="<?= e(url($home)) ?>">Khu vực của bạn</a> / Dịch vụ</p>
     <header class="catalog-heading module-heading">
         <div class="module-heading__copy"><?php if ($listPath === '/admin/dich-vu'): ?><span class="module-heading__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 8 5v8l-8 5-8-5V8l8-5Zm-8 5 8 5 8-5M12 13v8M8 5.5l8 5"/></svg></span><?php endif; ?><div><p class="eyebrow">STRYKE / Dịch vụ theo cơ sở</p><h1>Quản lý dịch vụ</h1><p class="form-hint"><?= $canWrite ? 'Quản lý giá, đơn vị tính và số lượng trong phạm vi được giao.' : 'Chỉ xem dịch vụ, đơn giá và tồn tại cơ sở được phân công.' ?></p></div></div>
-        <?php if ($canWrite): ?><a class="btn btn--primary" href="<?= e(url($listPath . '/create')) ?>"><?php if ($listPath === '/admin/dich-vu'): ?><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><?php else: ?>+ <?php endif; ?>Thêm dịch vụ</a><?php endif; ?>
+        <?php if ($canWrite): ?><a class="btn btn--primary" href="<?= e(admin_context_url($listPath . '/create')) ?>"><?php if ($listPath === '/admin/dich-vu'): ?><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><?php else: ?>+ <?php endif; ?>Thêm dịch vụ</a><?php endif; ?>
     </header>
     <?php if ($notice): ?><p class="alert alert--success" role="status"><?= e($notice) ?></p><?php endif; ?>
     <?php require dirname(__DIR__) . '/partials/list-toolbar.php'; ?>

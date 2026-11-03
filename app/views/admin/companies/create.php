@@ -13,8 +13,8 @@ $status = $value($old, 'trang_thai', 'HOAT_DONG');
     <header class="account-page__intro catalog-heading module-heading"><div>
         <p class="eyebrow">Quản trị tập đoàn / Công ty nhượng quyền</p>
         <h1 class="account-h1">Thêm công ty</h1><p class="module-subtitle">Thông tin pháp lý, liên hệ và trạng thái hợp tác.</p>
-    </div><a class="btn btn--outline workspace-back" href="<?= e(url('/admin/companies')) ?>">Quay lại</a></header>
-    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(url('/admin/companies')) ?>">
+    </div><a class="btn btn--outline workspace-back admin-back-link" href="<?= e(admin_context_url('/admin/companies')) ?>">Quay lại danh sách</a></header>
+    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(admin_context_url('/admin/companies')) ?>">
         <?= csrf_field() ?>
                 <section class="module-form-card">
         <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">1</span>Thông tin doanh nghiệp</h2>
@@ -73,6 +73,6 @@ $status = $value($old, 'trang_thai', 'HOAT_DONG');
         </div>
         </div></section>
         <div class="catalog-actions"><button class="btn btn--primary" type="submit">Lưu công ty</button>
-        <a class="btn btn--outline" href="<?= e(url('/admin/companies')) ?>">Quay lại</a></div>
+        <a class="btn btn--outline admin-back-link" href="<?= e(admin_context_url('/admin/companies')) ?>">Quay lại danh sách</a></div>
     </form>
 </section>

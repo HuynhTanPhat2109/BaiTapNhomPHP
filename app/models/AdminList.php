@@ -6,18 +6,22 @@ use PDO;
 
 final class AdminList
 {
-    // SQL identifiers come only from the five models, never from request input.
-    public static function page(PDO $pdo, string $from, string $columns, string $id, array $fields, array $filters): array
+    // SQL identifiers, scope conditions and ordering come from models, never request input.
+    public static function page(PDO $pdo, string $from, string $columns, string $id, array $fields, array $filters,
+        array $where = [], array $params = [], ?string $order = null): array
     {
-        $where = [];
-        $params = [];
         foreach ($fields as $field => $column) {
             if ($filters[$field] === '') {
                 continue;
             }
             if ($field === 'q') {
-                $where[] = "$column LIKE :keyword ESCAPE '!'";
-                $params['keyword'] = '%' . strtr($filters[$field], ['!' => '!!', '%' => '!%', '_' => '!_']) . '%';
+                $search = [];
+                foreach ((array) $column as $index => $searchColumn) {
+                    $key = is_array($column) ? 'keyword' . $index : 'keyword';
+                    $search[] = "$searchColumn LIKE :$key ESCAPE '!'";
+                    $params[$key] = '%' . strtr($filters[$field], ['!' => '!!', '%' => '!%', '_' => '!_']) . '%';
+                }
+                $where[] = count($search) > 1 ? '(' . implode(' OR ', $search) . ')' : $search[0];
             } else {
                 $where[] = "$column = :$field";
                 $params[$field] = $filters[$field];
@@ -29,7 +33,8 @@ final class AdminList
         $total = (int) $stmt->fetchColumn();
         $pages = max(1, (int) ceil($total / $filters['per_page']));
         $page = min($filters['page'], $pages);
-        $stmt = $pdo->prepare("SELECT $columns$sql ORDER BY $id DESC LIMIT :limit OFFSET :offset");
+        $order ??= "$id DESC";
+        $stmt = $pdo->prepare("SELECT $columns$sql ORDER BY $order LIMIT :limit OFFSET :offset");
         foreach ($params as $key => $value) {
             $stmt->bindValue(':' . $key, $value);
         }

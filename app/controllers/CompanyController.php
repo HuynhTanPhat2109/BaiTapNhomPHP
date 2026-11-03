@@ -4,6 +4,8 @@ namespace App\Controllers;
 
 use App\Services\CompanyService;
 use App\Models\CoSo;
+use App\Models\CongTyNhuongQuyen;
+use App\Services\AdminListService;
 use App\Services\ContractService;
 use App\Services\ValidationException;
 use Core\Application;
@@ -23,9 +25,13 @@ final class CompanyController extends Controller
 
     public function index(): void
     {
-        $this->render('admin/companies/index', [
+        $filters = AdminListService::managementFilters('/admin/companies', $_GET);
+        $result = (new CongTyNhuongQuyen($this->app->pdo()))->page($filters);
+        if ($result['page'] !== $filters['page']) admin_list_redirect('/admin/companies', array_replace($filters, ['page' => $result['page']]));
+        $notice = $_SESSION['company_notice'] ?? null; unset($_SESSION['company_notice']);
+        $this->render('admin/companies/index', $result + [
             'title' => 'Quản lý công ty nhượng quyền',
-            'companies' => $this->companies->all(),
+            'companies' => $result['items'], 'filters' => $filters, 'notice' => $notice,
         ]);
     }
 
@@ -67,7 +73,8 @@ final class CompanyController extends Controller
 
         try {
             $this->companies->create($data);
-            $this->redirect('/admin/companies');
+            $_SESSION['company_notice'] = 'Đã thêm công ty.';
+            admin_list_redirect('/admin/companies');
         } catch (ValidationException $e) {
             $this->render('admin/companies/create', [
                 'title' => 'Thêm công ty nhượng quyền',
@@ -102,7 +109,8 @@ final class CompanyController extends Controller
 
         try {
             $this->companies->update($id, $data);
-            $this->redirect('/admin/companies');
+            $_SESSION['company_notice'] = 'Đã cập nhật công ty.';
+            admin_list_redirect('/admin/companies');
         } catch (ValidationException $e) {
             $this->render('admin/companies/edit', [
                 'title' => 'Cập nhật công ty nhượng quyền',
@@ -124,7 +132,8 @@ final class CompanyController extends Controller
 
         try {
             $this->companies->changeStatus($id, is_string($status) ? $status : '');
-            $this->redirect('/admin/companies');
+            $_SESSION['company_notice'] = 'Đã cập nhật trạng thái công ty.';
+            admin_list_redirect('/admin/companies');
         } catch (ValidationException $e) {
             $this->render('admin/companies/edit', [
                 'title' => 'Cập nhật công ty nhượng quyền',

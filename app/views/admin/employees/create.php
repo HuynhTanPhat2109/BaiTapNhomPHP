@@ -11,8 +11,8 @@ $status = $value($old, 'trang_thai', 'DANG_LAM');
 $gender = $value($old, 'gioi_tinh');
 ?>
 <section class="container account-page catalog-page catalog-workspace workspace-page">
-    <header class="account-page__intro catalog-heading module-heading"><div><p class="eyebrow">Quản trị tập đoàn / Nhân viên</p><h1 class="account-h1">Onboard quản lý công ty</h1><p class="module-subtitle">Thông tin nhân sự, phân công và tài khoản làm việc.</p></div><a class="btn btn--outline workspace-back" href="<?= e(url('/admin/employees')) ?>">Quay lại</a></header>
-    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(url('/admin/employees')) ?>">
+    <header class="account-page__intro catalog-heading module-heading"><div><p class="eyebrow">Quản trị tập đoàn / Nhân viên</p><h1 class="account-h1">Onboard quản lý công ty</h1><p class="module-subtitle">Thông tin nhân sự, phân công và tài khoản làm việc.</p></div><a class="btn btn--outline workspace-back admin-back-link" href="<?= e(admin_context_url('/admin/employees')) ?>">Quay lại danh sách</a></header>
+    <form class="catalog-form module-form workspace-form" method="post" action="<?= e(admin_context_url('/admin/employees')) ?>">
         <?= csrf_field() ?>
                 <section class="module-form-card">
         <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">1</span>Thông tin nhân sự</h2>
@@ -50,6 +50,6 @@ $gender = $value($old, 'gioi_tinh');
         <?= field_error('account', $errors) ?>
         </div></section>
         <div class="catalog-actions"><button class="btn btn--primary" type="submit">Tạo quản lý công ty</button>
-        <a class="btn btn--outline" href="<?= e(url('/admin/employees')) ?>">Quay lại</a></div>
+        <a class="btn btn--outline admin-back-link" href="<?= e(admin_context_url('/admin/employees')) ?>">Quay lại danh sách</a></div>
     </form>
 </section>
