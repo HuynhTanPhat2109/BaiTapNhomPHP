@@ -1,3 +1,4 @@
+<script src="<?= e(base_path() . '/assets/js/booking-history.js') ?>" defer></script>
 <?php
 $from = $from ?? ''; $to = $to ?? ''; $sort = $sort ?? 'newest';
 $historyUrl = static fn(string $filter = '', int $page = 1): string => url('/booking/history') . '&' . http_build_query(['status'=>$filter,'from'=>$from,'to'=>$to,'sort'=>$sort,'page'=>$page]);
@@ -124,6 +125,45 @@ $icon = static fn(string $name): string => '<svg viewBox="0 0 24 24" fill="none"
                         <svg class="booking-history-costs-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M297.4 470.6C309.9 483.1 330.2 483.1 342.7 470.6L534.7 278.6C547.2 266.1 547.2 245.8 534.7 233.3C522.2 220.8 501.9 220.8 489.4 233.3L320 402.7L150.6 233.4C138.1 220.9 117.8 220.9 105.3 233.4C92.8 245.9 92.8 266.2 105.3 278.7L297.3 470.7z"/></svg>
                     </summary>
                     <section class="booking-history-costs-body" aria-labelledby="booking-costs-<?= e($item['ma_dat_san']) ?>">
+
+                        <?php
+                            $bookingNote = trim((string) ($item['ghi_chu'] ?? ''));
+                            $receiptImage = trim((string) ($item['receipt_url'] ?? ''));
+                        ?>
+
+                            <div class="booking-history-extra-row">
+                                <strong>Ghi chú:</strong>
+                                <span class="booking-history-note">
+                                    <?= e($bookingNote !== '' ? $bookingNote : 'Không có') ?>
+                                </span>
+                            </div>
+
+                        <?php if ($receiptImage !== ''): ?>
+                            <div class="booking-history-extra-row">
+                                <strong>Ảnh minh chứng:</strong>
+
+                                <button
+                                    type="button"
+                                    class="booking-history-view-proof"
+                                    data-view-proof
+                                    data-proof-src="<?= e($receiptImage) ?>"
+                                    aria-label="Xem ảnh minh chứng chuyển khoản của booking #<?= e($item['ma_dat_san']) ?>"
+                                    aria-haspopup="dialog"
+                                    aria-controls="booking-history-proof"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" aria-hidden="true">
+                                        <rect x="3" y="3" width="18" height="18" rx="3"/>
+                                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                                        <path d="m3 17 5-5 4 4 3-3 6 6"/>
+                                    </svg>
+                                    Xem ảnh chuyển khoản
+                                </button>
+                            </div>
+                        <?php endif; ?>
+
+                            <div class="booking-history-extra-divider"></div>
+
                         <div class="booking-history-costs-row"><strong>Tiền sân</strong><strong><?= e($formatCost($item['tong_tien_san'] ?? null)) ?></strong></div>
                         <div class="booking-history-costs-row"><strong>Tiền dịch vụ</strong><strong><?= e($formatCost($item['tong_tien_dich_vu'] ?? null)) ?></strong></div>
                         <?php if (!empty($item['service_lines'])): ?>
@@ -161,3 +201,23 @@ $icon = static fn(string $name): string => '<svg viewBox="0 0 24 24" fill="none"
         </div>
     <?php endif; ?>
 </section>
+
+<dialog class="booking-history-proof-modal"
+     id="booking-history-proof"
+     data-proof-modal
+     aria-label="Ảnh minh chứng chuyển khoản">
+
+    <div class="booking-history-proof-container">
+        <button type="button"
+                class="booking-history-proof-close"
+                data-close-proof
+                aria-label="Đóng ảnh">
+            &times;
+        </button>
+
+        <img data-proof-image
+             alt="Ảnh minh chứng chuyển khoản">
+        <p class="booking-history-proof-error" data-proof-error hidden role="status">Không thể tải ảnh minh chứng. Vui lòng đóng và thử lại.</p>
+    </div>
+</dialog>
+

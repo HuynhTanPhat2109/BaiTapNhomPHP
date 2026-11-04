@@ -212,6 +212,7 @@ final class BookingManagementService
         }
 
         // 2. Bắt đầu Transaction nguyên tử với Locking Hierarchy chặt chẽ theo Contract của Phát
+        $this->pdo->exec('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
         $this->pdo->beginTransaction();
 
         try {
@@ -277,8 +278,12 @@ final class BookingManagementService
             }
 
             // 2) facility
-            $facLock = $this->pdo->prepare('SELECT ma_co_so FROM co_so WHERE ma_co_so = :fid FOR UPDATE');
+            $facLock = $this->pdo->prepare('SELECT ma_co_so, ma_cong_ty FROM co_so WHERE ma_co_so = :fid FOR UPDATE');
             $facLock->execute(['fid' => $facilityId]);
+            $lockedFacility = $facLock->fetch(PDO::FETCH_ASSOC);
+            if (!$lockedFacility || (int)$lockedFacility['ma_cong_ty'] !== $companyId) {
+                throw new ValidationException(['booking'=>'Phạm vi cơ sở vừa thay đổi. Vui lòng tải lại đơn và kiểm tra quyền quản lý.']);
+            }
 
             // 3) sports ascending
             $spLock = $this->pdo->prepare('SELECT ma_bo_mon FROM bo_mon WHERE ma_bo_mon = :id FOR UPDATE');
@@ -304,55 +309,18 @@ final class BookingManagementService
                 if ($svId > 0) $svLock->execute(['id' => $svId]);
             }
 
-            // 7) Gọi BookingService::lockPayable($bookingId) để khóa và kiểm tra booking
-            // Lưu ý: Nếu khách hàng đã nộp biên lai hoặc đơn đang ở CẦN ĐỐI SOÁT, trạng thái booking là CHO_XAC_NHAN hoặc hết hạn.
-            // Để lockPayable() kiểm tra an toàn theo contract của Phát, tạm thời chuẩn hóa về CHO_THANH_TOAN trong transaction.
-            $bPre = $this->pdo->prepare('SELECT trang_thai_dat_san, het_han_giu_san_luc FROM dat_san WHERE ma_dat_san = :id FOR UPDATE');
-            $bPre->execute(['id' => $bookingId]);
-            $preRow = $bPre->fetch(PDO::FETCH_ASSOC);
-
-            // Kiểm tra xem đơn này có đang ở trạng thái CẦN ĐỐI SOÁT hay không
-            $checkP = $this->pdo->prepare('SELECT trang_thai FROM thanh_toan WHERE ma_dat_san = :id');
-            $checkP->execute(['id' => $bookingId]);
-            $currentPaymentStatus = $checkP->fetchColumn();
-            $isReconcile = ($currentPaymentStatus === 'CAN_DOI_SOAT');
-
-            $nowStr = self::now()->format('Y-m-d H:i:s');
-            $wasNormalized = false;
-            $originalStatus = $preRow['trang_thai_dat_san'] ?? 'CHO_THANH_TOAN';
-            $originalExpires = $preRow['het_han_giu_san_luc'] ?? null;
-
-            if ($preRow && ($preRow['trang_thai_dat_san'] === 'CHO_XAC_NHAN' || $isReconcile)) {
-                $futureExpires = date('Y-m-d H:i:s', strtotime('+30 minutes', strtotime($nowStr)));
-                $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san = 'CHO_THANH_TOAN', het_han_giu_san_luc = :exp WHERE ma_dat_san = :id")
-                    ->execute(['exp' => $futureExpires, 'id' => $bookingId]);
-                $wasNormalized = true;
-            }
-
-            try {
-                $booking = $this->bookingService->lockPayable($bookingId);
-            } catch (HttpException $e) {
-                if ($wasNormalized) {
-                    $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san = :st, het_han_giu_san_luc = :exp WHERE ma_dat_san = :id")
-                        ->execute(['st' => $originalStatus, 'exp' => $originalExpires, 'id' => $bookingId]);
-                }
-
-                // Tự động chuyển booking sang HET_HAN nếu đã hết hạn giữ chỗ (CHỈ KHI KHÔNG PHẢI CAN_DOI_SOAT)
-                if (!$isReconcile) {
-                    $bCheck = $this->pdo->prepare('SELECT het_han_giu_san_luc, trang_thai_dat_san FROM dat_san WHERE ma_dat_san = :id');
-                    $bCheck->execute(['id' => $bookingId]);
-                    $bRow = $bCheck->fetch(PDO::FETCH_ASSOC);
-
-                    if ($bRow && !empty($bRow['het_han_giu_san_luc']) && $bRow['het_han_giu_san_luc'] <= $nowStr) {
-                        $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san = 'HET_HAN' WHERE ma_dat_san = :id AND trang_thai_dat_san IN ('CHO_THANH_TOAN', 'CHO_XAC_NHAN')")->execute(['id' => $bookingId]);
-                        $this->pdo->prepare("UPDATE thanh_toan SET trang_thai = 'HET_HAN' WHERE ma_dat_san = :id AND trang_thai = 'CHO_THANH_TOAN'")->execute(['id' => $bookingId]);
-                    }
-                }
-
-                throw new ValidationException([
-                    'booking' => $e->getMessage() ?: 'Đơn đặt sân đã hết hạn giữ chỗ hoặc không đủ điều kiện để xác nhận.'
-                ]);
-            }
+            // Keep the original deadline. Receipt review is an explicit state, not a new hold.
+            $booking = $this->bookingService->lockPayable($bookingId, true);
+            $conflict=$this->pdo->prepare("SELECT other.ma_dat_san FROM chi_tiet_dat_san own
+                JOIN chi_tiet_dat_san other ON other.ma_san=own.ma_san AND other.ngay_choi=own.ngay_choi
+                    AND other.gio_bat_dau<own.gio_ket_thuc AND other.gio_ket_thuc>own.gio_bat_dau
+                JOIN dat_san b ON b.ma_dat_san=other.ma_dat_san
+                WHERE own.ma_dat_san=? AND other.ma_dat_san<>?
+                    AND (b.trang_thai_dat_san IN ('CHO_XAC_NHAN','DA_XAC_NHAN','HOAN_THANH')
+                        OR (b.trang_thai_dat_san='CHO_THANH_TOAN' AND b.het_han_giu_san_luc>CURRENT_TIMESTAMP))
+                LIMIT 1 FOR UPDATE");
+            $conflict->execute([$bookingId,$bookingId]);
+            if ($conflict->fetchColumn()) throw new ValidationException(['booking'=>'Khung giờ bị trùng với đơn khác. Cần đối soát trước khi xác nhận.']);
 
             // C. Khóa và kiểm tra thông tin thanh toán tương ứng
             $pStmt = $this->pdo->prepare('SELECT * FROM thanh_toan WHERE ma_dat_san = :id FOR UPDATE');
@@ -381,16 +349,8 @@ final class BookingManagementService
                 ]);
             }
 
-            // F. Kiểm tra thời hạn giữ sân tại thời điểm bấm xác nhận
-            // Tuyệt đối không kiểm tra hết hạn nếu đang trong tiến trình CẦN ĐỐI SOÁT (vì trong lúc đối soát phải giữ sân đó)
-            $nowStr = self::now()->format('Y-m-d H:i:s');
-            if (!$isReconcile && !empty($booking['het_han_giu_san_luc']) && $booking['het_han_giu_san_luc'] <= $nowStr) {
-                // Tự động chuyển booking sang HET_HAN nếu đã quá hạn
-                $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san = 'HET_HAN' WHERE ma_dat_san = :id AND trang_thai_dat_san = 'CHO_THANH_TOAN'")->execute(['id' => $bookingId]);
-                $this->pdo->prepare("UPDATE thanh_toan SET trang_thai = 'HET_HAN' WHERE ma_thanh_toan = :id AND trang_thai = 'CHO_THANH_TOAN'")->execute(['id' => $payment['ma_thanh_toan']]);
-                throw new ValidationException([
-                    'booking' => "Đơn đặt sân đã hết hạn giữ chỗ lúc {$booking['het_han_giu_san_luc']}. Không thể xác nhận đặt sân. Sân có thể đã được giải phóng cho khách khác. Vui lòng chuyển sang 'Cần đối soát' để xử lý số tiền đã nhận."
-                ]);
+            if (!in_array($payment['trang_thai'], ['CHO_THANH_TOAN','CAN_DOI_SOAT'], true)) {
+                throw new ValidationException(['payment'=>'Giao dịch không còn được phép xác nhận.']);
             }
 
             // G. Kiểm tra tính duy nhất của mã giao dịch ngân hàng (Chống xử lý lặp mã ngân hàng)
@@ -409,6 +369,17 @@ final class BookingManagementService
                     'so_tien_thuc_nhan' => "Số tiền thực nhận ({$formattedActual} đ) KHÔNG KHỚP với số tiền đơn đặt ({$expectedAmount} đ). Theo quy định, không thể xác nhận booking khi sai tiền. Vui lòng chuyển sang 'Cần đối soát'."
                 ]);
             }
+
+            // Stock must cover every outstanding reservation, including this order.
+            $reservationModel = new \App\Models\Booking($this->pdo);
+            foreach ($svcIds as $serviceId) {
+                $stockStmt=$this->pdo->prepare('SELECT so_luong_ton FROM dich_vu WHERE ma_dich_vu=? FOR UPDATE');
+                $stockStmt->execute([$serviceId]); $stock=$stockStmt->fetchColumn();
+                if ($stock !== null && $stock !== false && (int)$stock < $reservationModel->reserved($serviceId, self::now()->format('Y-m-d H:i:s'))) {
+                    throw new ValidationException(['inventory'=>'Tồn dịch vụ không đủ cho các đơn đang giữ. Vui lòng kiểm tra lại.']);
+                }
+            }
+            $this->bookingService->lockPayable($bookingId, true);
 
             // 3. Thực thi cập nhật bảng thanh_toan -> THANH_CONG
             $existingReceipt = ReceiptImage::findForBooking($bookingId, $payment['ghi_chu'] ?? '');
@@ -464,7 +435,7 @@ final class BookingManagementService
                  SET so_luong_ton = so_luong_ton - :qty
                  WHERE ma_dich_vu = :service_id
                    AND so_luong_ton IS NOT NULL
-                   AND so_luong_ton >= :qty'
+                   AND so_luong_ton >= :minimum_qty'
             );
 
             foreach ($services as $srv) {
@@ -480,6 +451,7 @@ final class BookingManagementService
 
                 $deductStmt->execute([
                     'qty' => $qty,
+                    'minimum_qty' => $qty,
                     'service_id' => (int) $srv['ma_dich_vu'],
                 ]);
 
@@ -559,9 +531,12 @@ final class BookingManagementService
         $formattedActual = number_format((float) $actualAmount, 2, '.', '');
         $cleanTxn = $bankTxnId !== null ? trim($bankTxnId) : null;
 
+        $this->pdo->exec('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
         $this->pdo->beginTransaction();
 
         try {
+            $bLock=$this->pdo->prepare('SELECT ma_dat_san FROM dat_san WHERE ma_dat_san=? FOR UPDATE');
+            $bLock->execute([$bookingId]);
             $pStmt = $this->pdo->prepare('SELECT * FROM thanh_toan WHERE ma_dat_san = :id FOR UPDATE');
             $pStmt->execute(['id' => $bookingId]);
             $payment = $pStmt->fetch(PDO::FETCH_ASSOC);
@@ -662,6 +637,7 @@ final class BookingManagementService
             throw new ValidationException(['ly_do_huy' => 'Lý do không vượt quá 500 ký tự.']);
         }
 
+        $this->pdo->exec('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
         $this->pdo->beginTransaction();
 
         try {
@@ -698,6 +674,10 @@ final class BookingManagementService
             $pStmt = $this->pdo->prepare('SELECT * FROM thanh_toan WHERE ma_dat_san = :id FOR UPDATE');
             $pStmt->execute(['id' => $bookingId]);
             $payment = $pStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($booking['trang_thai_dat_san']==='DA_XAC_NHAN' || ($payment['trang_thai'] ?? '')==='THANH_CONG') {
+                throw new ValidationException(['booking'=>'Đơn đã xác nhận thanh toán cần xử lý hoàn tiền riêng; không thể hủy bằng thao tác từ chối biên lai.']);
+            }
 
             // 1. Cập nhật bảng dat_san sang DA_HUY để giải phóng khung giờ sân về TRỐNG
             $existingBookingNote = trim($booking['ghi_chu'] ?? '');

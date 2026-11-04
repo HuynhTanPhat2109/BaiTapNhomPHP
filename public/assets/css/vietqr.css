@@ -24,33 +24,6 @@
     display: none !important;
 }
 
-/* Tiêu đề trang chuẩn STRYKE */
-.booking-heading {
-    margin-bottom: 24px;
-}
-
-.booking-eyebrow {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    color: var(--bk-accent, #c8f36b);
-    text-transform: uppercase;
-    margin-bottom: 6px;
-}
-
-.booking-heading h1 {
-    font-size: clamp(24px, 3vw, 30px);
-    font-weight: 600;
-    color: var(--bk-text, #edf3e9);
-    margin: 0 0 6px;
-}
-
-.booking-subtle {
-    font-size: 13px;
-    color: var(--bk-muted, #a8b9a9);
-    margin: 0;
-}
-
 /* 1. THANH ĐẾM NGƯỢC GIỮ CHỖ (DARK MODE COUNTDOWN) */
 .stryke-countdown-banner {
     background: var(--bk-surface, #1a2b20);
@@ -192,7 +165,7 @@
     flex-shrink: 0;
 }
 
-.stryke-action-btn {
+.stryke-bank-icon-btn {
     width: 38px;
     height: 38px;
     display: inline-flex;
@@ -207,13 +180,13 @@
     transition: all 0.15s ease;
 }
 
-.stryke-action-btn:hover {
+.stryke-bank-icon-btn:hover {
     background: var(--bk-surface, #1a2b20);
     color: var(--bk-accent, #c8f36b);
     border-color: var(--bk-accent, #c8f36b);
 }
 
-.stryke-action-btn.copied {
+.stryke-bank-icon-btn.copied {
     background: rgba(200, 243, 107, 0.2);
     color: var(--bk-accent, #c8f36b);
     border-color: var(--bk-accent, #c8f36b);
@@ -516,57 +489,26 @@
     background: rgba(18, 32, 24, 0.95);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border-top: 1px solid var(--bk-line, #34483a);
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.35);
-    padding: 12px 32px max(14px, env(safe-area-inset-bottom));
+    padding: 10px 16px max(14px, env(safe-area-inset-bottom));
     z-index: 100;
 }
 
 .stryke-bottom-inner {
-    max-width: 1680px;
     width: 100%;
+    max-width: none;
+    min-width: 0;
     margin: 0 auto;
+
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 10px;
-}
-
-.stryke-bottom-total-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.stryke-bottom-label {
-    font-size: 13px;
-    color: var(--bk-muted, #a8b9a9);
-}
-
-.stryke-bottom-desc {
-    color: var(--bk-text, #edf3e9);
-    font-weight: 600;
-}
-
-.stryke-bottom-amount {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-}
-
-.stryke-total-label {
-    font-size: 13px;
-    color: var(--bk-muted, #a8b9a9);
-}
-
-.stryke-total-val {
-    font-size: 19px;
-    font-weight: 700;
-    color: var(--bk-accent, #c8f36b);
 }
 
 .stryke-btn-continue {
     width: 100%;
-    padding: 14px 24px;
+    padding: 10px 24px;
     background: var(--bk-accent, #c8f36b);
     color: #0f1c13;
     border: none;
@@ -775,103 +717,52 @@
     opacity: 0.9;
 }
 
-/* 9.2 KHỐI HIỂN THỊ KHI HẾT GIỜ (CHÍNH GIỮA TRANG) */
+/* Expired state only; preserve the payment layout and state visibility contract. */
 .stryke-expired-center-box {
-    max-width: 560px;
-    margin: 32px auto 60px;
-    background: var(--bk-surface, #1a2b20);
-    border: 1px solid var(--bk-line, #34483a);
-    border-radius: 16px;
-    padding: 40px 24px;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    animation: fadeInCenter 0.3s ease;
-}
-
-@keyframes fadeInCenter {
-    from { opacity: 0; transform: scale(0.96); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-.stryke-expired-center-box[hidden] {
-    display: none !important;
-}
-
-.stryke-expired-icon-wrap {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.35);
-    color: #f87171;
-    font-size: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 16px;
-}
-
-.stryke-expired-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--bk-text, #edf3e9);
-    margin: 0 0 10px;
-}
-
-.stryke-expired-desc {
-    font-size: 14px;
-    color: var(--bk-muted, #a8b9a9);
-    line-height: 1.6;
-    margin: 0 0 28px;
-}
-
-.stryke-expired-btns {
+    min-height: calc(100svh - 120px);
+    max-width: 680px;
+    margin: 0 auto -120px;
+    padding: 40px 20px 80px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    flex-wrap: wrap;
-    gap: 12px;
+    text-align: center;
+    box-sizing: border-box;
 }
-
-.stryke-btn-go-home {
-    padding: 13px 28px;
-    background: var(--bk-accent, #c8f36b);
-    color: #0f1c13;
-    font-weight: 700;
-    font-size: 14px;
-    text-decoration: none;
-    border-radius: 8px;
-    transition: opacity 0.15s, transform 0.15s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+.stryke-expired-center-box[hidden] { display: none; }
+.stryke-expired-icon-wrap {
+    display: grid; place-items: center;
+    width: 88px; height: 88px; flex: 0 0 auto;
+    margin-bottom: 24px; border: 1px solid #739a50; border-radius: 50%;
+    color: #c8f36b; background: radial-gradient(circle at 35% 25%, #355436, #142b1f);
+    box-shadow: 0 0 40px #a3d75510;
 }
-
-.stryke-btn-go-home:hover {
-    opacity: 0.92;
-    transform: translateY(-1px);
+.stryke-expired-icon-wrap svg { width: 52px; height: 52px; }
+.stryke-expired-center-box .stryke-expired-title {
+    font-size: clamp(24px, 3vw, 36px); line-height: 1.25;
+    color: #eff6ed; margin: 0 0 18px; letter-spacing: -.025em;
 }
-
-.stryke-btn-reselect {
-    padding: 13px 22px;
-    background: #24382c;
-    border: 1px solid var(--bk-line, #34483a);
-    color: var(--bk-text, #edf3e9);
-    font-weight: 600;
-    font-size: 14px;
-    text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.15s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+.stryke-expired-desc { max-width: 510px; font-size: 16px; color: #aebfb3; line-height: 1.8; margin: 0 0 30px; text-wrap: balance; }
+.stryke-expired-desc strong { color: #e3f3cf; }
+.stryke-expired-btns { display: flex; justify-content: center; gap: 12px; width: 100%; flex-wrap: wrap; }
+.stryke-expired-btns a {
+    display: inline-flex; justify-content: center; align-items: center;
+    min-height: 48px; padding: 12px 24px; box-sizing: border-box;
+    border: 1px solid #405c46; border-radius: 10px; font-size: 14px;
+    font-weight: 650; text-decoration: none; transition: background-color .15s, border-color .15s;
 }
-
-.stryke-btn-reselect:hover {
-    background: var(--bk-surface, #1a2b20);
-    border-color: var(--bk-accent, #c8f36b);
-    color: var(--bk-accent, #c8f36b);
+.stryke-expired-btns .stryke-btn-go-home { background: #162b20; color: #edf3e9; }
+.stryke-expired-btns .stryke-btn-reselect { background: #c8f36b; border-color: #c8f36b; color: #112014; }
+.stryke-expired-btns .stryke-btn-go-home:hover { background: #233e2c; border-color: #85a966; }
+.stryke-expired-btns .stryke-btn-reselect:hover { background: #daff90; }
+.stryke-expired-btns a:focus-visible { outline: 3px solid #d9ff96; outline-offset: 4px; }
+@media (max-width: 600px) {
+    .stryke-expired-center-box { padding: 24px 0 60px; }
+    .stryke-expired-btns { flex-direction: column; max-width: 340px; }
+    .stryke-expired-desc { font-size: 14px; }
 }
+@media (prefers-reduced-motion: reduce) { .stryke-expired-btns a { transition: none; } }
 
 /* =========================================================
    10. RESPONSIVE ĐA KÍCH THƯỚC MÀN HÌNH
@@ -945,7 +836,7 @@
         gap: 4px;
     }
 
-    .stryke-action-btn {
+    .stryke-bank-icon-btn  {
         width: 32px;
         height: 32px;
     }
@@ -1491,3 +1382,65 @@
     line-height: 1.5;
 }
 
+/* =========================================
+   PAYMENT SUBMIT - FULL WIDTH
+========================================= */
+
+.stryke-bottom-bar .stryke-bottom-inner > .stryke-payment-submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    align-self: stretch;
+    flex: 0 0 auto;
+
+    min-height: 44px;
+    margin: 0;
+
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+}
+.stryke-toast-notice,
+.stryke-toast-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+.stryke-toast-notice {
+    background: rgba(200, 243, 107, .12);
+    border: 1px solid rgba(200, 243, 107, .35);
+    color: #c8f36b;
+    font-weight: 600;
+}
+
+.stryke-toast-error {
+    background: rgba(239, 68, 68, .12);
+    border: 1px solid rgba(239, 68, 68, .35);
+    color: #fca5a5;
+    font-weight: 500;
+}
+
+.stryke-toast-notice > span:first-child,
+.stryke-toast-error > span:first-child {
+    font-size: 1.15rem;
+}
+.stryke-upload-dropzone.is-invalid {
+    border-color: #ef4444;
+}
+.stryke-toast.is-hiding {
+    opacity: 0;
+    transition: opacity .3s ease;
+}
+.stryke-clipboard-temp {
+    position: fixed;
+    left: -9999px;
+    top: -9999px;
+}

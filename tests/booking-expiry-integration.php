@@ -60,22 +60,23 @@ try {
     $paid=$make(-360,'CHO_THANH_TOAN','THANH_CONG');$review=$make(-360,'CHO_THANH_TOAN','CAN_DOI_SOAT');
     $fixed=[];foreach(['DA_XAC_NHAN','HOAN_THANH','DA_HUY','HET_HAN'] as $state)$fixed[$state]=$make(-360,$state);
     $before=$m->history($customer);
-    expiryCheck($before['counts']['CHO_THANH_TOAN']===3 && $before['counts']['HET_HAN']===3,'effective history counts include overdue, protect payment anomalies');
+    expiryCheck($before['counts']['CHO_THANH_TOAN']===2 && $before['counts']['HET_HAN']===4,'effective history expires pending reconciliation without receipt review');
     $expiredPage=$m->history($customer,'HET_HAN');
-    expiryCheck($expiredPage['total']===3 && count($expiredPage['items'])===3,'effective filter and pagination match counts');
+    expiryCheck($expiredPage['total']===4 && count($expiredPage['items'])===4,'effective filter and pagination match counts');
     expiryCheck($m->find($boundary)['trang_thai_dat_san']==='CHO_THANH_TOAN','GET projection did not persist expiry');
     expiryCheck($s->inspect($paid,$customer)['trang_thai_dat_san']==='CHO_THANH_TOAN','inspect shares protected payment rule');
-    expiryCheck($s->expirePending()===2,'deadline and old unattended bookings expired');
+    expiryCheck($s->expirePending()===3,'deadline and old unattended bookings expired');
     expiryCheck($m->find($fresh)['trang_thai_dat_san']==='CHO_THANH_TOAN','unexpired booking preserved');
     expiryCheck($m->find($old)['trang_thai_dat_san']==='HET_HAN','old backlog cleared');
     expiryCheck($p->query("SELECT trang_thai FROM thanh_toan WHERE ma_dat_san=$boundary")->fetchColumn()==='HET_HAN','pending payment synchronized');
     foreach([$paid=>'THANH_CONG',$review=>'CAN_DOI_SOAT'] as $id=>$state) {
-        expiryCheck($m->find($id)['trang_thai_dat_san']==='CHO_THANH_TOAN' && $p->query("SELECT trang_thai FROM thanh_toan WHERE ma_dat_san=$id")->fetchColumn()===$state,'protect booking and payment '.$state);
+        $expected=$state==='THANH_CONG'?'CHO_THANH_TOAN':'HET_HAN';
+        expiryCheck($m->find($id)['trang_thai_dat_san']===$expected && $p->query("SELECT trang_thai FROM thanh_toan WHERE ma_dat_san=$id")->fetchColumn()===$state,'preserve payment evidence; only successful payment protects pending booking '.$state);
         expiryCheck($m->expire($id)===0,'single expiry protects '.$state);
     }
     foreach($fixed as $state=>$id)expiryCheck($m->find($id)['trang_thai_dat_san']===$state,'terminal state unchanged '.$state);
     expiryCheck($s->expirePending()===0,'repeated job idempotent');
-    expiryCheck(count($s->expiryReport()['protected_sample'])===2,'reconciliation reported');
+    expiryCheck(count($s->expiryReport()['protected_sample'])===1,'recorded payment anomaly reported');
     $exact=$make(60,'CHO_THANH_TOAN','CHO_THANH_TOAN');
     $exactTime=$m->find($exact)['het_han_giu_san_luc'];
     // Freeze only this disposable DB connection's clock to prove the exact boundary.

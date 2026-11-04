@@ -25,6 +25,14 @@ for ($i = 1; $i <= 14; $i++) {
 $pdo->exec("INSERT INTO dat_san VALUES (99,8,1,'2027-01-01 00:00:00','DA_XAC_NHAN','999999.00',NULL)");
 $pdo->exec("UPDATE dat_san SET ngay_tao='2026-10-02 00:00:00' WHERE ma_dat_san=2;
     UPDATE dat_san SET ngay_tao='2026-10-04 23:59:59' WHERE ma_dat_san=4");
+$pdo->exec("ALTER TABLE dat_san ADD COLUMN ghi_chu TEXT;
+    ALTER TABLE dat_san ADD COLUMN tong_tien_san TEXT DEFAULT '185000.00';
+    ALTER TABLE dat_san ADD COLUMN tong_tien_dich_vu TEXT DEFAULT '0.00';
+    ALTER TABLE thanh_toan ADD COLUMN ghi_chu TEXT;
+    CREATE TABLE chi_tiet_dich_vu_dat (ma_chi_tiet_dv INTEGER PRIMARY KEY,ma_dat_san INTEGER,ten_dich_vu_snapshot TEXT,don_vi_tinh_snapshot TEXT,so_luong INTEGER,don_gia TEXT,thanh_tien TEXT);
+    UPDATE dat_san SET ghi_chu='Note from customer' WHERE ma_dat_san=14;
+    INSERT INTO thanh_toan VALUES (14,'CHO_THANH_TOAN','[BIEN_LAI:uploads/receipts/receipt_14_aaaaaaaaaaaaaaaa.png]');
+    INSERT INTO thanh_toan VALUES (99,'CHO_THANH_TOAN','private note');");
 $pdo->exec('PRAGMA query_only=ON'); // Any accidental UPDATE/INSERT/DELETE now fails.
 $model = new Booking($pdo);
 $checks = 0;
@@ -33,6 +41,8 @@ $check = static function(bool $ok, string $label) use (&$checks): void {
     $checks++;
 };
 $history = $model->history(7);
+$check($history['items'][0]['ghi_chu']==='Note from customer' && str_contains($history['items'][0]['payment_note'],'[BIEN_LAI:'), 'History loads actual booking and payment notes');
+$check($model->historyReceipt(99,7)===null && $model->historyReceipt(14,7)!==null,'Receipt query enforces booking owner');
 $check($history['total'] === 14 && count($history['items']) === 6, 'Counts and pagination');
 $check(array_column($history['items'], 'ma_dat_san') === [14,13,12,11,10,9], 'Newest first, owner scope');
 $check(count($history['items'][0]['lines']) === 3, 'Multiple courts and separated slots');
@@ -102,4 +112,9 @@ $check(str_contains($empty, 'Bạn chưa có lịch đặt sân nào'), 'First b
 $history['counts'] = ['DA_HUY'=>1]; $history['stats'] = ['DA_HUY'=>1]; $status='DA_XAC_NHAN';
 ob_start(); require dirname(__DIR__).'/app/views/courts/history.php'; $empty = ob_get_clean();
 $check(str_contains($empty, 'Không có lịch đặt phù hợp bộ lọc'), 'Filter empty state');
-if (in_array('--render', $argv, true)) { echo $html; } else { echo "PASS: $checks history checks; read-only SQLite fixture, no application DB.\n"; }
+if (in_array('--render', $argv, true)) {
+    $proofHistory=$model->history(7);
+    $proofHistory['items'][0]['receipt_url']='/test-proof/1.png';
+    $proofHistory['items'][1]['receipt_url']='/test-proof/2.png';
+    Core\View::render('courts/history',['history'=>$proofHistory,'status'=>'','statuses'=>$statuses,'title'=>'History test']);
+} else { echo "PASS: $checks history checks; read-only SQLite fixture, no application DB.\n"; }
