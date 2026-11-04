@@ -4,7 +4,7 @@ namespace App\Controllers;
 
 use App\Services\EmployeeService;
 use App\Services\AdminListService;
-use App\Models\{NhanVien, CoSo};
+use App\Models\{NhanVien, CoSo, TaiKhoan};
 use App\Services\ValidationException;
 use Core\Application;
 use Core\Controller;
@@ -36,6 +36,32 @@ final class EmployeeController extends Controller
         $this->render($viewPrefix . '/index', $result + [
             'title' => 'Quản lý nhân viên',
             'employees' => $result['items'], 'filters' => $filters, 'notice' => $notice, 'options' => $options,
+        ]);
+    }
+
+    public function show(): void
+    {
+        [$role, $companyId, $basePath] = $this->context();
+        try {
+            $employee = $this->employees->getEmployee($role, $companyId, $_GET['id'] ?? null);
+        } catch (ValidationException $e) {
+            throw new HttpException(404, 'Không tìm thấy nhân viên.');
+        }
+        $model = new NhanVien($this->app->pdo());
+        $company = $model->company((int) $employee['ma_cong_ty']);
+        $facility = $employee['ma_co_so'] === null ? null : $model->facility((int) $employee['ma_co_so']);
+        if ($facility !== null && (int) $facility['ma_cong_ty'] !== (int) $employee['ma_cong_ty']) {
+            throw new HttpException(404, 'Không tìm thấy nhân viên trong phạm vi này.');
+        }
+        // identity() explicitly selects public account fields; it never reads the password hash.
+        $identity = $employee['ma_tai_khoan'] === null ? null
+            : (new TaiKhoan($this->app->pdo()))->identity((int) $employee['ma_tai_khoan']);
+        if ($identity !== null && (int) $identity['ma_nhan_vien'] !== (int) $employee['ma_nhan_vien']) {
+            throw new HttpException(404, 'Không tìm thấy tài khoản nhân viên.');
+        }
+        $account = $identity === null ? null : array_intersect_key($identity, array_flip(['ten_dang_nhap', 'ten_vai_tro', 'trang_thai']));
+        $this->render('admin/employees/show', compact('employee', 'account', 'company', 'facility', 'basePath') + [
+            'title' => 'Chi tiết nhân viên',
         ]);
     }
 
@@ -158,7 +184,7 @@ final class EmployeeController extends Controller
             'chuc_vu' => $_POST['chuc_vu'] ?? '',
             'ngay_vao_lam' => $_POST['ngay_vao_lam'] ?? '',
             'trang_thai' => $_POST['trang_thai'] ?? 'DANG_LAM',
-            'ma_co_so' => $role === 'QUAN_TRI_TAP_DOAN' ? null : ($_POST['ma_co_so'] ?? ''),
+            'ma_co_so' => $_POST['ma_co_so'] ?? '',
         ];
         if ($role === 'QUAN_TRI_TAP_DOAN') {
             $data['ma_cong_ty'] = $_POST['ma_cong_ty'] ?? '';

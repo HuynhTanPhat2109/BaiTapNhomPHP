@@ -3,6 +3,7 @@ $errors = $errors ?? [];
 $old = $old ?? [];
 $options = $options ?? [];
 $companies = $options['companies'] ?? [];
+$facilities = $options['facilities'] ?? [];
 $employee = $employee ?? [];
 $value = static function (array $old, array $employee, string $field, string $default = ''): string {
     if (array_key_exists($field, $old)) return is_scalar($old[$field]) ? (string) $old[$field] : '';
@@ -11,7 +12,7 @@ $value = static function (array $old, array $employee, string $field, string $de
 $id = $employee['ma_nhan_vien'] ?? '';
 ?>
 <section class="container account-page catalog-page catalog-workspace workspace-page">
-    <header class="account-page__intro catalog-heading module-heading"><div><p class="eyebrow">Quản trị tập đoàn / Nhân viên</p><h1 class="account-h1">Sửa quản lý công ty</h1><p class="module-subtitle">Thông tin nhân sự, phân công và tài khoản làm việc.</p></div><a class="btn btn--outline workspace-back admin-back-link" href="<?= e(admin_context_url('/admin/employees')) ?>">Quay lại danh sách</a></header>
+    <header class="account-page__intro catalog-heading module-heading"><div><p class="eyebrow">Quản trị tập đoàn / Nhân viên</p><h1 class="account-h1">Sửa nhân viên</h1><p class="module-subtitle">Thông tin nhân sự và phân công. Vai trò tài khoản hiện tại được giữ nguyên.</p></div><a class="btn btn--outline workspace-back admin-back-link" href="<?= e(admin_context_url('/admin/employees')) ?>">Quay lại danh sách</a></header>
     <form class="catalog-form module-form workspace-form" method="post" action="<?= e(admin_context_url('/admin/employees/update')) ?>">
         <?= csrf_field() ?><input type="hidden" name="id" value="<?= e($id) ?>">
                 <section class="module-form-card">
@@ -28,6 +29,7 @@ $id = $employee['ma_nhan_vien'] ?? '';
         <section class="module-form-card">
         <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">2</span>Phân công &amp; trạng thái</h2>
         <div class="module-fields">
+        <div class="form-group"><label for="ma_co_so">Cơ sở</label><select class="form-control" id="ma_co_so" name="ma_co_so"<?= ($employee['ten_vai_tro'] ?? '') === 'QUAN_LY_CONG_TY' ? ' disabled' : '' ?><?= field_error_attributes('ma_co_so', $errors) ?>><option value="">Chưa gán cơ sở</option><?php foreach ($facilities as $facility): ?><option value="<?= e($facility['ma_co_so']) ?>" <?= $value($old, $employee, 'ma_co_so') === (string) $facility['ma_co_so'] ? 'selected' : '' ?>><?= e($facility['ten_cong_ty'] . ' — ' . $facility['ten_co_so']) ?></option><?php endforeach; ?></select><?= field_error('ma_co_so', $errors) ?><p class="form-hint">Cơ sở phải thuộc công ty đã chọn; không thay đổi vai trò tài khoản.</p></div>
         <div class="form-group"><label for="chuc_vu">Chức vụ</label><input class="form-control" id="chuc_vu" name="chuc_vu" maxlength="100" value="<?= e($value($old, $employee, 'chuc_vu')) ?>"<?= field_error_attributes('chuc_vu', $errors) ?>><?= field_error('chuc_vu', $errors) ?></div>
         <div class="form-group"><label for="ngay_vao_lam">Ngày vào làm</label><input class="form-control" id="ngay_vao_lam" name="ngay_vao_lam" type="date" value="<?= e($value($old, $employee, 'ngay_vao_lam')) ?>"<?= field_error_attributes('ngay_vao_lam', $errors) ?>><?= field_error('ngay_vao_lam', $errors) ?></div>
         <?php $status = $value($old, $employee, 'trang_thai', 'DANG_LAM'); ?><div class="form-group"><label for="trang_thai">Trạng thái</label><select class="form-control" id="trang_thai" name="trang_thai" required<?= field_error_attributes('trang_thai', $errors) ?>><option value="DANG_LAM" <?= $status === 'DANG_LAM' ? 'selected' : '' ?>>Đang làm</option><option value="DA_NGHI" <?= $status === 'DA_NGHI' ? 'selected' : '' ?>>Đã nghỉ</option></select><?= field_error('trang_thai', $errors) ?></div>

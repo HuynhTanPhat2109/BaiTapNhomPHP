@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use PDO;
+use App\Services\FacilityScope;
 
 final class CoSo
 {
@@ -13,8 +14,16 @@ final class CoSo
         $this->pdo = $pdo;
     }
 
-    public function all(): array
+    public function all(array $scope = FacilityScope::ADMIN): array
     {
+        if ($scope['company'] !== null || $scope['facility'] !== null) {
+            [$where, $params] = FacilityScope::where($scope);
+            $stmt = $this->pdo->prepare('SELECT f.*, c.ten_cong_ty, c.trang_thai AS trang_thai_cong_ty,
+                (SELECT COUNT(*) FROM san s WHERE s.ma_co_so=f.ma_co_so) AS so_san FROM co_so f
+                JOIN cong_ty_nhuong_quyen c ON c.ma_cong_ty=f.ma_cong_ty WHERE ' . implode(' AND ', $where) . ' ORDER BY f.ma_co_so DESC');
+            $stmt->execute($params);
+            return $stmt->fetchAll();
+        }
         return $this->pdo->query(
             'SELECT f.*, c.ten_cong_ty, c.trang_thai AS trang_thai_cong_ty,
                 (SELECT COUNT(*) FROM san s WHERE s.ma_co_so = f.ma_co_so) AS so_san
@@ -31,16 +40,18 @@ final class CoSo
         return $stmt->fetchAll();
     }
 
-    public function page(array $filters): array
+    public function page(array $filters, array $scope = FacilityScope::ADMIN): array
     {
+        [$where, $params] = FacilityScope::where($scope);
         return AdminList::page($this->pdo, ' FROM co_so f JOIN cong_ty_nhuong_quyen c ON c.ma_cong_ty = f.ma_cong_ty',
             'f.*, c.ten_cong_ty, c.trang_thai AS trang_thai_cong_ty,
                 (SELECT COUNT(*) FROM san s WHERE s.ma_co_so = f.ma_co_so) AS so_san', 'f.ma_co_so',
-            ['q' => 'f.ten_co_so', 'ma_cong_ty' => 'f.ma_cong_ty', 'trang_thai' => 'f.trang_thai'], $filters);
+            ['q' => 'f.ten_co_so', 'ma_cong_ty' => 'f.ma_cong_ty', 'trang_thai' => 'f.trang_thai'], $filters, $where, $params);
     }
 
-    public function filterCompanies(): array
+    public function filterCompanies(array $scope = FacilityScope::ADMIN): array
     {
+        if ($scope['company'] !== null) return array_filter([$this->company($scope['company'])]);
         return $this->pdo->query('SELECT ma_cong_ty, ten_cong_ty FROM cong_ty_nhuong_quyen ORDER BY ten_cong_ty, ma_cong_ty')->fetchAll();
     }
 
@@ -61,22 +72,24 @@ final class CoSo
         return $stmt->fetch() ?: null;
     }
 
-    public function companies(?int $currentId = null): array
+    public function companies(?int $currentId = null, array $scope = FacilityScope::ADMIN): array
     {
+        if ($scope['company'] !== null) return array_filter([$this->company($scope['company'])]);
         $stmt = $this->pdo->prepare("SELECT ma_cong_ty, ten_cong_ty, trang_thai FROM cong_ty_nhuong_quyen
             WHERE trang_thai = 'HOAT_DONG' OR ma_cong_ty = :current ORDER BY ten_cong_ty");
         $stmt->execute(['current' => $currentId ?? 0]);
         return $stmt->fetchAll();
     }
 
-    public function options(?int $currentId = null): array
+    public function options(?int $currentId = null, array $scope = FacilityScope::ADMIN): array
     {
+        [$where, $params] = FacilityScope::where($scope);
         $stmt = $this->pdo->prepare("SELECT f.ma_co_so, f.ten_co_so, f.trang_thai, c.ten_cong_ty,
                 c.trang_thai AS trang_thai_cong_ty FROM co_so f
             JOIN cong_ty_nhuong_quyen c ON c.ma_cong_ty = f.ma_cong_ty
-            WHERE (f.trang_thai = 'HOAT_DONG' AND c.trang_thai = 'HOAT_DONG') OR f.ma_co_so = :current
-            ORDER BY c.ten_cong_ty, f.ten_co_so");
-        $stmt->execute(['current' => $currentId ?? 0]);
+            WHERE ((f.trang_thai = 'HOAT_DONG' AND c.trang_thai = 'HOAT_DONG') OR f.ma_co_so = :current)"
+            . ($where ? ' AND ' . implode(' AND ', $where) : '') . ' ORDER BY c.ten_cong_ty, f.ten_co_so');
+        $stmt->execute(['current' => $currentId ?? 0] + $params);
         return $stmt->fetchAll();
     }
 

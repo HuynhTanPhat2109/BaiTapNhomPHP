@@ -1,9 +1,9 @@
 <?php $bodyClass = 'page-catalog'; ?>
 <section class="container catalog-page catalog-workspace workspace-page">
-    <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Cơ sở thể thao</p><h1><?= e($title) ?></h1><p class="module-subtitle">Thông tin cơ sở, liên hệ và giờ hoạt động.</p></div><a class="btn btn--outline workspace-back admin-back-link" href="<?= e(admin_context_url('/admin/co-so')) ?>">Quay lại danh sách</a></header>
-    <?php if (!$companies): ?><p class="alert alert--danger" role="alert">Chưa có công ty đang hoạt động. Kiểm tra <a href="<?= e(admin_context_url('/admin/companies')) ?>">Quản lý Công ty</a> trước khi thêm cơ sở.</p><?php endif; ?>
+    <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Cơ sở thể thao</p><h1><?= e($title) ?></h1><p class="module-subtitle">Thông tin cơ sở, liên hệ và giờ hoạt động.</p></div><a class="btn btn--outline workspace-back admin-back-link" href="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/co-so')) ?>">Quay lại danh sách</a></header>
+    <?php if (!$companies): ?><p class="alert alert--danger" role="alert">Chưa có công ty đang hoạt động. <?php if ($canDelete ?? true): ?>Kiểm tra <a href="<?= e(admin_context_url('/admin/companies')) ?>">Quản lý Công ty</a> trước khi thêm cơ sở.<?php else: ?>Vui lòng liên hệ Quản trị tập đoàn.<?php endif; ?></p><?php endif; ?>
     <?php if (($item['trang_thai_cong_ty'] ?? 'HOAT_DONG') !== 'HOAT_DONG'): ?><p class="alert" role="status">Công ty hiện tại đã ngừng. Cơ sở chỉ được giữ ở trạng thái Tạm ngừng hoặc chuyển sang công ty hoạt động khi chưa có dữ liệu tham chiếu.</p><?php endif; ?>
-    <form class="catalog-form module-form workspace-form" method="post" enctype="multipart/form-data" action="<?= e(admin_context_url('/admin/co-so/' . ($item ? 'update' : 'store'))) ?>" novalidate>
+    <form class="catalog-form module-form workspace-form" method="post" enctype="multipart/form-data" action="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/co-so/' . ($item ? 'update' : 'store'))) ?>" novalidate>
         <?= csrf_field() ?>
         <?php if ($item): ?><input type="hidden" name="id" value="<?= e($item['ma_co_so']) ?>"><?php endif; ?>
                 <section class="module-form-card">
@@ -11,12 +11,13 @@
         <div class="module-fields">
         <div class="form-group">
             <label for="ma_cong_ty">Công ty nhượng quyền</label>
-            <select class="form-control" id="ma_cong_ty" name="ma_cong_ty" required<?= field_error_attributes('ma_cong_ty', $errors) ?>>
+            <select class="form-control" id="ma_cong_ty" name="ma_cong_ty" required<?= !($canDelete ?? true) ? ' disabled' : '' ?><?= field_error_attributes('ma_cong_ty', $errors) ?>>
                 <option value="">Chọn công ty</option>
                 <?php foreach ($companies as $company): ?>
                     <option value="<?= e($company['ma_cong_ty']) ?>" <?= (string) ($old['ma_cong_ty'] ?? '') === (string) $company['ma_cong_ty'] ? 'selected' : '' ?>><?= e($company['ten_cong_ty']) ?><?= $company['trang_thai'] !== 'HOAT_DONG' ? ' (Đã ngừng)' : '' ?></option>
                 <?php endforeach; ?>
             </select>
+            <?php if (!($canDelete ?? true)): ?><input type="hidden" name="ma_cong_ty" value="<?= e($managementScope['company']) ?>"><?php endif; ?>
             <?= field_error('ma_cong_ty', $errors) ?>
         </div>
         <?php $provinces = App\Services\AdministrativeAddress::provinces(); ?>
@@ -111,15 +112,16 @@
         </div>
         <div class="form-group">
             <label for="trang_thai">Trạng thái</label>
-            <select class="form-control" id="trang_thai" name="trang_thai" required<?= field_error_attributes('trang_thai', $errors) ?>>
+            <select class="form-control" id="trang_thai" name="trang_thai" required<?= !($canDelete ?? true) ? ' disabled' : '' ?><?= field_error_attributes('trang_thai', $errors) ?>>
                 <?php foreach (['HOAT_DONG' => 'Hoạt động', 'TAM_NGUNG' => 'Tạm ngừng'] as $value => $label): ?>
                     <option value="<?= e($value) ?>" <?= ($old['trang_thai'] ?? 'HOAT_DONG') === $value ? 'selected' : '' ?>><?= e($label) ?></option>
                 <?php endforeach; ?>
             </select>
+            <?php if (!($canDelete ?? true)): ?><input type="hidden" name="trang_thai" value="<?= e($item['trang_thai'] ?? 'HOAT_DONG') ?>"><?php endif; ?>
             <?= field_error('trang_thai', $errors) ?>
         </div>
         </div></section>
-        <div class="catalog-actions"><button class="btn btn--primary" type="submit" <?= !$companies ? 'disabled' : '' ?>>Lưu cơ sở</button><a class="btn btn--outline" href="<?= e(admin_context_url('/admin/co-so')) ?>">Hủy</a></div>
+        <div class="catalog-actions"><button class="btn btn--primary" type="submit" <?= !$companies ? 'disabled' : '' ?>>Lưu cơ sở</button><a class="btn btn--outline" href="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/co-so')) ?>">Hủy</a></div>
     </form>
 </section>
 

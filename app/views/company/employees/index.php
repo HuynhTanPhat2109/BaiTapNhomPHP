@@ -14,8 +14,8 @@
         <tbody><?php foreach ($employees as $employee): ?>
             <?php $id = (string) ($employee['ma_nhan_vien'] ?? ''); $status = $employee['trang_thai'] ?? ''; ?>
             <tr>
-                <th scope="row"><?= e($employee['ho_ten'] ?? '') ?><small class="workspace-secondary"><?= e($employee['chuc_vu'] ?? '') ?></small></th>
-                <td data-label="Cơ sở"><?= ($employee['ma_co_so'] ?? null) === null ? 'Chưa gán' : e($employee['ma_co_so']) ?></td>
+                <th scope="row"><a class="admin-table-link" href="<?= e(admin_context_url('/company/employees/show') . '&id=' . rawurlencode($id)) ?>"><?= e($employee['ho_ten'] ?? '') ?></a><small class="workspace-secondary"><?= e($employee['chuc_vu'] ?? '') ?></small></th>
+                <td data-label="Cơ sở"><?= e(($employee['ma_co_so'] ?? null) === null ? 'Chưa phân công' : ($employee['ten_co_so'] ?? 'Không còn thông tin cơ sở')) ?></td>
                 <td data-label="Liên hệ"><?= e($employee['email'] ?? '') ?><small class="workspace-secondary"><?= e($employee['so_dien_thoai'] ?? '') ?></small></td>
                 <td data-label="Ngày vào làm"><?= e($formatDate($employee['ngay_vao_lam'] ?? null)) ?></td>
                 <td class="workspace-number" data-label="Trạng thái"><span class="catalog-status" data-status="<?= $status === 'DANG_LAM' ? 'HOAT_DONG' : 'NGUNG' ?>"><?= $status === 'DANG_LAM' ? 'Đang làm' : ($status === 'DA_NGHI' ? 'Đã nghỉ' : 'Không xác định') ?></span></td>

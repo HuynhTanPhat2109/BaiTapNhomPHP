@@ -311,14 +311,24 @@ final class AdminBooking
     /**
      * Lấy danh sách sân của cơ sở để hiển thị trong dropdown bộ lọc.
      */
-    public function courtsByFacility(?int $facilityId): array
+    public function courtsByFacility(?int $facilityId, array $scope): array
     {
         if (!$facilityId) {
             return [];
         }
-        $sql = "SELECT ma_san, ten_san FROM san WHERE ma_co_so = :facility_id ORDER BY ten_san";
+        $sql = 'SELECT s.ma_san, s.ten_san FROM san s JOIN co_so f ON f.ma_co_so = s.ma_co_so WHERE s.ma_co_so = :facility_id';
+        $params = ['facility_id' => $facilityId];
+        if ($scope['company'] !== null) {
+            $sql .= ' AND f.ma_cong_ty = :scope_company';
+            $params['scope_company'] = $scope['company'];
+        }
+        if ($scope['facility'] !== null) {
+            $sql .= ' AND s.ma_co_so = :scope_facility';
+            $params['scope_facility'] = $scope['facility'];
+        }
+        $sql .= ' ORDER BY s.ten_san';
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute(['facility_id' => $facilityId]);
+        $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

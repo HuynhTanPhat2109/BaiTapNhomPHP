@@ -88,7 +88,13 @@ async function freePort() {
         await clickNavigation(page.locator('.module-heading a.btn--primary').first());
         await checkBack(slug, width);
         await clickNavigation(page.locator('.admin-back-link').first()); listContext(slug);
-        await action('view');
+        if (slug === 'bo-mon') {
+          const row = page.locator('.catalog-table tbody tr').first();
+          check(await row.locator('a.list-action').count() === 2 && await row.locator('a.list-action--view').count() === 0, `bo-mon ${width}: list exposes only edit/delete`);
+          const edit = new URL(await row.locator('a.list-action--edit').getAttribute('href'), base);
+          edit.searchParams.set('route', '/admin/bo-mon/show');
+          await navigate(edit.href); // Existing detail route and return context remain supported.
+        } else await action('view');
         await checkBack(slug, width);
         await clickNavigation(page.locator('a.detail-back'));
         listContext(slug);
@@ -136,6 +142,29 @@ async function freePort() {
         if (slug === 'contracts') Object.assign(filters, { tu_ngay: '2020-01-01', den_ngay: '2030-12-31' });
         await navigate(address(slug, filters));
         check(await page.locator('.catalog-table tbody tr').count() === 10, `${slug} ${width}: backend page 2 has ten records`);
+        if (slug === 'contracts') {
+          const geometry = await page.locator('tbody tr').first().evaluate(row => {
+            const form = row.querySelector('.contract-actions');
+            const edit = form.querySelector('a').getBoundingClientRect(), select = form.querySelector('select').getBoundingClientRect(), update = form.querySelector('button').getBoundingClientRect();
+            return { edit, select, update, order: [...form.querySelectorAll('select, a, button')].map(control => control.tagName).join(','), width: form.clientWidth, overflow: form.scrollWidth > form.clientWidth + 1, rowHeight: row.clientHeight };
+          });
+          check(!geometry.overflow && [geometry.edit, geometry.select, geometry.update].every(rect => Math.abs(rect.height - 38) < 1), `contracts ${width}: actions fit and share 38px height`);
+          check(geometry.order === 'SELECT,A,BUTTON', `contracts ${width}: DOM/tab order is status, edit, update`);
+          check(Math.abs(geometry.edit.y - geometry.update.y) < 1 && geometry.update.x > geometry.edit.x, `contracts ${width}: edit and update stay adjacent on one row`);
+          if (geometry.width >= 330) check(Math.abs(geometry.edit.y - geometry.select.y) < 1 && geometry.select.x < geometry.edit.x, `contracts ${width}: dropdown precedes adjacent buttons on desktop`);
+          else check(geometry.select.bottom <= geometry.edit.top + 1, `contracts ${width}: narrow layout keeps the button pair together below status`);
+          if (width === 1440) check(geometry.rowHeight < 100, 'contracts desktop: no oversized row from stacked status form');
+        }
+        if (slug === 'employees') {
+          await clickNavigation(page.locator('tbody tr th a.admin-table-link').first());
+          const detailText = await page.locator('.detail-page').innerText();
+          check(['Thông tin nhân viên', 'Tài khoản đăng nhập', 'Phân quyền', 'memory.'].every(text => detailText.includes(text)), `employees ${width}: read-only cards show login and scope`);
+          check(!(await page.content()).includes('FIXTURE_SECRET_NEVER_RENDER'), `employees ${width}: account secret sentinel never reaches HTML`);
+          check(await page.locator('.detail-page form, .detail-page input, .detail-edit').count() === 0, `employees ${width}: details have no write/reset action`);
+          check(new URL(await page.locator('.detail-back').getAttribute('href'), base).searchParams.get('page') === '2', `employees ${width}: detail back preserves page`);
+          check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `employees ${width}: detail fits viewport`);
+          await clickNavigation(page.locator('.detail-back')); listContext(slug);
+        }
         await clickNavigation(page.locator('.module-heading a.btn--primary').first());
         await checkBack(slug, width);
         if (slug === 'companies') {
@@ -225,7 +254,8 @@ async function freePort() {
         const business = ['companies', 'contracts', 'employees'].includes(slug);
         const status = slug === 'dich-vu' ? 'DANG_CUNG_CAP' : slug === 'bang-gia' ? 'NGUNG'
           : slug === 'companies' ? 'HOAT_DONG' : slug === 'contracts' ? 'HIEU_LUC' : slug === 'employees' ? 'DANG_LAM' : null;
-        await navigate(address(slug, { page: '2', q: 'UX', ...(status ? { trang_thai: status } : {}) }));
+        // Admin now sees all personnel. Keep this fixture's original 11-manager last-page case.
+        await navigate(address(slug, { page: '2', q: 'UX', ...(status ? { trang_thai: status } : {}), ...(slug === 'employees' ? { vai_tro: 'QUAN_LY_CONG_TY' } : {}) }));
         if (business) {
           const form = page.locator('.catalog-table tbody tr').first().locator('form');
           if (slug === 'contracts') await form.locator('select').selectOption('HET_HAN');
@@ -239,6 +269,7 @@ async function freePort() {
         check(new URL(page.url()).searchParams.get('page') === null, `${slug} ${width}: last-page deletion redirects to page 1`);
         check((await page.locator('.catalog-table tbody tr').count()) === 10 && await page.locator('[role="status"]').count() > 0, `${slug} ${width}: clamped list retains rows and notice`);
         if (status) check(new URL(page.url()).searchParams.get('trang_thai') === status, `${slug} ${width}: empty last page retains status filter`);
+        if (slug === 'employees') check(new URL(page.url()).searchParams.get('vai_tro') === 'QUAN_LY_CONG_TY', `employees ${width}: clamped list retains role filter`);
       }
 
       await reset(20);
@@ -292,6 +323,8 @@ async function freePort() {
     }
     const token = await page.locator('input[name="_token"]').first().inputValue();
     for (const role of ['KHACH_HANG', 'QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO', 'NHAN_VIEN']) {
+      const detail = await page.request.get(address('employees/show', { id: '1', fixture_role: role }));
+      check(detail.status() === 403, `${role}: direct Admin employee detail URL denied`);
       for (const slug of [...Object.keys(modules), 'companies', 'contracts', 'employees']) {
         const response = await page.request.get(address(slug, { fixture_role: role, return_to: address(slug, { page: '2' }) }));
         check(response.status() === 403, `${role} cannot use return context to access ${slug}`);
@@ -315,6 +348,23 @@ async function freePort() {
     await companyPage.goto(companyAddress(scoped));
     check(await companyPage.locator('tbody tr').count() === 10 && await companyPage.locator('#filter-ma_co_so option[value="3"]').count() === 0, 'company employee list/options exclude foreign facility');
     check(!(await companyPage.locator('tbody').innerText()).includes('ux200'), 'company cannot see foreign employee email');
+    await Promise.all([companyPage.waitForNavigation(), companyPage.locator('tbody tr th a.admin-table-link').first().click()]);
+    check((await companyPage.locator('.detail-page').innerText()).includes('memory.10'), 'company employee detail shows scoped username');
+    check(await companyPage.locator('.admin-menu__item[aria-current="page"]').innerText() === 'Nhân viên', 'company detail retains correct sidebar active item');
+    const scopedBack = new URL(await companyPage.locator('.detail-back').getAttribute('href'), base).searchParams;
+    for (const [key, value] of Object.entries(scoped)) check(scopedBack.get(key) === value, 'company detail back preserves ' + key);
+    await Promise.all([companyPage.waitForNavigation(), companyPage.locator('.detail-back').click()]);
+    const detailUrl = id => base + '?' + new URLSearchParams({ route: '/company/employees/show', id });
+    for (const id of ['2001', '1', '999999']) {
+      const denied = await companyPage.request.get(detailUrl(id));
+      check(denied.status() === 404 && !(await denied.text()).includes('memory.'), 'company direct detail excludes foreign/manager/missing employee ' + id);
+    }
+    const noAccount = await companyPage.request.get(detailUrl('9000'));
+    check(noAccount.ok() && (await noAccount.text()).includes('Chưa có tài khoản đăng nhập'), 'own employee without account has useful read-only empty state');
+    for (const role of ['KHACH_HANG', 'QUAN_LY_CO_SO', 'NHAN_VIEN', 'QUAN_TRI_TAP_DOAN']) {
+      const denied = await page.request.get(detailUrl('1001') + '&fixture_role=' + role);
+      check(denied.status() === 403, role + ': direct company employee detail URL denied');
+    }
     await Promise.all([companyPage.waitForNavigation(), companyPage.locator('tbody tr').first().locator('a.list-action--edit').click()]);
     await companyPage.locator('[name="ho_ten"]').fill('UX Scoped edit');
     await Promise.all([companyPage.waitForNavigation(), companyPage.locator('.admin-workspace form[method="post"] button[type="submit"]').click()]);
@@ -327,6 +377,35 @@ async function freePort() {
     await companyPage.goto(companyAddress({ ma_cong_ty: '2' }));
     check(!(await companyPage.locator('tbody').innerText()).includes('ux200'), 'client company filter cannot override authenticated scope');
     await companyContext.close();
+
+    const animated = await browser.newContext({ reducedMotion: 'no-preference', viewport: { width: 1440, height: 780 } });
+    const animatedPage = await animated.newPage();
+    await animatedPage.goto(address('contracts'));
+    const button = animatedPage.locator('.contract-actions .list-action--edit').first();
+    const row = animatedPage.locator('tbody tr').first();
+    const rowBefore = await row.boundingBox();
+    const duration = await button.evaluate(element => getComputedStyle(element).transitionDuration.split(',').map(parseFloat));
+    check(duration.every(value => value >= .15 && value <= .22), 'action transitions use requested 150–220ms duration');
+    await button.hover(); await animatedPage.waitForTimeout(230);
+    const hovered = await button.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).m42);
+    check(Math.abs(hovered + 1) < .1, 'action hover lifts by one pixel');
+    const rowAfter = await row.boundingBox();
+    check(['x', 'y', 'width', 'height'].every(key => Math.abs(rowBefore[key] - rowAfter[key]) < .1), 'hover transform causes no table layout shift');
+    await animatedPage.mouse.down(); await animatedPage.waitForTimeout(230);
+    check(Math.abs(await button.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).m42) - 1) < .1, 'pressed action gives one-pixel feedback');
+    await animatedPage.mouse.move(0, 0); await animatedPage.mouse.up();
+    const active = animatedPage.locator('.admin-menu__item[aria-current="page"]');
+    const activeBefore = await active.boundingBox();
+    await active.hover(); await animatedPage.waitForTimeout(230);
+    const activeAfter = await active.boundingBox();
+    check(['x', 'y', 'width', 'height'].every(key => Math.abs(activeBefore[key] - activeAfter[key]) < .1), 'active sidebar hover preserves position and size');
+    check(await active.evaluate(element => getComputedStyle(element).backgroundColor) === 'rgb(183, 239, 124)', 'active sidebar keeps STRYKE green');
+    check(!(await animatedPage.locator('.admin-sidebar').innerText()).includes('Sắp phát triển'), 'Admin sidebar no longer renders the disabled payment item');
+    for (const label of ['Quản lý booking', 'Tài khoản ngân hàng', 'Hóa đơn']) check(await animatedPage.locator('.admin-sidebar a', { hasText: label }).count() === 1, 'sidebar retains ' + label);
+    await animatedPage.emulateMedia({ reducedMotion: 'reduce' });
+    await button.hover();
+    check(await button.evaluate(element => getComputedStyle(element).transitionDuration === '0s' && getComputedStyle(element).transform === 'none'), 'reduced motion disables action transition and transform');
+    await animated.close();
 
     const noJs = await browser.newContext({ javaScriptEnabled: false });
     const noJsPage = await noJs.newPage();

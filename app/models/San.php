@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use PDO;
+use App\Services\FacilityScope;
 
 final class San
 {
@@ -23,12 +24,13 @@ final class San
         return $stmt->fetchAll();
     }
 
-    public function page(array $filters): array
+    public function page(array $filters, array $scope = FacilityScope::ADMIN): array
     {
+        [$where, $params] = FacilityScope::where($scope);
         return AdminList::page($this->pdo, ' FROM san s
             JOIN co_so f ON f.ma_co_so = s.ma_co_so JOIN loai_san l ON l.ma_loai_san = s.ma_loai_san
             JOIN bo_mon b ON b.ma_bo_mon = l.ma_bo_mon', 's.*, f.ten_co_so, l.ten_loai_san, b.ten_bo_mon', 's.ma_san',
-            ['q' => 's.ten_san', 'ma_co_so' => 's.ma_co_so', 'ma_loai_san' => 's.ma_loai_san', 'trang_thai' => 's.trang_thai'], $filters);
+            ['q' => 's.ten_san', 'ma_co_so' => 's.ma_co_so', 'ma_loai_san' => 's.ma_loai_san', 'trang_thai' => 's.trang_thai'], $filters, $where, $params);
     }
 
     public function find(int $id, bool $lock = false): ?array

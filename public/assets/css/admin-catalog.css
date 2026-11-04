@@ -61,6 +61,7 @@
 .page-admin .admin-catalog .management-filters .list-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; max-width: none; align-items: end; }
 .page-admin .admin-catalog .management-filters .list-toolbar__actions { min-width: 0; width: 100%; }
 .page-admin .admin-catalog .management-filters .list-toolbar__actions .btn { flex: 1; }
+.page-admin .admin-catalog .management-filters--company-employees .list-toolbar__actions { width: 100%; }
 @container management-filters (min-width: 560px) {
     .page-admin .admin-catalog .management-filters .list-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .page-admin .admin-catalog .management-filters .list-toolbar__actions { grid-column: 1 / -1; width: auto; justify-self: end; }
@@ -123,7 +124,7 @@
 .page-admin .admin-catalog .workspace-col-status { width: 124px; }
 .page-admin .admin-catalog .workspace-col-actions { width: 224px; }
 .page-admin .admin-catalog .catalog-table:has(.list-actions--direct) .workspace-col-actions { width: 248px; }
-.page-admin .admin-catalog .catalog-table:has(.contract-actions) .workspace-col-actions { width: 256px; }
+.page-admin .admin-catalog .catalog-table:has(.contract-actions) .workspace-col-actions { width: 344px; }
 .page-admin .admin-catalog .workspace-secondary { display: block; margin-top: 5px; color: var(--muted); font-size: 13px; font-weight: 400; line-height: 1.5; overflow-wrap: anywhere; }
 .page-admin .catalog-workspace.admin-catalog .catalog-table th:last-child,
 .page-admin .catalog-workspace.admin-catalog .catalog-table td:last-child { padding-inline: 4px; }
@@ -205,9 +206,14 @@
 .page-admin .catalog-workspace.admin-catalog .list-actions--direct { width: 100%; }
 .page-admin .catalog-workspace.admin-catalog .row-actions .list-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: auto; min-height: 36px; margin: 0; padding: 7px 9px; border: 1px solid #dce6df; border-radius: 8px; font-size: 14px; line-height: 1.4; font-weight: 600; white-space: nowrap; }
 .page-admin .admin-catalog .row-actions form { min-width: 0; margin: 0; }
-.page-admin .admin-catalog .row-actions .contract-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; width: 100%; }
-.page-admin .admin-catalog .row-actions .contract-actions label { grid-column: 1 / -1; color: var(--muted); font-size: 13px; text-align: left; }
-.page-admin .admin-catalog .row-actions .contract-actions select { width: 100%; min-width: 0; min-height: 36px; padding: 6px; font-size: 14px; }
+.page-admin .admin-catalog .row-actions:has(> .contract-actions) { display: block; container-type: inline-size; }
+.page-admin .admin-catalog .row-actions .contract-actions { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 8px; width: 100%; }
+.page-admin .admin-catalog .row-actions .contract-actions .list-action { height: 38px; min-height: 38px; padding: 8px 10px; }
+.page-admin .admin-catalog .contract-actions__buttons { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.page-admin .admin-catalog .row-actions .contract-actions select { width: 100%; min-width: 0; height: 38px; min-height: 38px; padding: 6px 8px; border-radius: 8px; font-size: 14px; }
+@container (min-width: 330px) {
+    .page-admin .admin-catalog .row-actions .contract-actions { grid-template-columns: minmax(0, 1fr) auto; }
+}
 .page-admin .catalog-workspace.admin-catalog .list-action-menu { flex-basis: auto; text-align: left; }
 .page-admin .catalog-workspace.admin-catalog .list-action-menu > summary { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 38px; min-height: 38px; padding: 0; border: 1px solid #dce6de; border-radius: 9px; color: #486751; cursor: pointer; list-style: none; }
 .page-admin .admin-catalog .list-action-menu > summary::-webkit-details-marker { display: none; }
@@ -339,3 +345,205 @@
     .page-admin .workspace-confirm { padding: 22px; }
 }
 @media (prefers-reduced-motion: reduce) { .page-admin .admin-sidebar { transition: none; } }
+
+/* Invoice list actions stay together; the existing mobile table cards keep their labels. */
+.page-admin .admin-catalog .invoice-list .invoice-col-stt { width: 40px; }
+.page-admin .admin-catalog .invoice-list .invoice-col-code { width: 15%; }
+.page-admin .admin-catalog .invoice-list .invoice-col-booking { width: 84px; }
+.page-admin .admin-catalog .invoice-list .invoice-col-date { width: 112px; }
+.page-admin .admin-catalog .invoice-list .invoice-col-status { width: 86px; }
+.page-admin .admin-catalog .invoice-list .invoice-col-actions { width: 200px; }
+.page-admin .catalog-workspace.admin-catalog .invoice-list .catalog-table :is(th, td) { padding: 12px 10px; vertical-align: middle; }
+.page-admin .catalog-workspace.admin-catalog .invoice-list .catalog-table .list-stt { padding-inline: 3px; }
+.page-admin .admin-catalog .invoice-list .invoice-number { display: block; color: var(--primary); font-size: 14px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.page-admin .admin-catalog .invoice-list .invoice-code { font-weight: 500; }
+.page-admin .admin-catalog .invoice-list .invoice-date { white-space: nowrap; font-size: 14px; }
+.page-admin .admin-catalog .invoice-list .invoice-amounts { color: var(--muted); font-size: 13px; }
+.page-admin .admin-catalog .invoice-list .invoice-total { color: #255735; font-weight: 600; font-variant-numeric: tabular-nums; }
+.page-admin .admin-catalog .invoice-list .invoice-status--cancelled { background: #fceeed; color: #a14643; }
+.page-admin .admin-catalog .invoice-actions { display: inline-flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 8px; max-width: 100%; }
+.page-admin .catalog-workspace.admin-catalog .invoice-actions .btn { flex: 0 0 auto; width: auto; height: 38px; min-height: 38px; padding: 8px 10px; border-radius: 8px; gap: 6px; font-size: 14px; font-weight: 550; line-height: 1.4; white-space: nowrap; }
+@media (max-width: 1100px) {
+    .page-admin .admin-catalog .invoice-list .catalog-table td:has(.invoice-actions) { grid-column: 1 / -1; }
+}
+
+/* Small interaction feedback without moving the sidebar or surrounding layout. */
+.page-admin .admin-workspace :is(.btn, .list-action, .admin-back-link, .detail-back), .page-admin .admin-menu__item {
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+.page-admin .catalog-workspace.admin-catalog .list-action-menu > summary { transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+.page-admin :is(.btn, .list-action, .admin-back-link, .detail-back):focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .page-admin :is(.btn, .list-action, .admin-back-link, .detail-back):not(:disabled):not([aria-disabled="true"]):hover { transform: translateY(-1px); box-shadow: 0 3px 9px #17332314; }
+    .page-admin :is(.btn, .list-action, .admin-back-link, .detail-back):not(:disabled):not([aria-disabled="true"]):active { transform: translateY(1px); box-shadow: none; }
+    .page-admin a.admin-menu__item:hover { box-shadow: inset 3px 0 #b7ef7c66; }
+    .page-admin a.admin-menu__item:active { box-shadow: inset 3px 0 #b7ef7c; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .page-admin .admin-workspace :is(.btn, .list-action, .admin-back-link, .detail-back), .page-admin .admin-menu__item,
+    .page-admin .catalog-workspace.admin-catalog .list-action-menu > summary { transition: none; transform: none; }
+}
+
+/* Receiving bank accounts only; other workspace modules keep their own styles. */
+.page-admin .admin-catalog .bank-page { min-width: 0; }
+.page-admin .admin-catalog .bank-page .module-heading { align-items: center; }
+.page-admin .admin-catalog .bank-page .module-heading h1 { font-size: 32px !important; font-weight: 600; }
+.page-admin .admin-catalog .bank-page .module-heading > .btn { flex: 0 0 auto; white-space: nowrap; }
+.page-admin .admin-catalog .bank-page .module-table-heading h2,
+.page-admin .admin-catalog .bank-page .admin-form-heading { font-size: 20px; font-weight: 600; }
+.page-admin .admin-catalog .bank-page .workspace-secondary { font-size: 13px; line-height: 1.5; }
+.page-admin .admin-catalog .bank-page .catalog-status { font-size: 13px; font-weight: 500; }
+.page-admin .admin-catalog .bank-page .bank-facility-picker { display: flex; align-items: end; gap: 12px; margin-bottom: 20px; padding: 18px 20px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.page-admin .admin-catalog .bank-page .bank-facility-picker .form-group { flex: 1 1 360px; max-width: 520px; min-width: 0; margin: 0; }
+.page-admin .admin-catalog .bank-page .bank-facility-picker label { display: block; margin-bottom: 7px; font-size: 14px; font-weight: 500; }
+.page-admin .admin-catalog .bank-page .bank-facility-picker .form-control { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border-radius: 9px; font-size: 15px; }
+.page-admin .admin-catalog .bank-page .bank-facility-picker .btn { flex: 0 0 auto; min-height: 44px; }
+.page-admin .admin-catalog .bank-page .bank-readonly-note { margin-bottom: 20px; padding: 14px 18px; border: 1px solid var(--border); border-radius: 10px; background: #edf5e8; color: #425f49; font-size: 14px; line-height: 1.5; }
+.page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table th,
+.page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table td { font-size: 15px; font-weight: 400; }
+.page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table thead th,
+.page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table th[scope="row"] { font-weight: 500; }
+.page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table :is(th, td):last-child { padding-inline: 12px; }
+.page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table .bank-beneficiary strong { display: block; font-size: 15px; font-weight: 600; letter-spacing: .02em; overflow-wrap: anywhere; }
+.page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table .bank-beneficiary small { display: block; margin-top: 5px; }
+.page-admin .catalog-workspace.admin-catalog .bank-page .row-actions { gap: 8px; }
+.page-admin .catalog-workspace.admin-catalog .bank-page .row-actions .list-action { min-height: 38px; padding: 8px 10px; font-size: 14px; font-weight: 500; }
+.page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table .list-stt { text-align: center; }
+.page-admin .admin-workspace.admin-catalog > .bank-form-page { max-width: 960px; margin-inline: auto; }
+.page-admin .admin-catalog .bank-form-page .module-fields { gap: 20px; }
+.page-admin .admin-catalog .bank-form-page .bank-field-wide { grid-column: 1 / -1; }
+.page-admin .admin-catalog .bank-form-page .bank-account-options { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: #f7faf5; }
+.page-admin .admin-catalog .bank-form-page .bank-account-options .workspace-check { margin: 0; font-size: 14px; line-height: 1.5; }
+.page-admin .admin-catalog .bank-form-page .form-hint { display: block; margin-top: 7px; font-size: 13px; line-height: 1.5; }
+.page-admin .admin-catalog .bank-form-page #ten_chu_tai_khoan { text-transform: uppercase; }
+.page-admin .admin-catalog .bank-page .catalog-table-wrap { container: bank-table / inline-size; }
+@media (min-width: 1101px) {
+    .page-admin .admin-catalog .bank-page .bank-col-name { width: 16%; }
+    .page-admin .admin-catalog .bank-page .bank-col-default { width: 118px; }
+    .page-admin .admin-catalog .bank-page .bank-col-status { width: 104px; }
+    .page-admin .admin-catalog .bank-page .bank-col-actions { width: 280px; }
+    .page-admin .catalog-workspace.admin-catalog .bank-page .row-actions { flex-wrap: wrap; justify-content: center; }
+    .page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table :is(th, td):last-child { text-align: center; }
+    .page-admin .catalog-workspace.admin-catalog .bank-page--readonly .catalog-table :is(th, td):last-child { text-align: left; }
+}
+@container bank-table (max-width: 900px) {
+    .page-admin .admin-catalog .bank-page .catalog-table,
+    .page-admin .admin-catalog .bank-page .catalog-table tbody { display: block; width: 100%; }
+    .page-admin .admin-catalog .bank-page .catalog-table colgroup,
+    .page-admin .admin-catalog .bank-page .catalog-table thead { display: none; }
+    .page-admin .admin-catalog .bank-page .catalog-table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; padding: 20px; border-bottom: 1px solid var(--border); }
+    .page-admin .admin-catalog .bank-page .catalog-table tbody :is(th, td) { display: block; width: auto; min-width: 0; padding: 0; border: 0; text-align: left; }
+    .page-admin .admin-catalog .bank-page .catalog-table tbody td::before { display: block; content: attr(data-label); margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 500; }
+    .page-admin .admin-catalog .bank-page .catalog-table tbody th::before { display: block; content: 'Ngân hàng'; margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 500; }
+    .page-admin .admin-catalog .bank-page .catalog-table .bank-beneficiary,
+    .page-admin .admin-catalog .bank-page .catalog-table td[data-label="Thao tác"] { grid-column: 1 / -1; }
+    .page-admin .admin-catalog .bank-page .row-actions { flex-wrap: wrap; justify-content: flex-start; }
+}
+@media (max-width: 1100px) {
+    .page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table .bank-beneficiary { grid-column: 1 / -1; }
+    .page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table :is(th, td):last-child { padding-inline: 0; }
+    .page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table .list-stt { text-align: left; }
+}
+@media (max-width: 767px) {
+    .page-admin .admin-catalog .bank-form-page .bank-account-options { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}
+@media (max-width: 600px) {
+    .page-admin .admin-catalog .bank-page .module-heading h1 { font-size: 27px !important; }
+    .page-admin .admin-catalog .bank-page .bank-facility-picker { flex-wrap: wrap; padding: 18px; }
+    .page-admin .admin-catalog .bank-page .bank-facility-picker .form-control { font-size: 16px; }
+    .page-admin .admin-catalog .bank-page .bank-facility-picker .btn { width: 100%; }
+}
+
+/* Company employee tools use the existing court controls and the available content width. */
+.page-admin .admin-catalog .management-filters--company-employees .list-toolbar__actions { justify-self: stretch; }
+.page-admin .admin-catalog .management-filters--company-employees .list-toolbar__actions .btn { flex: 1; }
+@container management-filters (min-width: 800px) {
+    .page-admin .admin-catalog .management-filters--company-employees .list-toolbar {
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        grid-template-areas: "search search search search search search company company company role role role"
+                             "status status status sort sort sort size size actions actions actions actions";
+    }
+    .page-admin .admin-catalog .management-filters--company-employees [data-filter="q"] { grid-area: search; }
+    .page-admin .admin-catalog .management-filters--company-employees [data-filter="ma_co_so"] { grid-area: company; }
+    .page-admin .admin-catalog .management-filters--company-employees [data-filter="vai_tro"] { grid-area: role; }
+    .page-admin .admin-catalog .management-filters--company-employees [data-filter="trang_thai"] { grid-area: status; }
+    .page-admin .admin-catalog .management-filters--company-employees [data-filter="sort"] { grid-area: sort; }
+    .page-admin .admin-catalog .management-filters--company-employees .list-toolbar__size { grid-area: size; max-width: none; }
+    .page-admin .admin-catalog .management-filters--company-employees .list-toolbar__actions { grid-area: actions; }
+}
+@container management-filters (min-width: 1180px) {
+    .page-admin .admin-catalog .management-filters--company-employees .list-toolbar {
+        grid-template-columns: minmax(170px, 1.5fr) minmax(120px, 1.1fr) repeat(3, minmax(110px, 1fr)) minmax(100px, .7fr) auto;
+        grid-template-areas: "search company role status sort size actions";
+    }
+}
+
+/* Payment actions use external CSS, compatible with the application's style-src 'self' CSP. */
+.page-admin .booking-admin-detail .booking-operations { display: grid; gap: 26px; margin-top: 26px; }
+.page-admin .booking-admin-detail .booking-operation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 26px; }
+.page-admin .booking-admin-detail .booking-operation-card { display: flex; flex-direction: column; min-width: 0; margin: 0; padding: 26px; border: 1px solid var(--border); border-radius: 16px; background: #fff; box-shadow: var(--shadow-card); }
+.page-admin .booking-admin-detail .booking-operation-card header { display: grid; gap: 10px; margin-bottom: 22px; }
+.page-admin .booking-admin-detail .booking-operation-card h2, .page-admin .booking-admin-detail .booking-operation-notice h2 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 21px; font-weight: 600; line-height: 1.4; }
+.page-admin .booking-admin-detail .booking-operation-card h2 svg { width: 24px; height: 24px; flex: 0 0 24px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.page-admin .booking-admin-detail .booking-operation-card p, .page-admin .booking-admin-detail .booking-operation-notice p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; overflow-wrap: anywhere; }
+.page-admin .booking-admin-detail .booking-operation-fields { display: grid; gap: 18px; }
+.page-admin .booking-admin-detail .booking-operation-fields .form-group { display: grid; align-content: start; gap: 8px; min-width: 0; margin: 0; }
+.page-admin .booking-admin-detail .booking-operation-fields label { margin: 0; font-size: 15px; font-weight: 550; line-height: 1.5; }
+.page-admin .booking-admin-detail .booking-operation-fields .form-control { width: 100%; min-width: 0; min-height: 44px; padding: 11px 12px; border: 1px solid #bfd0c3; border-radius: 9px; background: #fff; font: inherit; font-size: 15px; line-height: 1.5; }
+.page-admin .booking-admin-detail .booking-operation-fields textarea { min-height: 132px; resize: vertical; }
+.page-admin .booking-admin-detail .booking-operation-fields small { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.page-admin .booking-admin-detail .booking-operation-footer { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.page-admin .booking-admin-detail .booking-operation-footer .btn { max-width: 100%; min-height: 44px; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+.page-admin .booking-admin-detail .booking-operation-card--warning { border-color: #e5d9c5; }
+.page-admin .booking-admin-detail .booking-operation-card--warning .btn--outline { color: #87572c; border-color: #dec6a3; background: #fffaf1; }
+.page-admin .booking-admin-detail .booking-operation-card--warning .btn--outline:hover { background: #f9edda; }
+.page-admin .booking-admin-detail .booking-operation-card--success { border-color: #c3ddbd; }
+.page-admin .booking-admin-detail .booking-operation-notice { display: grid; gap: 10px; padding: 22px 26px; border: 1px solid #e5d9c5; border-radius: 14px; background: #fffbf2; }
+.page-admin .booking-admin-detail .booking-operation-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0; }
+.page-admin .booking-admin-detail .booking-operation-facts dt { color: var(--muted); font-size: 14px; }
+.page-admin .booking-admin-detail .booking-operation-facts dd { margin: 6px 0 0; overflow-wrap: anywhere; }
+.page-admin .booking-admin-detail .booking-operation-card--late .booking-operation-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.page-admin .booking-admin-detail .booking-operation-field--wide { grid-column: 1 / -1; }
+@media (max-width: 1100px) {
+    .page-admin .booking-admin-detail .booking-operation-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+    .page-admin .booking-admin-detail .booking-operation-card, .page-admin .booking-admin-detail .booking-operation-notice { padding: 20px; }
+    .page-admin .booking-admin-detail .booking-operation-card--late .booking-operation-fields,
+    .page-admin .booking-admin-detail .booking-operation-facts { grid-template-columns: minmax(0, 1fr); }
+    .page-admin .booking-admin-detail .booking-operation-footer .btn { width: 100%; font-size: 14px; }
+    .page-admin .booking-admin-detail .booking-operation-fields .form-control { font-size: 16px; }
+}
+/* Booking list actions use the shared top-layer popover and native dialogs. */
+.page-admin .booking-action-dialog { width: min(680px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: #fff; color: var(--text); box-shadow: 0 20px 70px #102c2633; overflow-y: auto; }
+.booking-action-dialog::backdrop { background: #102c2666; }
+.booking-action-dialog > header { display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.booking-action-dialog h2 { margin: 4px 0 0; font-size: 24px; }
+.booking-action-dialog h3 { margin: 0 0 12px; font-size: 19px; }
+.booking-action-dialog p { color: var(--muted); line-height: 1.6; }
+.booking-action-dialog .booking-action-summary, .booking-action-dialog .booking-action-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.booking-action-dialog .booking-action-summary { padding: 16px; margin: 0 0 22px; border-radius: 12px; background: #f2f7f3; }
+.booking-action-summary dt { color: var(--muted); font-size: 13px; }
+.booking-action-summary dd { margin: 6px 0 0; font-size: 15px; font-weight: 550; overflow-wrap: anywhere; }
+.page-admin .booking-action-dialog form { width: 100%; max-width: none; margin: 0; }
+.booking-action-dialog [hidden] { display: none !important; }
+.booking-action-dialog .form-group { display: grid; min-width: 0; gap: 8px; margin: 0 0 16px; }
+.booking-action-dialog label { font-size: 14px; font-weight: 550; }
+.booking-action-dialog .form-control { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid #bfd0c3; border-radius: 9px; font-size: 16px; }
+.booking-action-dialog footer { display: flex; flex-wrap: wrap; justify-content: end; gap: 10px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
+.booking-action-dialog .btn { min-height: 44px; white-space: normal; }
+.page-admin .booking-admin-list .list-action-menu__panel > a, .page-admin .booking-admin-list .list-action-menu__panel > button { display: flex; align-items: center; width: 100%; padding: 10px 12px; border: 0; border-radius: 7px; background: transparent; color: var(--text); font: inherit; font-size: 14px; text-decoration: none; text-align: left; cursor: pointer; }
+.page-admin .booking-admin-list .list-action-menu__panel > :is(a, button):is(:hover, :focus-visible) { background: #edf7e7; outline: 2px solid #88b86a; outline-offset: -2px; }
+.bank-monitor { container-type: inline-size; }
+.bank-monitor-filters { display: grid; grid-template-columns: minmax(200px, 1.5fr) repeat(3, minmax(140px, 1fr)); align-items: end; gap: 16px; padding: 20px; margin-bottom: 22px; border: 1px solid var(--border); border-radius: 16px; background: #fff; }
+.bank-monitor-filters .form-group { min-width: 0; margin: 0; }
+.bank-monitor-filters .form-control { width: 100%; min-height: 44px; }
+.bank-monitor-actions { display: flex; gap: 10px; grid-column: 1 / -1; justify-content: end; }
+.bank-monitor .catalog-table { min-width: 800px; }
+.bank-monitor details { min-width: 135px; font-size: 14px; }
+.bank-monitor summary { cursor: pointer; color: #38663e; font-weight: 550; }
+.bank-monitor details dl { display: grid; gap: 6px; margin-top: 12px; }
+.bank-monitor details dd { margin: 0; overflow-wrap: anywhere; }
+@container (max-width: 850px) { .bank-monitor-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (max-width: 480px) { .bank-monitor-filters { grid-template-columns: minmax(0, 1fr); padding: 16px; } .bank-monitor-actions { justify-content: stretch; } .bank-monitor-actions .btn { flex: 1; } }
+@media (max-width: 600px) { .page-admin .booking-action-dialog { padding: 18px; } .booking-action-dialog .booking-action-summary, .booking-action-dialog .booking-action-fields { grid-template-columns: minmax(0, 1fr); } .booking-action-dialog footer .btn { flex: 1; } }

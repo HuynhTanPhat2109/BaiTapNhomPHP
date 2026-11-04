@@ -2,15 +2,15 @@
 $recordQuery = '&id=' . rawurlencode((string) $recordId);
 $serviceActions = str_ends_with($listPath, '/dich-vu');
 $actionFilters = array_replace($filters, ['page' => $page]);
-$buttons = [['view', 'Chi tiết', admin_context_url($listPath . '/show', $actionFilters) . $recordQuery]];
-if (!$serviceActions || $canWrite) $buttons[] = ['edit', 'Sửa', admin_context_url($listPath . '/edit', $actionFilters) . $recordQuery];
+$buttons = $listPath === '/admin/bo-mon' ? [] : [['view', 'Chi tiết', admin_context_url($listPath . '/show', $actionFilters) . $recordQuery]];
+if ($canWrite ?? true) $buttons[] = ['edit', 'Sửa', admin_context_url($listPath . '/edit', $actionFilters) . $recordQuery];
 if ($serviceActions) {
     if ($canWrite) $buttons[] = [$row['trang_thai'] === 'DANG_CUNG_CAP' ? 'stop' : 'activate', $row['trang_thai'] === 'DANG_CUNG_CAP' ? 'Ngừng cung cấp' : 'Kích hoạt', admin_context_url($listPath . '/show', $actionFilters) . $recordQuery . '&confirm=1#status-confirmation'];
-} elseif ($listPath === '/admin/bang-gia') {
+} elseif (str_ends_with($listPath, '/bang-gia')) {
     $activePrice = $row['trang_thai'] === 'DANG_AP_DUNG';
-    $buttons[] = [$activePrice ? 'stop' : 'activate', $activePrice ? 'Ngừng áp dụng' : 'Kích hoạt',
+    if ($canWrite ?? true) $buttons[] = [$activePrice ? 'stop' : 'activate', $activePrice ? 'Ngừng áp dụng' : 'Kích hoạt',
         admin_context_url($listPath . '/show', $actionFilters) . $recordQuery . '&confirm=1#status-confirmation'];
-} else {
+} elseif ($canDelete ?? true) {
     $buttons[] = ['delete', 'Xóa', admin_context_url($listPath . '/delete', $actionFilters) . $recordQuery];
 }
 $icons = [
@@ -23,7 +23,7 @@ $icons = [
 $rowMenuId = 'row-actions-' . str_replace('/', '-', trim($listPath, '/')) . '-' . $recordId;
 $rowMenuLabel = $row['ten_bang_gia'] ?? $row['ten_dich_vu'] ?? $row['ten_bo_mon'] ?? $row['ten_loai_san'] ?? $row['ten_co_so'] ?? $row['ten_san'] ?? 'bản ghi';
 $rowMenuHasForms = false;
-$rowMenuUsePopover = $serviceActions || $listPath === '/admin/bang-gia';
+$rowMenuUsePopover = $serviceActions || str_ends_with($listPath, '/bang-gia');
 ob_start();
 ?>
     <?php foreach ($buttons as [$kind, $label, $href]): ?>

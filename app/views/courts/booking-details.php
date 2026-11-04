@@ -398,13 +398,14 @@ use App\Services\BookingPricingService as Money;
                                         <?= e(Money::display($offer['don_gia']) . ' / ' . $offer['don_vi_tinh']) ?>
                                     </small>
 
-                                    <small class="booking-stock">
+                                    <small class="booking-stock" data-physical-stock="<?= $offer['available'] === null ? '' : e($offer['so_luong_ton'] ?? $offer['available']) ?>" data-available-stock="<?= $offer['available'] === null ? '' : e($offer['available']) ?>">
                                         <?= !$offer['purchasable']
                                             ? 'Cho thuê: liên hệ cơ sở'
                                             : ($offer['available'] === null
-                                                ? 'Đang cung cấp'
-                                                : 'Còn ' . $offer['available']) ?>
+                                                ? 'Không theo dõi tồn'
+                                                : ($offer['available'] > 0 ? 'Còn hàng · Khả dụng: ' . $offer['available'] : 'Hết hàng')) ?>
                                     </small>
+                                    <?php if ($offer['available'] !== null): ?><small class="booking-stock">Tồn vật lý: <?= e($offer['so_luong_ton'] ?? $offer['available']) ?> · Đang giữ: <?= e(max(0, (int) ($offer['so_luong_ton'] ?? $offer['available']) - $offer['available'])) ?></small><?php endif; ?>
                                 </div>
 
                                 <div class="booking-service-controls">

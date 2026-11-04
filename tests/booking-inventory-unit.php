@@ -13,6 +13,7 @@ final class InventoryMemoryPDO extends PDO
     public int $begins = 0, $commits = 0, $rollbacks = 0;
     public ?int $failServiceId = null;
     public bool $throwOnWrite = false;
+    public int $serviceLockDelayMs = 0;
     private bool $transaction = false;
     private array $snapshot = [];
     private int $lastId = 0;
@@ -30,6 +31,10 @@ final class InventoryMemoryPDO extends PDO
         $this->courts = [1 => $c, 2 => array_replace($c, ['ma_san' => 2, 'ten_san' => 'Sân 2'])];
     }
     public function prepare(string $query, array $options = []): PDOStatement|false { return new InventoryMemoryStatement($this, $query); }
+    public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
+    {
+        $stmt = $this->prepare($query); $stmt->execute(); return $stmt;
+    }
     public function exec(string $statement): int|false { if ($statement !== 'SET TRANSACTION ISOLATION LEVEL READ COMMITTED') throw new RuntimeException('Unexpected exec'); return 0; }
     public function lastInsertId(?string $name = null): string|false { return (string) $this->lastId; }
     public function allocateBooking(): int { return ++$this->lastId; }
@@ -58,7 +63,27 @@ final class InventoryMemoryStatement extends PDOStatement
         $p = $params ?? []; $sql = preg_replace('/\s+/', ' ', trim($this->sql));
         $this->db->calls[] = ['sql' => $sql, 'params' => $p]; $this->rows = []; $this->affected = 0;
         if (preg_match('/\A(?:INSERT|UPDATE|DELETE)\b/', $sql) && !$this->db->inTransaction()) throw new RuntimeException('Write outside transaction');
-        if (str_starts_with($sql, 'INSERT INTO dat_san ')) {
+        if ($sql === 'SELECT DATABASE()') {
+            $this->rows = [['database' => 'inventory_memory_only']];
+        } elseif (str_starts_with($sql, 'SELECT GET_LOCK')) {
+            $this->rows = [['acquired' => 1]];
+        } elseif (str_starts_with($sql, 'SELECT RELEASE_LOCK')) {
+            $this->rows = [['released' => 1]];
+        } elseif (str_starts_with($sql, 'SELECT b.ma_dat_san FROM dat_san b WHERE')) {
+            foreach ($this->db->bookings as $b) {
+                $protected = in_array($this->db->payments[$b['ma_dat_san']] ?? '', ['THANH_CONG', 'CAN_DOI_SOAT'], true);
+                $wantsProtected = str_contains($sql, 'AND NOT (NOT EXISTS');
+                if ($b['trang_thai_dat_san'] === 'CHO_THANH_TOAN' && $b['het_han_giu_san_luc'] <= CourtScheduleService::now()->format('Y-m-d H:i:s') && $protected === $wantsProtected) $this->rows[] = ['ma_dat_san' => $b['ma_dat_san']];
+            }
+        } elseif (str_starts_with($sql, 'SELECT trang_thai FROM thanh_toan')) {
+            if (isset($this->db->payments[$p[0]])) $this->rows[] = ['trang_thai' => $this->db->payments[$p[0]]];
+        } elseif (str_starts_with($sql, 'UPDATE dat_san b SET b.trang_thai_dat_san')) {
+            $b = &$this->db->bookings[$p[0]];
+            if ($b && $b['trang_thai_dat_san'] === 'CHO_THANH_TOAN' && $b['het_han_giu_san_luc'] <= CourtScheduleService::now()->format('Y-m-d H:i:s')
+                && !in_array($this->db->payments[$p[0]] ?? '', ['THANH_CONG', 'CAN_DOI_SOAT'], true)) {
+                $b['trang_thai_dat_san'] = 'HET_HAN'; $this->affected = 1;
+            }
+        } elseif (str_starts_with($sql, 'INSERT INTO dat_san ')) {
             $id = $this->db->allocateBooking();
             $fields = ['khoa_yeu_cau', 'dau_van_tay_yeu_cau', 'ma_co_so', 'ma_khach_hang', 'ngay_tao', 'bat_dau_giu_san_luc', 'het_han_giu_san_luc', 'tong_tien_san', 'tong_tien_dich_vu', 'tong_tien_tam_tinh', 'ghi_chu'];
             $this->db->bookings[$id] = array_combine($fields, $p) + ['ma_dat_san' => $id, 'trang_thai_dat_san' => 'CHO_THANH_TOAN'];
@@ -106,6 +131,9 @@ final class InventoryMemoryStatement extends PDOStatement
         } elseif (str_starts_with($sql, 'SELECT ma_thanh_toan FROM thanh_toan')) {
             $this->rows = [];
         } elseif (preg_match('/\ASELECT \* FROM (\w+) WHERE \w+ = \S+ FOR UPDATE\z/', $sql, $m)) {
+            if ($m[1] === 'dich_vu' && $this->db->serviceLockDelayMs > 0) {
+                usleep($this->db->serviceLockDelayMs * 1000); $this->db->serviceLockDelayMs = 0;
+            }
             $id = (int) array_values($p)[0];
             $row = match ($m[1]) { 'dich_vu' => $this->db->services[$id] ?? null, 'co_so' => $this->db->facilities[$id] ?? null,
                 'cong_ty_nhuong_quyen' => $this->db->companies[$id] ?? null, 'san' => $this->db->courts[$id] ?? null,
@@ -193,6 +221,8 @@ function inventoryCaller(InventoryMemoryPDO $db, int $id, bool $failAfterDeducti
     } catch (Throwable $e) { if ($db->inTransaction()) $db->rollBack(); throw $e; }
 }
 
+// Reuse only the RAM fixture classes/functions from the guarded Chrome fixture.
+if (defined('STRYKE_INVENTORY_FIXTURE')) return;
 set_error_handler(static function (int $level, string $message, string $file, int $line): never { throw new ErrorException($message, 0, $level, $file, $line); });
 try {
     // A: actual checkout snapshot + actual catalog writer; no reimplementation of quote/prices.
@@ -227,7 +257,8 @@ try {
     inventoryCheck($booking->quote(inventorySelection(2))['offers'][1]['available'] === 4, '10 physical minus 6 held = 4 available');
     inventoryReject(fn() => $booking->confirm(2, bin2hex(random_bytes(32)), inventorySelection(2), ['services' => [1 => 5], 'note' => ''], $stale['fingerprint']), 409);
     inventoryCheck(count($db->bookings) === 1, 'stale request rolls back without partial booking');
-    foreach ([[4 => 1], [5 => 1], [3 => 1]] as $bad) inventoryReject(fn() => $booking->quote(inventorySelection(2), ['services' => $bad, 'note' => '']), 409);
+    foreach ([[4 => 1], [3 => 1]] as $bad) inventoryReject(fn() => $booking->quote(inventorySelection(2), ['services' => $bad, 'note' => '']), 409);
+    inventoryCheck($booking->quote(inventorySelection(2), ['services' => [5 => 1], 'note' => ''])['services'][0]['id'] === 5, 'approved rental is selectable under the existing stock contract');
     $offers = $booking->quote(inventorySelection(2))['offers'];
     inventoryCheck($offers[2]['available'] === null && $offers[3]['available'] === 0, 'NULL and zero distinct');
     $b = inventoryPending($db, [1 => 4], 2);
@@ -294,15 +325,39 @@ try {
     $db->beginTransaction(); inventoryReject(fn() => $inventory->deductForPayment(0), 404);
     inventoryReject(fn() => $inventory->deductForPayment(999), 404); $db->rollBack();
 
-    foreach (['quantity', 'facility', 'unit', 'rental', 'missing'] as $bad) {
+    foreach (['quantity', 'facility', 'unit', 'missing'] as $bad) {
         $db = new InventoryMemoryPDO(); $id = inventoryPending($db, [1 => 1]);
         if ($bad === 'quantity') $db->serviceLines[0]['so_luong'] = 0;
         if ($bad === 'facility') $db->services[1]['ma_co_so'] = 2;
         if ($bad === 'unit') $db->services[1]['don_vi_tinh'] = 'thùng';
-        if ($bad === 'rental') $db->services[1]['loai_dich_vu'] = 'CHO_THUE';
         if ($bad === 'missing') unset($db->services[1]);
         $db->beginTransaction(); inventoryReject(fn() => (new BookingInventoryService($db))->deductForPayment($id), 409); $db->rollBack();
     }
+    // Rentals: real quote/confirmation/stock hook, with six physical units in memory only.
+    $db = new InventoryMemoryPDO(); $db->services[5]['so_luong_ton'] = 6;
+    $booking = new BookingService($db); $model = new Booking($db);
+    inventoryCheck($booking->quote(inventorySelection())['offers'][5]['available'] === 6, 'rental 6 physical / 0 held = 6 available');
+    $id = inventoryPending($db, [5 => 2]);
+    inventoryCheck($db->services[5]['so_luong_ton'] === 6 && $booking->quote(inventorySelection(2))['offers'][5]['available'] === 4, 'rental pending 2 holds virtually: 6 - 2 = 4');
+    $booking->cancelHold($id, 1);
+    inventoryCheck($booking->quote(inventorySelection())['offers'][5]['available'] === 6, 'cancel rental releases hold without physical restock');
+    $stale = $booking->quote(inventorySelection(2), ['services' => [5 => 1], 'note' => '']);
+    $id = inventoryPending($db, [5 => 6]);
+    inventoryCheck($booking->quote(inventorySelection(2))['offers'][5]['available'] === 0, 'rental 6 held = unavailable');
+    inventoryReject(fn() => $booking->confirm(2, bin2hex(random_bytes(32)), inventorySelection(2), ['services' => [5 => 1], 'note' => ''], $stale['fingerprint']), 409);
+    inventoryCheck($db->services[5]['so_luong_ton'] === 6, 'stale second customer cannot oversell or deduct physical rental stock');
+    $db->bookings[$id]['het_han_giu_san_luc'] = '2000-01-01 00:00:00';
+    inventoryCheck($booking->quote(inventorySelection(2))['offers'][5]['available'] === 6, 'expired rental hold is ignored before cleanup');
+    $db = new InventoryMemoryPDO(); $db->services[5]['so_luong_ton'] = 6;
+    $id = inventoryPending($db, [5 => 2]); $snapshot = $db->serviceLines;
+    inventoryCheck(inventoryCaller($db, $id) === 'applied' && $db->services[5]['so_luong_ton'] === 4, 'rental payment transaction deducts snapshot quantity');
+    inventoryCheck(inventoryCaller($db, $id) === 'duplicate' && $db->services[5]['so_luong_ton'] === 4, 'rental caller state gate blocks sequential duplicate deduction');
+    inventoryCheck((new BookingService($db))->quote(inventorySelection(2))['offers'][5]['available'] === 4 && $db->serviceLines === $snapshot, 'paid rental no longer holds virtually or rewrites snapshots');
+    $db = new InventoryMemoryPDO(); $db->services[5]['so_luong_ton'] = 0;
+    inventoryCheck((new BookingService($db))->quote(inventorySelection())['offers'][5]['available'] === 0, 'zero rental stock is zero, not unlimited');
+    inventoryReject(fn() => (new BookingService($db))->quote(inventorySelection(), ['services' => [5 => 1], 'note' => '']), 409);
+    $db->services[5]['so_luong_ton'] = null; $id = inventoryPending($db, [5 => 8]);
+    inventoryCheck(inventoryCaller($db, $id) === 'applied' && $db->services[5]['so_luong_ton'] === null, 'NULL rental stays untracked through payment');
     $db = new InventoryMemoryPDO(); $id = inventoryPending($db, []); $db->beginTransaction();
     inventoryCheck((new BookingInventoryService($db))->deductForPayment($id) === ['booking_id' => $id, 'deducted' => [], 'untracked' => []], 'booking without services is supported'); $db->rollBack();
     $db = new InventoryMemoryPDO(); $id = inventoryPending($db, [2 => 999999]);

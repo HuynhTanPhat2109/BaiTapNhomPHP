@@ -15,7 +15,7 @@ final class SanService
     private PDO $pdo;
     private San $courts;
 
-    public function __construct(PDO $pdo)
+    public function __construct(PDO $pdo, private array $scope = FacilityScope::ADMIN)
     {
         $this->pdo = $pdo;
         $this->courts = new San($pdo);
@@ -37,6 +37,7 @@ final class SanService
 
     public function save(array $data, ?int $id = null): int
     {
+        FacilityScope::write($this->scope);
         if ($errors = self::validate($data)) {
             throw new ValidationException($errors);
         }
@@ -50,6 +51,7 @@ final class SanService
         if ($id !== null && !$before) {
             throw new HttpException(404, 'Không tìm thấy sân.');
         }
+        if ($before) FacilityScope::check($before, $this->scope);
         $facilities = new CoSo($this->pdo);
         $types = new LoaiSan($this->pdo);
         $facilityIds = array_unique([$clean['ma_co_so'], (int) ($before['ma_co_so'] ?? $clean['ma_co_so'])]);
@@ -62,6 +64,7 @@ final class SanService
             if (!$oldFacilities[$parentId]) {
                 throw new ValidationException(['ma_co_so' => 'Cơ sở không tồn tại.']);
             }
+            FacilityScope::check($oldFacilities[$parentId], $this->scope);
         }
         foreach ($typeIds as $parentId) {
             $oldTypes[$parentId] = $types->find($parentId);
@@ -83,6 +86,7 @@ final class SanService
                 if (!$parents[$parentId] || (int) $parents[$parentId]['ma_cong_ty'] !== (int) $oldFacilities[$parentId]['ma_cong_ty']) {
                     throw new HttpException(409, 'Liên kết cơ sở vừa thay đổi. Vui lòng tải lại trang.');
                 }
+                FacilityScope::check($parents[$parentId], $this->scope);
             }
             $sportIds = array_unique(array_column($oldTypes, 'ma_bo_mon'));
             sort($sportIds);
@@ -153,6 +157,7 @@ final class SanService
 
     public function delete(int $id): void
     {
+        FacilityScope::admin($this->scope);
         $before = $this->courts->find($id);
         if (!$before) {
             throw new HttpException(404, 'Không tìm thấy sân.');

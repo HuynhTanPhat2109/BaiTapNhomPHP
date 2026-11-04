@@ -85,7 +85,7 @@ function field_error(string $field, array $errors): string
 // Rebuild the destination from a fixed module and validated filters, never a client URL.
 function admin_context_url(string $path, ?array $filters = null): string
 {
-    if (!preg_match('~\A(/admin/(?:bo-mon|loai-san|co-so|san|bang-gia|dich-vu|companies|contracts|employees)|/company/employees)(?:/(?:create|store|show|edit|update|delete|status))?\z~', $path, $match)) {
+    if (!preg_match('~\A(/admin/(?:bo-mon|loai-san|co-so|san|bang-gia|dich-vu|companies|contracts|employees)|/company/employees|/(?:company|facility|staff)/(?:co-so|san|bang-gia))(?:/(?:create|store|show|edit|update|delete|status))?\z~', $path, $match)) {
         return url($path);
     }
     $listPath = $match[1];

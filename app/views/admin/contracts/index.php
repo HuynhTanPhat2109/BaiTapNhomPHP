@@ -27,18 +27,19 @@ $formatMoney = require dirname(__DIR__) . '/partials/format-money.php';
                     <td class="workspace-number" data-label="Trạng thái"><span class="catalog-status" data-status="<?= e($status) ?>"><?= e(['HIEU_LUC' => 'Hiệu lực', 'HET_HAN' => 'Hết hạn', 'CHAM_DUT' => 'Chấm dứt'][$status] ?? 'Không xác định') ?></span></td>
                     <td data-label="Thao tác">
                         <?php ob_start(); ?>
-                        <a class="list-action list-action--edit" href="<?= e(admin_context_url('/admin/contracts/edit') . '&id=' . rawurlencode((string) $id)) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m16 3 5 5M3 21l5-1L21 7a2.1 2.1 0 0 0-5-3L3 17v4Z"/></svg>Sửa</a>
                         <form class="contract-actions" method="post" action="<?= e(admin_context_url('/admin/contracts/status') . '&id=' . rawurlencode((string) $id)) ?>" data-confirm="Xác nhận cập nhật trạng thái hợp đồng này?">
                             <?= csrf_field() ?>
-                            <label for="trang_thai_<?= e((string) $id) ?>">Trạng thái hợp đồng</label>
                             <select class="contract-actions__select" id="trang_thai_<?= e((string) $id) ?>" name="trang_thai" aria-label="Trạng thái hợp đồng" required>
                                 <option value="HIEU_LUC" <?= $status === 'HIEU_LUC' ? 'selected' : '' ?>>Hiệu lực</option>
                                 <option value="HET_HAN" <?= $status === 'HET_HAN' ? 'selected' : '' ?>>Hết hạn</option>
                                 <option value="CHAM_DUT" <?= $status === 'CHAM_DUT' ? 'selected' : '' ?>>Chấm dứt</option>
                             </select>
-                            <button class="list-action list-action--activate" type="submit"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Cập nhật</button>
+                            <div class="contract-actions__buttons">
+                                <a class="list-action list-action--edit" href="<?= e(admin_context_url('/admin/contracts/edit') . '&id=' . rawurlencode((string) $id)) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m16 3 5 5M3 21l5-1L21 7a2.1 2.1 0 0 0-5-3L3 17v4Z"/></svg>Sửa</a>
+                                <button class="list-action list-action--activate" type="submit"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Cập nhật</button>
+                            </div>
                         </form>
-                        <?php $rowMenuContent = ob_get_clean(); $rowMenuId = 'contract-actions-' . $id; $rowMenuLabel = $contract['so_hop_dong'] ?? ''; $rowMenuHasForms = true; require dirname(__DIR__) . '/partials/row-menu.php'; ?>
+                        <?php $rowMenuContent = ob_get_clean(); $rowMenuId = 'contract-actions-' . $id; $rowMenuLabel = $contract['so_hop_dong'] ?? ''; $rowMenuHasForms = true; $rowMenuUsePopover = false; require dirname(__DIR__) . '/partials/row-menu.php'; ?>
                     </td>
                 </tr>
             <?php endforeach; ?></tbody>

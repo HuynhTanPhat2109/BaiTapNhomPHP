@@ -12,7 +12,7 @@ final class CoSoService
     private PDO $pdo;
     private CoSo $facilities;
 
-    public function __construct(PDO $pdo)
+    public function __construct(PDO $pdo, private array $scope = FacilityScope::ADMIN)
     {
         $this->pdo = $pdo;
         $this->facilities = new CoSo($pdo);
@@ -73,6 +73,11 @@ final class CoSoService
 
     public function save(array $data, ?int $id = null, ?array $image = null, ?array $logo = null): int
     {
+        FacilityScope::write($this->scope);
+        if ($id === null && $this->scope['role'] === 'QUAN_LY_CO_SO') throw new HttpException(403, 'Quản lý cơ sở chỉ được cập nhật cơ sở được phân công.');
+        if ($this->scope['company'] !== null && ($data['ma_cong_ty'] ?? '') !== (string) $this->scope['company']) {
+            throw new HttpException(403, 'Không được chọn hoặc chuyển cơ sở sang công ty khác.');
+        }
         if ($errors = self::validate($data)) {
             throw new ValidationException($errors);
         }
@@ -87,6 +92,7 @@ final class CoSoService
         if ($id !== null && !$before) {
             throw new HttpException(404, 'Không tìm thấy cơ sở.');
         }
+        if ($before) FacilityScope::check($before, $this->scope);
         $newImage = null;
         $newLogo = null;
         $this->pdo->beginTransaction();
@@ -104,6 +110,12 @@ final class CoSoService
             $current = $id === null ? null : $this->facilities->find($id, true);
             if ($id !== null && !$current) {
                 throw new HttpException(404, 'Không tìm thấy cơ sở.');
+            }
+            if ($current) {
+                FacilityScope::check($current, $this->scope);
+                if ($this->scope['role'] !== 'QUAN_TRI_TAP_DOAN' && $clean['trang_thai'] !== $current['trang_thai']) {
+                    throw new HttpException(403, 'Chỉ Admin được thay đổi trạng thái cơ sở.');
+                }
             }
             if ($current && (int) $current['ma_cong_ty'] !== (int) $before['ma_cong_ty']) {
                 throw new HttpException(409, 'Công ty của cơ sở vừa thay đổi. Vui lòng tải lại trang.');
@@ -167,6 +179,7 @@ final class CoSoService
 
     public function delete(int $id): void
     {
+        FacilityScope::admin($this->scope);
         $before = $this->facilities->find($id);
         if (!$before) {
             throw new HttpException(404, 'Không tìm thấy cơ sở.');
