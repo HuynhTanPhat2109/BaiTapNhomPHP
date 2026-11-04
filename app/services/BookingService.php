@@ -77,8 +77,8 @@ final class BookingService
         foreach ($this->bookings->services($input['facility']) as $service) {
             $id=(int)$service['ma_dich_vu'];
             $service['available'] = $service['so_luong_ton'] === null ? null : max(0,(int)$service['so_luong_ton']-$this->bookings->reserved($id,$now->format('Y-m-d H:i:s')));
-            // Rental stock has no checkout/return lifecycle yet; do not promise availability.
-            $service['purchasable'] = $service['loai_dich_vu'] !== 'CHO_THUE';
+            // Rentals use the same stock/virtual hold contract; returns remain a separate workflow.
+            $service['purchasable'] = true;
             $offers[$id]=$service;
         }
         foreach ($extras['services'] as $id=>$quantity) {

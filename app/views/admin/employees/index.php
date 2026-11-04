@@ -3,8 +3,8 @@
 <section class="container account-page catalog-page admin-list catalog-workspace workspace-page">
     <header class="catalog-heading module-heading"><div>
         <p class="eyebrow">Quản trị tập đoàn / Nhân viên</p>
-        <h1 class="account-h1">Nhân sự quản lý công ty</h1>
-        <p>Danh sách nhân viên có vai trò quản lý công ty.</p>
+        <h1 class="account-h1">Nhân sự toàn hệ thống</h1>
+        <p>Quản lý công ty, quản lý cơ sở, nhân viên và hồ sơ chưa cấp tài khoản.</p>
     </div><a class="btn btn--primary" href="<?= e(admin_context_url('/admin/employees/create')) ?>">Thêm quản lý công ty</a></header>
 
     <?php require dirname(__DIR__) . '/partials/management-toolbar.php'; ?>
@@ -13,12 +13,12 @@
     <?php else: ?>
     <div class="catalog-table-wrap" tabindex="0" role="region" aria-label="Danh sách nhân viên"><table class="catalog-table workspace-table">
         <colgroup><col class="workspace-col-name"><col><col><col><col class="workspace-col-status"><col class="workspace-col-actions"></colgroup>
-        <thead><tr><th scope="col">Nhân viên</th><th scope="col">Mã công ty</th><th scope="col">Liên hệ</th><th scope="col">Ngày vào làm</th><th class="workspace-number" scope="col">Trạng thái</th><th class="workspace-number" scope="col">Thao tác</th></tr></thead>
+        <thead><tr><th scope="col">Nhân viên</th><th scope="col">Tên công ty</th><th scope="col">Liên hệ</th><th scope="col">Ngày vào làm</th><th class="workspace-number" scope="col">Trạng thái</th><th class="workspace-number" scope="col">Thao tác</th></tr></thead>
         <tbody><?php foreach ($employees as $employee): ?>
             <?php $id = (string) ($employee['ma_nhan_vien'] ?? ''); $status = $employee['trang_thai'] ?? ''; ?>
             <tr>
-                <th scope="row"><?= e($employee['ho_ten'] ?? '') ?><small class="workspace-secondary"><?= e($employee['chuc_vu'] ?? '') ?></small></th>
-                <td data-label="Mã công ty"><?= e($employee['ma_cong_ty'] ?? '') ?></td>
+                <th scope="row"><a class="admin-table-link" href="<?= e(admin_context_url('/admin/employees/show') . '&id=' . rawurlencode($id)) ?>"><?= e($employee['ho_ten'] ?? '') ?></a><small class="workspace-secondary"><?= e($employee['chuc_vu'] ?? '') ?></small></th>
+                <td data-label="Tên công ty"><?= e($employee['ten_cong_ty'] ?? 'Không còn thông tin công ty') ?></td>
                 <td data-label="Liên hệ"><?= e($employee['email'] ?? '') ?><small class="workspace-secondary"><?= e($employee['so_dien_thoai'] ?? '') ?></small></td>
                 <td data-label="Ngày vào làm"><?= e($formatDate($employee['ngay_vao_lam'] ?? null)) ?></td>
                 <td class="workspace-number" data-label="Trạng thái"><span class="catalog-status" data-status="<?= $status === 'DANG_LAM' ? 'HOAT_DONG' : 'NGUNG' ?>"><?= $status === 'DANG_LAM' ? 'Đang làm' : ($status === 'DA_NGHI' ? 'Đã nghỉ' : 'Không xác định') ?></span></td>

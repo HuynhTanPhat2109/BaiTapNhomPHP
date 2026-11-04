@@ -10,6 +10,22 @@ use PDO;
 
 final class BookingManagementService
 {
+    /** UI hints only; writers re-evaluate the same state under row locks. */
+    public static function actions(array $booking, ?\DateTimeImmutable $now = null): array
+    {
+        $status = $booking['trang_thai_dat_san'] ?? '';
+        $payment = $booking['trang_thai_thanh_toan'] ?? '';
+        $expires = $booking['het_han_giu_san_luc'] ?? '';
+        $pending = in_array($status, ['CHO_THANH_TOAN', 'CHO_XAC_NHAN'], true);
+        $live = $pending && $expires !== '' && $expires > ($now ?? self::now())->format('Y-m-d H:i:s');
+        $payable = in_array($payment, ['CHO_THANH_TOAN', 'CHO_XAC_NHAN', 'CAN_DOI_SOAT'], true);
+        $recordable = in_array($status, ['CHO_THANH_TOAN', 'CHO_XAC_NHAN', 'DA_HUY', 'HET_HAN'], true)
+            && in_array($payment, ['CHO_THANH_TOAN', 'CHO_XAC_NHAN', 'HUY', 'HET_HAN'], true);
+        return ['confirm' => $live && $payable, 'cancel' => $live && $payable,
+            'reconcile' => $recordable, 'late' => !$live,
+            'view_reconciliation' => in_array($payment, ['THANH_CONG', 'CAN_DOI_SOAT'], true)];
+    }
+
     private AdminBooking $model;
     private BookingService $bookingService;
     private InvoiceService $invoiceService;
@@ -326,27 +342,14 @@ final class BookingManagementService
             $pStmt = $this->pdo->prepare('SELECT * FROM thanh_toan WHERE ma_dat_san = :id FOR UPDATE');
             $pStmt->execute(['id' => $bookingId]);
             $payment = $pStmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$payment) {
-                throw new ValidationException(['payment' => 'Đơn đặt sân chưa có yêu cầu thanh toán hợp lệ.']);
+            if (!$preRow) throw new ValidationException(['booking' => 'Không tìm thấy booking.']);
+            if (!$payment) throw new ValidationException(['payment' => 'Không tìm thấy yêu cầu thanh toán.']);
+            if (!self::actions($preRow + ['trang_thai_thanh_toan' => $payment['trang_thai']])['confirm']) {
+                throw new ValidationException(['booking' => 'Booking đã hủy, hết hạn, đã xử lý hoặc thanh toán không còn đủ điều kiện xác nhận.']);
             }
-
-            // D. Chống xác nhận trùng lặp
-            if ($booking['trang_thai_dat_san'] === 'DA_XAC_NHAN' || $payment['trang_thai'] === 'THANH_CONG') {
-                throw new ValidationException(['booking' => 'Đơn đặt sân này đã được xác nhận thanh toán trước đó.']);
-            }
-            if ($booking['trang_thai_dat_san'] === 'HOAN_THANH') {
-                throw new ValidationException(['booking' => 'Đơn đặt sân này đã hoàn thành.']);
-            }
-
-            // E. Kiểm tra booking đã bị hủy hoặc hết hạn
-            if ($booking['trang_thai_dat_san'] === 'DA_HUY') {
-                throw new ValidationException(['booking' => 'Đơn đặt sân đã bị hủy. Không thể xác nhận booking.']);
-            }
-            if ($booking['trang_thai_dat_san'] === 'HET_HAN') {
-                throw new ValidationException([
-                    'booking' => 'Đơn đặt sân đã hết hạn giữ chỗ. Sân có thể đã được giải phóng cho khách khác. Vui lòng sử dụng tính năng "Đánh dấu Cần đối soát" để xử lý số tiền đã nhận.'
-                ]);
+            // lockPayable accepts CHO_THANH_TOAN only; never extend the original expiry.
+            if ($preRow['trang_thai_dat_san'] === 'CHO_XAC_NHAN') {
+                $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san = 'CHO_THANH_TOAN' WHERE ma_dat_san = :id")->execute(['id' => $bookingId]);
             }
 
             if (!in_array($payment['trang_thai'], ['CHO_THANH_TOAN','CAN_DOI_SOAT'], true)) {
@@ -432,7 +435,7 @@ final class BookingManagementService
 
             $deductStmt = $this->pdo->prepare(
                 'UPDATE dich_vu
-                 SET so_luong_ton = so_luong_ton - :qty
+                 SET so_luong_ton = so_luong_ton - :qty_deduct
                  WHERE ma_dich_vu = :service_id
                    AND so_luong_ton IS NOT NULL
                    AND so_luong_ton >= :minimum_qty'
@@ -546,7 +549,7 @@ final class BookingManagementService
             }
 
             // Kiểm tra phân quyền cơ sở / công ty (Anti-IDOR)
-            $preStmt = $this->pdo->prepare('SELECT ma_co_so FROM dat_san WHERE ma_dat_san = :id');
+            $preStmt = $this->pdo->prepare('SELECT ma_co_so, trang_thai_dat_san, het_han_giu_san_luc FROM dat_san WHERE ma_dat_san = :id FOR UPDATE');
             $preStmt->execute(['id' => $bookingId]);
             $preBooking = $preStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -567,9 +570,12 @@ final class BookingManagementService
                 throw new HttpException(403, 'Booking không thuộc phạm vi công ty của bạn.');
             }
 
-            if ($payment['trang_thai'] === 'THANH_CONG') {
-                throw new ValidationException(['payment' => 'Giao dịch đã xác nhận thành công trước đó, không thể chuyển sang Cần đối soát.']);
-            }
+            $pStmt = $this->pdo->prepare('SELECT * FROM thanh_toan WHERE ma_dat_san = :id FOR UPDATE');
+            $pStmt->execute(['id' => $bookingId]);
+            $payment = $pStmt->fetch(PDO::FETCH_ASSOC);
+            $actions = self::actions($preBooking + ['trang_thai_thanh_toan' => $payment['trang_thai'] ?? '']);
+            if (!$payment || !$actions['reconcile']) throw new ValidationException(['payment' => 'Giao dịch không còn đủ điều kiện ghi nhận đối soát.']);
+            if ($actions['late'] && (float) $formattedActual <= 0) throw new ValidationException(['so_tien_thuc_nhan' => 'Nhập số tiền chuyển muộn thực nhận; không xác nhận giữ sân.']);
 
             // Cập nhật trạng thái thanh toán sang CAN_DOI_SOAT
             $existingReceipt = ReceiptImage::findForBooking($bookingId, $payment['ghi_chu'] ?? '');
@@ -631,7 +637,7 @@ final class BookingManagementService
 
         $cleanReason = trim($reason);
         if ($cleanReason === '') {
-            $cleanReason = 'Hủy sau khi đối soát không thành công / Khách không chuyển phần tiền còn lại';
+            throw new ValidationException(['ly_do_huy' => 'Vui lòng nhập lý do từ chối / hủy booking.']);
         }
         if (mb_strlen($cleanReason, 'UTF-8') > 500) {
             throw new ValidationException(['ly_do_huy' => 'Lý do không vượt quá 500 ký tự.']);

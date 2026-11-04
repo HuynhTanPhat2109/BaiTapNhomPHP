@@ -5,6 +5,7 @@ use App\Controllers\AccountController;
 use App\Controllers\CompanyController;
 use App\Controllers\ContractController;
 use App\Controllers\EmployeeController;
+use App\Controllers\admin\DashboardController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\RoleMiddleware;
 
@@ -34,6 +35,7 @@ $router->post('/admin/contracts/update', [$contract, 'update'], [new RoleMiddlew
 $router->post('/admin/contracts/status', [$contract, 'changeStatus'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
 
 $router->get('/admin/employees', [$employee, 'index'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->get('/admin/employees/show', [$employee, 'show'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
 $router->get('/admin/employees/create', [$employee, 'create'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
 $router->post('/admin/employees', [$employee, 'store'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
 $router->get('/admin/employees/edit', [$employee, 'edit'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
@@ -41,22 +43,20 @@ $router->post('/admin/employees/update', [$employee, 'update'], [new RoleMiddlew
 $router->post('/admin/employees/status', [$employee, 'changeStatus'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
 
 $router->get('/company/employees', [$employee, 'index'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
+$router->get('/company/employees/show', [$employee, 'show'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 $router->get('/company/employees/create', [$employee, 'create'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 $router->post('/company/employees', [$employee, 'store'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 $router->get('/company/employees/edit', [$employee, 'edit'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 $router->post('/company/employees/update', [$employee, 'update'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 $router->post('/company/employees/status', [$employee, 'changeStatus'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 
-// Auth-only landing pages, not implementations of business modules.
-$areas = [
-    '/facility' => ['Quản lý cơ sở', ['QUAN_LY_CO_SO']],
-    '/staff' => ['Nhân viên', ['NHAN_VIEN']],
-];
-$router->get('/company', [$company, 'dashboard'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
-foreach ($areas as $path => [$title, $roles]) {
-    $router->get($path, static function () use ($home, $title): void {
-        $home->rolePage($title);
-    }, [new RoleMiddleware($app, $roles)]);
+// Preserve the existing company information/contracts page beside the new Dashboard.
+foreach (['/admin' => 'QUAN_TRI_TAP_DOAN', '/company' => 'QUAN_LY_CONG_TY', '/facility' => 'QUAN_LY_CO_SO', '/staff' => 'NHAN_VIEN'] as $home => $revenueRole) {
+    $router->get($home . '/revenue', [new DashboardController($app), 'index'], [new RoleMiddleware($app, [$revenueRole])]);
+}
+$router->get('/company/profile', [$company, 'dashboard'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
+foreach (['/company' => 'QUAN_LY_CONG_TY', '/facility' => 'QUAN_LY_CO_SO', '/staff' => 'NHAN_VIEN'] as $path => $dashboardRole) {
+    $router->get($path, [new DashboardController($app), 'index'], [new RoleMiddleware($app, [$dashboardRole])]);
 }
 
 $router->get('/customer', static function (): void {

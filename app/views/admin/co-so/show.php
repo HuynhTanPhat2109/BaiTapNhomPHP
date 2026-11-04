@@ -1,7 +1,7 @@
 <?php
 $bodyClass = 'page-catalog';
-$detailPath = '/admin/co-so'; $detailLabel = 'Cơ sở';
-$detailTitle = $item['ten_co_so']; $detailId = $item['ma_co_so']; $detailCanEdit = true;
+$detailPath = ($managementRoot ?? '/admin') . '/co-so'; $detailLabel = 'Cơ sở';
+$detailTitle = $item['ten_co_so']; $detailId = $item['ma_co_so']; $detailCanEdit = $canWrite ?? true;
 $detailStatusLabel = $item['trang_thai'] === 'HOAT_DONG' ? 'Hoạt động' : 'Tạm ngừng';
 ?>
 <section class="container catalog-page catalog-workspace detail-page workspace-page">
@@ -12,7 +12,7 @@ $detailStatusLabel = $item['trang_thai'] === 'HOAT_DONG' ? 'Hoạt động' : 'T
             <h2 id="facility-info">Thông tin cơ sở</h2>
             <dl class="detail-fields">
                 <div class="detail-field--wide"><dt>Tên cơ sở</dt><dd><?= e($item['ten_co_so']) ?></dd></div>
-                <div class="detail-field--wide"><dt>Công ty</dt><dd><a href="<?= e(admin_context_url('/admin/companies/edit') . '&id=' . $item['ma_cong_ty']) ?>"><?= e($item['ten_cong_ty']) ?></a></dd></div>
+                <div class="detail-field--wide"><dt>Công ty</dt><dd><?php if ($canDelete ?? true): ?><a href="<?= e(admin_context_url('/admin/companies/edit') . '&id=' . $item['ma_cong_ty']) ?>"><?= e($item['ten_cong_ty']) ?></a><?php else: ?><?= e($item['ten_cong_ty']) ?><?php endif; ?></dd></div>
                 <div><dt>Tỉnh/Thành phố</dt><dd><?= e($item['ten_tinh'] ?? 'Chưa bổ sung') ?></dd></div>
                 <div><dt>Phường/Xã</dt><dd><?= e($item['ten_phuong_xa'] ?? 'Chưa bổ sung') ?></dd></div>
                 <div class="detail-field--wide"><dt>Địa chỉ</dt><dd><?= e($item['dia_chi']) ?></dd></div>
@@ -41,18 +41,18 @@ $detailStatusLabel = $item['trang_thai'] === 'HOAT_DONG' ? 'Hoạt động' : 'T
                     <div><dt><?= e($label) ?></dt><dd><?= e($related[$key]) ?></dd></div>
                 <?php endforeach; ?>
             </dl>
-            <div class="detail-card__heading detail-subheading"><h3 id="facility-courts">Sân thuộc cơ sở</h3><a class="detail-link" href="<?= e(admin_context_url('/admin/san/create')) ?>">Thêm sân</a></div>
+            <div class="detail-card__heading detail-subheading"><h3 id="facility-courts">Sân thuộc cơ sở</h3><?php if ($canWrite ?? true): ?><a class="detail-link" href="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/san/create')) ?>">Thêm sân</a><?php endif; ?></div>
             <?php if ($courts): ?>
                 <ul class="detail-related">
-                    <?php foreach ($courts as $court): ?><li><div><a href="<?= e(admin_context_url('/admin/san/show') . '&id=' . $court['ma_san']) ?>"><?= e($court['ten_san']) ?></a><small><?= e($court['ten_bo_mon']) ?> / <?= e($court['ten_loai_san']) ?></small></div></li><?php endforeach; ?>
+                    <?php foreach ($courts as $court): ?><li><div><a href="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/san/show') . '&id=' . $court['ma_san']) ?>"><?= e($court['ten_san']) ?></a><small><?= e($court['ten_bo_mon']) ?> / <?= e($court['ten_loai_san']) ?></small></div></li><?php endforeach; ?>
                 </ul>
             <?php else: ?><div class="detail-empty"><strong>Chưa có sân</strong><p>Chưa có sân thuộc cơ sở này.</p></div><?php endif; ?>
         </section>
     </div>
-    <footer class="detail-action-panel" aria-labelledby="co-so-delete-heading">
+    <?php if ($canDelete ?? true): ?><footer class="detail-action-panel" aria-labelledby="co-so-delete-heading">
         <div class="detail-action-panel__row">
             <div><h2 id="co-so-delete-heading">Xóa cơ sở</h2><p>Chỉ có thể xóa khi không còn dữ liệu tham chiếu. Bạn sẽ được yêu cầu xác nhận ở bước tiếp theo.</p></div>
-            <a class="btn btn--outline detail-delete" href="<?= e(admin_context_url('/admin/co-so/delete') . '&id=' . $item['ma_co_so']) ?>">Xóa cơ sở…</a>
+            <a class="btn btn--outline detail-delete" href="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/co-so/delete') . '&id=' . $item['ma_co_so']) ?>">Xóa cơ sở…</a>
         </div>
-    </footer>
+    </footer><?php endif; ?>
 </section>

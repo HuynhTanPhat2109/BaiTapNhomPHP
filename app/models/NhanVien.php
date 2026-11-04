@@ -54,8 +54,8 @@ final class NhanVien
 
     public function page(array $filters, ?int $companyId = null): array
     {
-        // Same row scope as companyManagers()/byCompany(); filters never replace it.
-        $where = $companyId === null ? ["vt.ten_vai_tro='QUAN_LY_CONG_TY'"]
+        // Admin sees all personnel; company managers retain their original restricted scope.
+        $where = $companyId === null ? []
             : ["nv.ma_cong_ty=:actor_company", "(nv.ma_tai_khoan IS NULL OR vt.ten_vai_tro IN ('QUAN_LY_CO_SO','NHAN_VIEN'))"];
         $params = $companyId === null ? [] : ['actor_company' => $companyId];
         $order = match ($filters['sort']) {
@@ -65,7 +65,10 @@ final class NhanVien
         $fields = ['q' => ['nv.ho_ten', 'nv.email', 'nv.so_dien_thoai'], 'trang_thai' => 'nv.trang_thai', 'vai_tro' => 'vt.ten_vai_tro'];
         $fields += $companyId === null ? ['ma_cong_ty' => 'nv.ma_cong_ty'] : ['ma_co_so' => 'nv.ma_co_so'];
         return AdminList::page($this->pdo, ' FROM nhan_vien nv LEFT JOIN tai_khoan tk ON tk.ma_tai_khoan=nv.ma_tai_khoan
-            LEFT JOIN vai_tro vt ON vt.ma_vai_tro=tk.ma_vai_tro', 'nv.*, vt.ten_vai_tro', 'nv.ma_nhan_vien',
+            LEFT JOIN vai_tro vt ON vt.ma_vai_tro=tk.ma_vai_tro
+            LEFT JOIN cong_ty_nhuong_quyen c ON c.ma_cong_ty=nv.ma_cong_ty
+            LEFT JOIN co_so f ON f.ma_co_so=nv.ma_co_so AND f.ma_cong_ty=nv.ma_cong_ty',
+            'nv.*, vt.ten_vai_tro, c.ten_cong_ty, f.ten_co_so', 'nv.ma_nhan_vien',
             $fields, $filters, $where, $params, $order);
     }
 

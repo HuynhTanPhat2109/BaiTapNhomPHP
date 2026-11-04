@@ -9,20 +9,28 @@ use Core\HttpException;
 $pdo = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 $pdo->exec('CREATE TABLE co_so (ma_co_so INTEGER PRIMARY KEY, ten_co_so TEXT, anh_dai_dien TEXT DEFAULT NULL);
     CREATE TABLE dat_san (ma_dat_san INTEGER PRIMARY KEY, ma_khach_hang INTEGER, ma_co_so INTEGER,
-        ngay_tao TEXT, trang_thai_dat_san TEXT, tong_tien_tam_tinh TEXT, het_han_giu_san_luc TEXT DEFAULT NULL);
+        ngay_tao TEXT, trang_thai_dat_san TEXT, tong_tien_tam_tinh TEXT, het_han_giu_san_luc TEXT DEFAULT NULL,
+        tong_tien_san TEXT DEFAULT \'185000.00\', tong_tien_dich_vu TEXT DEFAULT \'0.00\');
     CREATE TABLE thanh_toan (ma_dat_san INTEGER, trang_thai TEXT);
     CREATE TABLE chi_tiet_dat_san (ma_chi_tiet INTEGER PRIMARY KEY, ma_dat_san INTEGER, ma_san INTEGER,
-        ten_san_snapshot TEXT, ngay_choi TEXT, gio_bat_dau TEXT, gio_ket_thuc TEXT)');
+        ten_san_snapshot TEXT, ngay_choi TEXT, gio_bat_dau TEXT, gio_ket_thuc TEXT);
+    CREATE TABLE chi_tiet_dich_vu_dat (ma_chi_tiet_dv INTEGER PRIMARY KEY, ma_dat_san INTEGER,
+        ten_dich_vu_snapshot TEXT, don_vi_tinh_snapshot TEXT, so_luong INTEGER, don_gia TEXT, thanh_tien TEXT)');
 $pdo->prepare('INSERT INTO co_so (ma_co_so,ten_co_so) VALUES (1,?)')->execute(['STRYKE · Cơ sở kiểm thử']);
 $statuses = BookingHistoryController::STATUSES;
 $states = array_keys($statuses);
 for ($i = 1; $i <= 14; $i++) {
-    $pdo->prepare("INSERT INTO dat_san VALUES (?,7,1,?,?,?,'2099-01-01 00:00:00')")->execute([$i, '2026-10-' . sprintf('%02d', $i) . ' 09:00:00', $states[($i-1)%6], '185000.00']);
+    $pdo->prepare("INSERT INTO dat_san (ma_dat_san,ma_khach_hang,ma_co_so,ngay_tao,trang_thai_dat_san,tong_tien_tam_tinh,het_han_giu_san_luc)
+        VALUES (?,7,1,?,?,?,'2099-01-01 00:00:00')")->execute([$i, '2026-10-' . sprintf('%02d', $i) . ' 09:00:00', $states[($i-1)%6], '185000.00']);
     foreach ([[1,'Sân 1','08:00:00','08:30:00'], [1,'Sân 1','10:00:00','11:00:00'], [2,'Sân 2','09:00:00','10:00:00']] as [$court,$name,$start,$end]) {
         $pdo->prepare('INSERT INTO chi_tiet_dat_san (ma_dat_san,ma_san,ten_san_snapshot,ngay_choi,gio_bat_dau,gio_ket_thuc) VALUES (?,?,?,?,?,?)')->execute([$i,$court,$name,'2026-11-15',$start,$end]);
     }
 }
-$pdo->exec("INSERT INTO dat_san VALUES (99,8,1,'2027-01-01 00:00:00','DA_XAC_NHAN','999999.00',NULL)");
+$pdo->exec("INSERT INTO dat_san (ma_dat_san,ma_khach_hang,ma_co_so,ngay_tao,trang_thai_dat_san,tong_tien_tam_tinh)
+    VALUES (99,8,1,'2027-01-01 00:00:00','DA_XAC_NHAN','999999.00')");
+$pdo->exec("INSERT INTO chi_tiet_dich_vu_dat VALUES (1,14,'Nước snapshot PR6','chai',2,'10000.00','20000.00'),
+    (2,99,'Dịch vụ chủ khác','chai',1,'999999.00','999999.00');
+    UPDATE dat_san SET tong_tien_san='165000.00',tong_tien_dich_vu='20000.00' WHERE ma_dat_san=14");
 $pdo->exec("UPDATE dat_san SET ngay_tao='2026-10-02 00:00:00' WHERE ma_dat_san=2;
     UPDATE dat_san SET ngay_tao='2026-10-04 23:59:59' WHERE ma_dat_san=4");
 $pdo->exec("ALTER TABLE dat_san ADD COLUMN ghi_chu TEXT;
@@ -48,6 +56,10 @@ $check(array_column($history['items'], 'ma_dat_san') === [14,13,12,11,10,9], 'Ne
 $check(count($history['items'][0]['lines']) === 3, 'Multiple courts and separated slots');
 $check($history['items'][0]['lines'][0]['ten_san_snapshot'] === 'Sân 1', 'Snapshot');
 $check($history['items'][0]['tong_tien_tam_tinh'] === '185000.00', 'Stored total');
+$check($history['items'][0]['tong_tien_san'] === '165000.00' && $history['items'][0]['tong_tien_dich_vu'] === '20000.00', 'Stored court/service totals, no repricing');
+$check(count($history['items'][0]['service_lines']) === 1 && $history['items'][0]['service_lines'][0]['ten_dich_vu_snapshot'] === 'Nước snapshot PR6', 'History reads stored service snapshots without catalog');
+$check($history['items'][1]['service_lines'] === [], 'History supports booking without services');
+$check(!str_contains(json_encode($history), 'Dịch vụ chủ khác'), 'Service snapshot owner scope');
 $check($model->history(7, '', 999)['page'] === 3, 'Clamp page');
 $check($model->history(7, '', 3)['items'][1]['ma_dat_san'] === 1, 'Oldest still accessible');
 $check($model->history(123)['total'] === 0, 'New customer empty');

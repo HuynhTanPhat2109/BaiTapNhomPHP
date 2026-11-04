@@ -23,7 +23,7 @@ final class EmployeeService
     {
         $companyId = $this->actorCompanyId($actorRole, $actorCompanyId);
         if ($actorRole === 'QUAN_TRI_TAP_DOAN') {
-            return $this->employees->companyManagers();
+            return $this->employees->all();
         }
         return $this->employees->byCompany($companyId);
     }
@@ -33,11 +33,12 @@ final class EmployeeService
         $companyId = $this->actorCompanyId($actorRole, $actorCompanyId);
         $id = self::requireId($employeeId, 'ma_nhan_vien');
         $employee = $actorRole === 'QUAN_TRI_TAP_DOAN'
-            ? $this->employees->findCompanyManager($id)
+            ? $this->employees->find($id)
             : $this->employees->findForCompany($id, $companyId);
         if (!$employee) {
             throw new HttpException(404, 'Không tìm thấy nhân viên.');
         }
+        $employee['ten_vai_tro'] = $this->employees->accountRoleForEmployee($id);
         return $employee;
     }
 
@@ -45,7 +46,7 @@ final class EmployeeService
     {
         $companyId = $this->actorCompanyId($actorRole, $actorCompanyId);
         if ($actorRole === 'QUAN_TRI_TAP_DOAN') {
-            return ['companies' => $this->companyOptions(), 'facilities' => []];
+            return ['companies' => $this->companyOptions(), 'facilities' => (new \App\Models\CoSo($this->pdo))->all()];
         }
         $currentId = $currentFacilityId === null || $currentFacilityId === ''
             ? null
@@ -93,12 +94,12 @@ final class EmployeeService
         if ($actorRole === 'QUAN_TRI_TAP_DOAN') {
             $companyId = self::requireId($data['ma_cong_ty'] ?? null, 'ma_cong_ty');
         }
-        $facilityId = $this->facilityForWrite($actorRole, $companyId, $clean['ma_co_so']);
+        $facilityId = $this->facilityForWrite($actorRole, $companyId, $clean['ma_co_so'], true);
 
         try {
             $this->pdo->beginTransaction();
             $current = $actorRole === 'QUAN_TRI_TAP_DOAN'
-                ? $this->employees->findCompanyManager($id, true)
+                ? $this->employees->find($id, true)
                 : $this->employees->findForCompany($id, $companyId, true);
             if (!$current) {
                 throw new HttpException(404, 'Không tìm thấy nhân viên.');
@@ -144,7 +145,7 @@ final class EmployeeService
         try {
             $this->pdo->beginTransaction();
             $employee = $actorRole === 'QUAN_TRI_TAP_DOAN'
-                ? $this->employees->findCompanyManager($id, true)
+                ? $this->employees->find($id, true)
                 : $this->employees->findForCompany($id, $companyId, true);
             if (!$employee) {
                 throw new HttpException(404, 'Không tìm thấy nhân viên.');
@@ -199,9 +200,9 @@ final class EmployeeService
         return $this->actorCompanyId($role, $actorCompanyId);
     }
 
-    private function facilityForWrite(string $role, int $companyId, ?int $facility): ?int
+    private function facilityForWrite(string $role, int $companyId, ?int $facility, bool $updating = false): ?int
     {
-        if ($role === 'QUAN_TRI_TAP_DOAN' && $facility !== null) {
+        if ($role === 'QUAN_TRI_TAP_DOAN' && $facility !== null && !$updating) {
             throw new ValidationException(['ma_co_so' => 'Quản lý công ty không được gán cơ sở.']);
         }
         return $facility;

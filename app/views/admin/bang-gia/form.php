@@ -1,10 +1,10 @@
 <?php $bodyClass = 'page-catalog'; $formatPrice = require __DIR__ . '/format-price.php'; ?>
 <section class="container catalog-page catalog-workspace module-form-page workspace-page">
-    <a class="btn btn--outline module-back admin-back-link" href="<?= e(admin_context_url('/admin/bang-gia')) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14"/></svg>Quay lại danh sách</a>
+    <a class="btn btn--outline module-back admin-back-link" href="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/bang-gia')) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14"/></svg>Quay lại danh sách</a>
     <header class="catalog-heading module-heading"><div><p class="eyebrow">STRYKE / Bảng giá</p><h1><?= e($title) ?></h1><p class="module-subtitle">Chọn phạm vi, thiết lập đơn giá và thời gian hiệu lực cho bảng giá.</p></div></header>
     <?php if (!$facilities || !$types): ?><p class="alert alert--danger" role="alert">Cần có Cơ sở/Công ty và Loại sân/Bộ môn hoạt động để thêm bảng giá. Không yêu cầu đã có Sân tương ứng.</p><?php endif; ?>
     <?php if ($item && ($item['trang_thai_co_so'] !== 'HOAT_DONG' || $item['trang_thai_cong_ty'] !== 'HOAT_DONG' || $item['trang_thai_loai_san'] !== 'HOAT_DONG' || $item['trang_thai_bo_mon'] !== 'HOAT_DONG')): ?><p class="alert" role="status">Dữ liệu cha đã ngừng. Không thể kích hoạt giá; có thể ngừng áp dụng tại trang chi tiết hoặc chọn lại liên kết hoạt động khi sửa.</p><?php endif; ?>
-    <form class="catalog-form module-form" method="post" action="<?= e(admin_context_url('/admin/bang-gia/' . ($item ? 'update' : 'store'))) ?>" novalidate>
+    <form class="catalog-form module-form" method="post" action="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/bang-gia/' . ($item ? 'update' : 'store'))) ?>" novalidate>
         <?= csrf_field() ?>
         <?php if ($item): ?><input type="hidden" name="id" value="<?= e($item['ma_bang_gia']) ?>"><?php endif; ?>
         <section class="module-form-card" aria-labelledby="price-scope-heading">
@@ -71,7 +71,7 @@
         <div class="form-group">
             <?php if ($item): ?>
                 <input type="hidden" name="trang_thai" value="<?= e($item['trang_thai']) ?>">
-                <p>Trạng thái: <span class="catalog-status"><?= $item['trang_thai'] === 'DANG_AP_DUNG' ? 'Đang áp dụng' : 'Ngừng áp dụng' ?></span>. <a href="<?= e(admin_context_url('/admin/bang-gia/show') . '&id=' . $item['ma_bang_gia']) ?>">Ngừng/Kích hoạt tại trang chi tiết</a>.</p>
+                <p>Trạng thái: <span class="catalog-status"><?= $item['trang_thai'] === 'DANG_AP_DUNG' ? 'Đang áp dụng' : 'Ngừng áp dụng' ?></span>. <a href="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/bang-gia/show') . '&id=' . $item['ma_bang_gia']) ?>">Ngừng/Kích hoạt tại trang chi tiết</a>.</p>
             <?php else: ?>
                 <label for="trang_thai">Trạng thái ban đầu</label>
                 <select class="form-control" id="trang_thai" name="trang_thai" required<?= field_error_attributes('trang_thai', $errors) ?>>
@@ -81,6 +81,6 @@
             <?= field_error('trang_thai', $errors) ?>
         </div>
         </section>
-        <div class="catalog-actions"><button class="btn btn--primary" type="submit" <?= !$facilities || !$types ? 'disabled' : '' ?>>Lưu bảng giá</button><a class="btn btn--outline" href="<?= e(admin_context_url('/admin/bang-gia')) ?>">Hủy</a></div>
+        <div class="catalog-actions"><button class="btn btn--primary" type="submit" <?= !$facilities || !$types ? 'disabled' : '' ?>>Lưu bảng giá</button><a class="btn btn--outline" href="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/bang-gia')) ?>">Hủy</a></div>
     </form>
 </section>

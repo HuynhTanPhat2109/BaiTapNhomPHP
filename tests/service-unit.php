@@ -249,7 +249,7 @@ try {
             foreach ($xpath->query('//aside[@id="admin-sidebar"]//a[@href]') as $link) {
                 parse_str(parse_url($link->getAttribute('href'), PHP_URL_QUERY) ?? '', $query);
                 $path = $query['route'] ?? '';
-                serviceCheck($path === $area || str_starts_with($path, $area . '/') || str_starts_with($path, '/admin/'), "$role Sidebar stays in own role area");
+                serviceCheck($path === $area || str_starts_with($path, $area . '/') || in_array($path, ['/admin/bookings', '/admin/invoices', '/facility/bank'], true), "$role Sidebar stays in own role area or an explicitly shared, protected module");
             }
             serviceCheck(!str_contains($html, '<script>unsafe</script>'), 'escaped text');
             if ($role !== 'QUAN_TRI_TAP_DOAN') serviceCheck(!str_contains($html, '>Đặt sân</a>') && str_contains($html, 'page-admin'), 'internal service workspace has no customer booking nav');
