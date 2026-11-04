@@ -24,6 +24,7 @@ if (in_array($template, ['auth/account', 'auth/settings', 'services/page', 'auth
         'NHAN_VIEN' => ['/staff', 'Nhân viên'],
     ][$navRole] ?? null;
 }
+$publicHeader = !$isAdminArea && $accountArea === null;
 ?>
 <!doctype html>
 <html lang="vi">
@@ -39,6 +40,14 @@ if (in_array($template, ['auth/account', 'auth/settings', 'services/page', 'auth
               href="<?= e(base_path() . '/assets/css/catalog.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/catalog.css')) ?>">
     <?php endif; ?>
     <script src="<?= e(base_path() . '/assets/js/app.js') ?>" defer></script>
+    <?php if ($publicHeader): ?>
+        <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/public-header.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/public-header.css')) ?>">
+        <script src="<?= e(base_path() . '/assets/js/public-header.js') ?>" defer></script>
+    <?php endif; ?>
+    <?php if ($publicHeader && $template === 'home'): ?>
+        <link rel="stylesheet"
+            href="<?= e(base_path() . '/assets/css/public-page-transition.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/public-page-transition.css')) ?>">
+    <?php endif; ?>
     <?php if ($template === 'services/page'): ?><link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/admin.css')) ?>"><?php endif; ?>
     <?php if (str_starts_with($template, 'courts/')): ?>
         <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/courts.css') ?>">
@@ -47,7 +56,7 @@ if (in_array($template, ['auth/account', 'auth/settings', 'services/page', 'auth
 </head>
 <body class="<?= e($bodyClass ?? '') ?><?= $template === 'services/page' ? ' page-admin page-services' : '' ?>">
 <a class="skip-link" href="#main-content">Bỏ qua điều hướng</a>
-<header class="navbar">
+<header class="navbar<?= $publicHeader ? ' stryke-header' : '' ?>">
     <nav class="container navbar__inner" aria-label="Điều hướng chính">
         <a class="navbar__brand" href="<?= e(url($accountArea[0] ?? ($isAdminArea ? '/admin' : '/'))) ?>" aria-label="STRYKE — Trang chủ">
             <svg class="brand-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true"><rect x="3" y="5" width="30" height="26" rx="1"/><path d="M18 5v26M3 11h7v14H3m30-14h-7v14h7"/><circle cx="18" cy="18" r="5"/></svg>
@@ -55,6 +64,7 @@ if (in_array($template, ['auth/account', 'auth/settings', 'services/page', 'auth
         </a>
         <button class="navbar__toggle" type="button" id="nav-toggle" aria-controls="nav-menu" aria-expanded="false" aria-label="Mở menu" hidden><span></span><span></span></button>
         <div class="navbar__links" id="nav-menu">
+            <?php if ($publicHeader): ?><div class="stryke-header__menu-content"><div class="stryke-header__primary"><?php endif; ?>
             <?php if ($accountArea !== null): ?>
                 <a href="<?= e(url($accountArea[0])) ?>"><?= e($accountArea[1]) ?></a>
                 <?php if (in_array($navRole, ['QUAN_LY_CO_SO', 'NHAN_VIEN', 'QUAN_LY_CONG_TY'], true)): ?>
@@ -67,13 +77,14 @@ if (in_array($template, ['auth/account', 'auth/settings', 'services/page', 'auth
                 <a href="<?= e(url('/admin/bo-mon')) ?>">Bộ môn</a>
                 <a href="<?= e(url('/admin/loai-san')) ?>">Loại sân</a>
             <?php else: ?>
-                <a href="<?= e(url('/')) ?>">Trang chủ</a>
-                <a href="<?= e(url('/courts')) ?>">Đặt sân</a>
+                <a href="<?= e(url('/')) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg><span>Trang chủ</span></a>
+                <a href="<?= e(url('/courts')) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-14 4h2m6 0h2"/></svg><span>Đặt sân</span></a>
                 <?php if (!$navAuthenticated || ($app->auth()->user()['ten_vai_tro'] ?? '') === 'KHACH_HANG'): ?>
-                    <a href="<?= e(url('/booking/history')) ?>">Lịch sử đặt sân</a>
+                    <a href="<?= e(url('/booking/history')) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7.4M3 5v6h6m3-4v5l3 2"/></svg><span>Lịch sử đặt sân</span></a>
                 <?php endif; ?>
-                <a href="<?= e(url('/') . '#about') ?>">Về STRYKE</a>
+                <a href="<?= e(url('/') . '#about') ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.01"/></svg><span>Về STRYKE</span></a>
             <?php endif; ?>
+            <?php if ($publicHeader): ?></div><div class="stryke-header__account"><?php endif; ?>
             <span class="nav-divider" aria-hidden="true"></span>
             <?php if ($navAuthenticated): ?>
                 <details class="account-menu" id="account-menu">
@@ -108,6 +119,7 @@ if (in_array($template, ['auth/account', 'auth/settings', 'services/page', 'auth
                 <a href="<?= e(url('/login')) ?>" <?= $isAuthPage ? 'data-auth-link' : '' ?>>Đăng nhập</a>
                 <a class="btn btn--primary btn--small" href="<?= e(url('/register')) ?>" <?= $isAuthPage ? 'data-auth-link' : '' ?>>Đăng ký <span aria-hidden="true">↗</span></a>
             <?php endif; ?>
+            <?php if ($publicHeader): ?></div></div><?php endif; ?>
         </div>
     </nav>
 </header>

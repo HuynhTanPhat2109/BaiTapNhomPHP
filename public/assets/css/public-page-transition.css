@@ -1,0 +1,78 @@
+
+/* ==========================================
+   STRYKE - SMOOTH PAGE TRANSITION
+========================================== */
+
+@view-transition {
+    navigation: auto;
+}
+
+/* Chỉ chuyển động vùng nội dung */
+#main-content {
+    view-transition-name: stryke-public-content;
+}
+
+/* Giữ header và footer ổn định */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+}
+
+/* Không nội suy kích thước snapshot */
+::view-transition-group(stryke-public-content) {
+    animation: none;
+}
+
+/* Trang cũ biến mất nhẹ */
+::view-transition-old(stryke-public-content) {
+    animation: stryke-page-out 160ms ease-out both;
+    mix-blend-mode: normal;
+}
+
+/* Trang mới hiện từ dưới lên */
+::view-transition-new(stryke-public-content) {
+    animation: stryke-page-in 300ms
+        cubic-bezier(.22, 1, .36, 1) both;
+    mix-blend-mode: normal;
+}
+
+@keyframes stryke-page-out {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes stryke-page-in {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 6px, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+/* Giảm chuyển động nếu được yêu cầu */
+@media (prefers-reduced-motion: reduce) {
+    @view-transition {
+        navigation: none;
+    }
+
+    #main-content {
+        view-transition-name: none;
+    }
+
+    ::view-transition-old(root),
+    ::view-transition-new(root),
+    ::view-transition-group(stryke-public-content),
+    ::view-transition-old(stryke-public-content),
+    ::view-transition-new(stryke-public-content) {
+        animation: none !important;
+    }
+}

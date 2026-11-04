@@ -6,7 +6,7 @@
   const toggle = document.getElementById('nav-toggle');
   const accountMenu = document.getElementById('account-menu');
   const accountTrigger = accountMenu?.querySelector('summary');
-  if (menu && toggle) {
+  if (menu && toggle && !menu.closest('.stryke-header')) {
     document.documentElement.classList.add('nav-enhanced');
     toggle.hidden = false;
     const closeMenu = () => {

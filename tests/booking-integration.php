@@ -52,7 +52,7 @@ function raceBookings(array $calls): array {
         return $results;
     } finally { if($pdo->inTransaction())$pdo->rollBack(); }
 }
-$admin=connectBookingTest();$db='stryke_booking_test_'.bin2hex(random_bytes(5));$server=null;
+$admin=connectBookingTest();$db='stryke_booking_test_'.bin2hex(random_bytes(5));$server=null;$receiptFiles=[];
 $admin->exec("CREATE DATABASE `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 try {
     $pdo=connectBookingTest($db);
@@ -250,6 +250,35 @@ try {
     $r=$http('/booking/confirm',$post);checkBooking($r['status']===303 && str_contains($r['headers'],'id='.$httpId),'HTTP retry same booking');
     $r=$http('/booking/wait',null,['id'=>$httpId]);checkBooking($r['status']===200 && str_contains($r['body'],'data-payment-pending') && str_contains($r['body'],'đang được tích hợp'),'real waiting page without payment simulation');
     file_put_contents(dirname(__DIR__).'/storage/temp/booking-wait-test.html',$r['body']);
+    // A deterministic image in the isolated payment's exact cache key, never a real bank request.
+    $testPayment=$payments->getPaymentByBooking($httpId);
+    $qrUrl=(new App\Services\VietQRService())->generateQuickLink('970422','0000000000',$testPayment['so_tien'],$testPayment['ma_tham_chieu'],'TEST ONLY');
+    $qrCache=dirname(__DIR__).'/storage/temp/vietqr_'.md5($qrUrl).'.png';
+    $chunk=static fn(string $type,string $data): string => pack('N',strlen($data)).$type.$data.pack('N',crc32($type.$data));
+    $png="\x89PNG\r\n\x1a\n".$chunk('IHDR',pack('NNCCCCC',200,200,8,2,0,0,0))
+        .$chunk('IDAT',gzcompress(str_repeat("\0".str_repeat("\xf0\xff\xf0",200),200))).$chunk('IEND','');
+    try {
+        file_put_contents($qrCache,$png);
+        $download=$http('/payment/qr',null,['booking_id'=>$httpId,'download'=>'1']);
+        checkBooking($download['status']===200 && $download['body']===$png && str_contains($download['headers'],'attachment; filename="VietQR_DonHang_'.$httpId.'.png"'),'QR download returns exact validated image and attachment filename');
+        $svg='<svg xmlns="http://www.w3.org/2000/svg" width="540" height="640"><rect width="540" height="640" fill="white"/><path d="M10 10h20v20H10z"/></svg>';
+        file_put_contents($qrCache,$svg);
+        $display=$http('/payment/qr',null,['booking_id'=>$httpId]);
+        $download=$http('/payment/qr',null,['booking_id'=>$httpId,'download'=>'1']);
+        checkBooking($download['status']===200 && $download['body']===$display['body'] && $download['body']===$svg
+            && str_contains($download['headers'],'Content-Type: image/svg+xml')
+            && str_contains($download['headers'],'.svg"'),'SVG QuickLink download returns same image as display without 503');
+        file_put_contents($qrCache,str_repeat('<html>upstream error</html>',20));
+        $download=$http('/payment/qr',null,['booking_id'=>$httpId,'download'=>'1']);
+        checkBooking($download['status']===503 && !str_contains($download['headers'],'attachment;'),'QR download rejects HTML instead of saving corrupt PNG');
+        $hold=$pdo->query('SELECT bat_dau_giu_san_luc,het_han_giu_san_luc FROM dat_san WHERE ma_dat_san='.(int)$httpId)->fetch();
+        $pdo->exec('UPDATE dat_san SET bat_dau_giu_san_luc=DATE_SUB(NOW(),INTERVAL 7 MINUTE),het_han_giu_san_luc=DATE_SUB(NOW(),INTERVAL 1 SECOND) WHERE ma_dat_san='.(int)$httpId);
+        try {
+            checkBooking($http('/payment/qr',null,['booking_id'=>$httpId,'download'=>'1'])['status']===409,'QR download rejects expired booking');
+        } finally {
+            $pdo->prepare('UPDATE dat_san SET bat_dau_giu_san_luc=?,het_han_giu_san_luc=? WHERE ma_dat_san=?')->execute([$hold['bat_dau_giu_san_luc'],$hold['het_han_giu_san_luc'],$httpId]);
+        }
+    } finally { unlink($qrCache); }
     checkBooking(str_contains($r['body'],'Court A') && preg_match('/17:00\s*–\s*17:30/u',$r['body']) && !str_contains($r['body'],'Quay lại lịch sân'),'waiting shows actual visit and only header back');
     checkBooking($slotState($status(),$court,'17:00')==='held','other viewer sees new hold through endpoint');
     checkBooking((int)$pdo->query("SELECT COUNT(*) FROM thanh_toan WHERE ma_dat_san=$httpId")->fetchColumn()===1 && (int)$pdo->query('SELECT COUNT(*) FROM hoa_don')->fetchColumn()===0,'checkout creates one payment and no invoice');
@@ -295,6 +324,45 @@ try {
     checkBooking($http('/booking/payment',['_token'=>$csrf,'id'=>$retryId])['status']===303,'POST retry recovers after dependency is restored');
     checkBooking((int)$pdo->query("SELECT COUNT(*) FROM thanh_toan WHERE ma_dat_san=$retryId")->fetchColumn()===1
         && $pdo->query("SELECT het_han_giu_san_luc FROM dat_san WHERE ma_dat_san=$retryId")->fetchColumn()===$before,'recovered payment preserves booking and original expiry');
+    // Real multipart upload through auth + CSRF + controller + image validation.
+    checkBooking($http('/booking/receipt',['id'=>$retryId])['status']===403,'receipt submission requires CSRF');
+    checkBooking($http('/booking/receipt',null,['id'=>$retryId])['status']===405,'receipt submission cannot use GET');
+    $uploadPath=tempnam(dirname(__DIR__).'/storage/temp','receipt-http-');
+    $multipart=static function(array $data)use($client,$port):int {
+        curl_setopt($client,CURLOPT_URL,'http://127.0.0.1:'.$port.'/index.php?route=%2Fbooking%2Freceipt');
+        curl_setopt($client,CURLOPT_POST,true);curl_setopt($client,CURLOPT_POSTFIELDS,$data);
+        if(curl_exec($client)===false)throw new RuntimeException(curl_error($client));
+        return curl_getinfo($client,CURLINFO_RESPONSE_CODE);
+    };
+    try {
+        file_put_contents($uploadPath,'not an image');
+        $multipart(['_token'=>$csrf,'id'=>$retryId,'bien_lai'=>new CURLFile($uploadPath,'image/png','proof.png')]);
+        checkBooking($booking->inspect($retryId,$customers[0])['trang_thai_dat_san']==='CHO_THANH_TOAN','invalid image does not change booking');
+        file_put_contents($uploadPath,base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='));
+        checkBooking($multipart(['_token'=>$csrf,'id'=>$retryId,'bien_lai'=>new CURLFile($uploadPath,'image/png','proof.png')])===303,'valid receipt redirects immediately to result');
+        $receiptFiles[]=App\Services\ReceiptImage::getReceiptFromNote($payments->getPaymentByBooking($retryId)['ghi_chu']);
+        $result=$http('/booking/wait',null,['id'=>$retryId]);
+        checkBooking($result['status']===200 && preg_match('/<section[^>]*data-payment-result(?![^>]*\bhidden\b)[^>]*>/',$result['body']) && !str_contains($result['body'],'data-receipt-waiting'),'receipt result replaces intermediate screen');
+        file_put_contents(dirname(__DIR__).'/storage/temp/receipt-result-test.html',$result['body']);
+        $firstReceipt=$payments->getPaymentByBooking($retryId)['ghi_chu'];
+        $multipart(['_token'=>$csrf,'id'=>$retryId,'bien_lai'=>new CURLFile($uploadPath,'image/png','proof.png')]);
+        checkBooking($payments->getPaymentByBooking($retryId)['ghi_chu']===$firstReceipt,'duplicate HTTP upload cannot overwrite accepted receipt');
+        $model=new App\Models\Booking($pdo);
+        $pdo->exec("UPDATE dat_san SET bat_dau_giu_san_luc=NOW()-INTERVAL 3 DAY,het_han_giu_san_luc=NOW()-INTERVAL 3 DAY+INTERVAL 6 MINUTE WHERE ma_dat_san=$retryId");
+        checkBooking($http('/booking/expire',['_token'=>$csrf,'id'=>$retryId])['status']===303 && $model->find($retryId)['trang_thai_dat_san']==='CHO_XAC_NHAN','expiry endpoint preserves receipt review after days');
+        $reviewStatus=json_decode($http('/payment/status',null,['booking_id'=>$retryId])['body'],true);
+        checkBooking(!$reviewStatus['is_expired'] && !$reviewStatus['is_confirmed'] && $reviewStatus['booking_status']==='CHO_XAC_NHAN','payment status endpoint neither expires nor confirms receipt review');
+        $history=$http('/booking/history');
+        checkBooking($history['status']===200 && str_contains($history['body'],'Chờ xác nhận'),'existing history renders receipt-review state');
+        checkBooking(str_contains($history['body'],'booking%2Fhistory%2Freceipt'),'history provides protected receipt URL');
+        $proof=$http('/booking/history/receipt',null,['id'=>$retryId]);
+        checkBooking($proof['status']===200 && str_contains($proof['headers'],'image/png') && str_starts_with($proof['body'],"\x89PNG"),'owner can read uploaded receipt through history endpoint');
+        // Regression: old inconsistent expired receipt records must never revive on GET.
+        $pdo->exec("UPDATE dat_san SET trang_thai_dat_san='HET_HAN' WHERE ma_dat_san=$retryId");
+        $http('/booking/wait',null,['id'=>$retryId]);
+        $statusResult=json_decode($http('/booking/wait',null,['id'=>$retryId,'status'=>'1'])['body'],true);
+        checkBooking($model->find($retryId)['trang_thai_dat_san']==='HET_HAN' && $statusResult['state']==='HET_HAN','GET and polling do not revive expired receipt booking');
+    } finally { unlink($uploadPath); }
     $http('/logout',['_token'=>$csrf]);
     $r=$http('/courts/schedule',null,['id'=>$facility,'date'=>$date]);$csrf=$token($r);
     $r=$http('/booking/start',['_token'=>$csrf,'selection'=>json_encode($pick('19:00','19:30'))]);preg_match('/draft=([a-f0-9]{64})/',$r['headers'],$m);$signupDraft=$m[1];
@@ -305,6 +373,8 @@ try {
     $r=$http('/login',['_token'=>$csrf,'username'=>$username,'password'=>'Testpass1!']);
     checkBooking($r['status']===303 && str_contains($r['headers'],'draft='.$signupDraft),'register then login returns to original draft');
     checkBooking($http('/booking/wait',null,['id'=>$httpId])['status']===404,'HTTP ownership prevents another customer viewing booking');
+    checkBooking($http('/payment/qr',null,['booking_id'=>$httpId,'download'=>'1'])['status']===404,'QR download rejects other customer');
+    checkBooking($http('/booking/history/receipt',null,['id'=>$retryId])['status']===404,'other customer cannot read history receipt');
     $r=$http('/booking/details',null,['draft'=>$signupDraft]);
     checkBooking($http('/booking/cancel',['_token'=>$token($r),'id'=>$httpId])['status']===404,'HTTP ownership prevents cancellation by another customer');
     checkBooking($http('/booking/payment',['_token'=>$token($r),'id'=>$httpId])['status']===404,'HTTP ownership prevents payment retry by another customer');
@@ -316,5 +386,6 @@ try {
     echo "PASS: $checks isolated booking integration checks.\n";
 } finally {
     if(is_resource($server)){proc_terminate($server);proc_close($server);}
+    foreach($receiptFiles as $file)if($file)App\Services\ReceiptImage::remove($file);
     $admin->exec("DROP DATABASE `$db`");
 }

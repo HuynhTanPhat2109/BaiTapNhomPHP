@@ -4,6 +4,13 @@ namespace App\Services;
 
 final class ReceiptImage
 {
+    public static function remove(string $path): void
+    {
+        if (self::validPath($path)) {
+            $file = dirname(__DIR__, 2) . '/public/' . $path;
+            if (is_file($file) && !unlink($file)) error_log('Cannot remove uncommitted receipt image.');
+        }
+    }
     private const UPLOAD_SUBDIR = 'uploads/receipts';
     private const ALLOWED_MIMES = [
         'image/jpeg' => 'jpg',

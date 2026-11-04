@@ -15,7 +15,7 @@ courtCheck(array_column($grid['rows'][0]['cells'], 'state') === ['unavailable', 
 courtCheck(Schedule::selection($grid, '1', '17:00', '18:30')['end'] === '18:30');
 foreach ([['1','16:30','17:00'], ['1','17:15','18:00'], ['2','17:00','18:00'], ['1','18:00','17:00'], ['1','18:00','20:00']] as $selection) courtReject(fn() => Schedule::selection($grid, ...$selection));
 foreach (['2026-10-22', '2026-02-30', 'bad', '2026-1-1'] as $date) courtReject(fn() => Schedule::validateDate($date, $now));
-foreach (['CHO_XAC_NHAN' => 'free', 'DA_HUY' => 'free', 'HET_HAN' => 'free', 'DA_XAC_NHAN' => 'booked', 'HOAN_THANH' => 'booked', 'CHO_THANH_TOAN' => 'held'] as $state => $expected) {
+foreach (['CHO_XAC_NHAN' => 'held', 'DA_HUY' => 'free', 'HET_HAN' => 'free', 'DA_XAC_NHAN' => 'booked', 'HOAN_THANH' => 'booked', 'CHO_THANH_TOAN' => 'held'] as $state => $expected) {
     $interval = ['ma_san' => 1, 'gio_bat_dau' => '17:00:00', 'gio_ket_thuc' => '17:30:00', 'trang_thai_dat_san' => $state, 'het_han_giu_san_luc' => '2026-10-23 16:36:00'];
     $result = $build([$interval]);
     courtCheck($result['rows'][0]['cells'][2]['state'] === $expected);

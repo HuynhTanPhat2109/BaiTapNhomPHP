@@ -8,18 +8,21 @@ $states = [
     'HET_HAN' => 'Đã hết thời gian giữ sân',
     'DA_XAC_NHAN' => 'Booking đã được xác nhận',
     'HOAN_THANH' => 'Booking đã hoàn thành',
-    'CHO_XAC_NHAN' => 'Booking chưa được giữ sân'
+    'CHO_XAC_NHAN' => 'Đang chờ nhân viên xác nhận'
 ];
 ?>
 
 <?php
 $cssBookingPath = dirname(__DIR__, 3) . '/public/assets/css/booking.css';
 $cssVietqrPath = dirname(__DIR__, 3) . '/public/assets/css/vietqr.css';
+$cssActionButtonPath = dirname(__DIR__, 3) . '/public/assets/css/action-button.css';
 $jsBookingPath = dirname(__DIR__, 3) . '/public/assets/js/booking.js';
 $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
 ?>
 <link rel="stylesheet" href="<?= e(base_path().'/assets/css/booking.css?v=' . (file_exists($cssBookingPath) ? filemtime($cssBookingPath) : time())) ?>">
+<link rel="stylesheet" href="<?= e(base_path().'/assets/css/action-button.css?v=' . (file_exists($cssActionButtonPath) ? filemtime($cssActionButtonPath) : time())) ?>">
 <link rel="stylesheet" href="<?= e(base_path().'/assets/css/vietqr.css?v=' . (file_exists($cssVietqrPath) ? filemtime($cssVietqrPath) : time())) ?>">
+<link rel="stylesheet" href="<?= e(base_path() . '/assets/css/payment-result.css') ?>">
 <script src="<?= e(base_path().'/assets/js/booking.js?v=' . (file_exists($jsBookingPath) ? filemtime($jsBookingPath) : time())) ?>" defer></script>
 <script src="<?= e(base_path().'/assets/js/vietqr.js?v=' . (file_exists($jsVietqrPath) ? filemtime($jsVietqrPath) : time())) ?>" defer></script>
 
@@ -38,44 +41,13 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
 
     <?php
     $isReconcileState = !empty($isReconcile) || ($payment && ($payment['trang_thai'] ?? '') === 'CAN_DOI_SOAT');
-    $isConfirmedBooking = (in_array($booking['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH'], true) || ($payment && ($payment['trang_thai'] ?? '') === 'THANH_CONG')) && !$isReconcileState;
-    $isReceiptWait = (!empty($receiptSubmitted) || $booking['trang_thai_dat_san'] === 'CHO_XAC_NHAN') && !$isConfirmedBooking && !$isReconcileState;
+    $isConfirmedBooking = (in_array($booking['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH'], true) && ($payment && ($payment['trang_thai'] ?? '') === 'THANH_CONG')) && !$isReconcileState;
+    $isReceiptWait = (!empty($receiptSubmitted) && $booking['trang_thai_dat_san'] === 'CHO_XAC_NHAN') && !$isConfirmedBooking && !$isReconcileState && ($payment['trang_thai'] ?? '') !== 'THANH_CONG';
     $isExpiredOrCanceled = in_array($booking['trang_thai_dat_san'], ['HET_HAN', 'DA_HUY'], true) && !$isConfirmedBooking && !$isReceiptWait && !$isReconcileState;
     ?>
 
-    <header class="booking-heading">
-        <div>
-            <p class="booking-eyebrow" data-booking-eyebrow><?= $isReconcileState ? 'CẦN ĐỐI SOÁT' : ($isConfirmedBooking ? 'THÀNH CÔNG' : ($isExpiredOrCanceled ? 'ĐẶT SÂN' : 'THANH TOÁN')) ?></p>
-            <h1 data-booking-title>
-                <?php
-                if ($isReconcileState) {
-                    echo 'Giao dịch cần đối soát thanh toán';
-                } elseif ($isConfirmedBooking) {
-                    echo 'Đặt sân &amp; Thanh toán thành công';
-                } elseif ($isReceiptWait) {
-                    echo 'Chờ xác nhận thanh toán';
-                } elseif ($isExpiredOrCanceled) {
-                    echo 'Đã hết thời gian giữ sân';
-                } else {
-                    echo 'Chờ thanh toán';
-                }
-                ?>
-            </h1>
-            <p class="booking-subtle">
-                Mã đặt sân #<?= e($booking['ma_dat_san']) ?>
-            </p>
-        </div>
-    </header>
-
-    <?php if (!empty($receiptNotice)): ?>
-        <div class="stryke-toast-notice" style="background: rgba(200, 243, 107, 0.12); border: 1px solid rgba(200, 243, 107, 0.35); color: #c8f36b; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 1.15rem;">✓</span>
-            <span><?= e($receiptNotice) ?></span>
-        </div>
-    <?php endif; ?>
-
     <?php if (!empty($paymentError) && !$isConfirmedBooking && !$isReconcileState): ?>
-        <div class="stryke-toast-error" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+        <div class="stryke-toast-error">
             <span style="font-size: 1.15rem;">⚠️</span>
             <span><?= e($paymentError) ?></span>
         </div>
@@ -94,7 +66,7 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
     </div>
 
     <!-- 1. THANH ĐẾM NGƯỢC GIỮ CHỖ (COUNTDOWN BANNER) -->
-    <div class="stryke-countdown-banner" <?= ($isConfirmedBooking || $isReceiptWait || $isExpiredOrCanceled || $isReconcileState) ? 'hidden' : '' ?>>
+    <div class="stryke-countdown-banner" <?= ($isConfirmedBooking || $isReceiptWait || $isExpiredOrCanceled || $isReconcileState || ($payment['trang_thai'] ?? '') === 'THANH_CONG') ? 'hidden' : '' ?>>
         <p class="stryke-countdown-label" data-wait-message role="status">
             <?= ($booking['trang_thai_dat_san'] === 'CHO_THANH_TOAN')
                 ? 'Đơn của bạn còn được giữ chỗ trong'
@@ -249,7 +221,7 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
 
         <!-- Nhóm nút điều hướng -->
         <div class="stryke-receipt-actions">
-            <a href="<?= e(url('/account')) ?>" class="stryke-btn-primary-action">
+            <a href="<?= e(url('/booking/history')) ?>" class="stryke-btn-primary-action">
                 Xem lịch đặt tại Tài khoản của tôi ↗
             </a>
             <a href="<?= e(url('/')) ?>" class="stryke-btn-secondary-action">
@@ -258,100 +230,12 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
         </div>
     </div>
 
-    <!-- TH1: KHỐI THANH TOÁN THÀNH CÔNG (ĐANG CHỜ XÁC NHẬN) - THIẾT KẾ ĐỒNG BỘ STRYKE DARK THEME -->
-    <div class="stryke-receipt-submitted-box"
-         data-receipt-waiting
-         <?= (!$receiptSubmitted || $isReconcileState || in_array($booking['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH', 'DA_HUY'], true)) ? 'hidden' : '' ?>>
-        
-        <!-- Icon thành công phát sáng phong cách STRYKE -->
-        <div class="stryke-success-icon-badge">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-        </div>
-
-        <h2 class="stryke-success-heading">
-            THANH TOÁN THÀNH CÔNG
-        </h2>
-        <p class="stryke-success-subheading">
-            (Đang chờ nhân viên cơ sở kiểm tra và xác nhận đơn đặt sân)
-        </p>
-
-        <!-- Thanh thông báo trạng thái nổi bật -->
-        <div class="stryke-receipt-status-banner">
-            <span class="stryke-receipt-status-dot"></span>
-            <span>Hệ thống đã tiếp nhận ảnh biên lai chuyển khoản. Nhân viên lễ tân đang kiểm tra biến động số dư tài khoản ngân hàng và sẽ kích hoạt lịch đặt ngay khi khớp lệnh.</span>
-        </div>
-
-        <!-- Khung tóm tắt thông tin đơn đặt & thanh toán -->
-        <div class="stryke-receipt-summary-card">
-            <div class="stryke-summary-grid">
-                <div class="stryke-summary-item">
-                    <span class="stryke-item-label">Mã đặt sân</span>
-                    <strong class="stryke-item-value">#<?= e($booking['ma_dat_san']) ?></strong>
-                </div>
-                <div class="stryke-summary-item">
-                    <span class="stryke-item-label">Số tiền đã chuyển</span>
-                    <strong class="stryke-item-value accent-lime">
-                        <?= e(number_format((float) ($payment['so_tien'] ?? $booking['tong_tien_tam_tinh']), 0, ',', '.')) ?> đ
-                    </strong>
-                </div>
-                <div class="stryke-summary-item">
-                    <span class="stryke-item-label">Mã tham chiếu CK</span>
-                    <code class="stryke-item-code"><?= e($payment['ma_tham_chieu'] ?? '') ?></code>
-                </div>
-                <div class="stryke-summary-item">
-                    <span class="stryke-item-label">Phương thức</span>
-                    <span class="stryke-item-value">Chuyển khoản VietQR</span>
-                </div>
-            </div>
-
-            <!-- Khung ảnh biên lai thu nhỏ - KHẮC PHỤC TRIỆT ĐỂ LỖI PHÌNH TO MÀN HÌNH -->
-            <?php if (!empty($receiptImage)): ?>
-                <div class="stryke-receipt-thumbnail-section">
-                    <div class="stryke-receipt-thumb-header">
-                        <span class="stryke-thumb-title">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                <polyline points="21 15 16 10 5 21"></polyline>
-                            </svg>
-                            Ảnh biên lai đã gửi
-                        </span>
-                        <a href="<?= e(base_path() . '/' . $receiptImage) ?>" target="_blank" rel="noopener" class="stryke-thumb-link">
-                            Phóng to ảnh ↗
-                        </a>
-                    </div>
-                    
-                    <div class="stryke-receipt-thumb-container">
-                        <a href="<?= e(base_path() . '/' . $receiptImage) ?>" target="_blank" rel="noopener" title="Bấm vào để xem ảnh kích thước gốc" class="stryke-thumb-link-wrapper">
-                            <img src="<?= e(base_path() . '/' . $receiptImage) ?>" alt="Biên lai chuyển khoản" class="stryke-receipt-thumb-img">
-                            <span class="stryke-thumb-zoom-tag">🔍 Bấm để xem ảnh lớn</span>
-                        </a>
-                    </div>
-                </div>
-            <?php endif; ?>
-        </div>
-
-        <p class="stryke-receipt-reassure">
-            💡 Bạn có thể theo dõi tiến trình xử lý tại trang tài khoản cá nhân. Đơn đặt sân sẽ chuyển sang <strong>ĐÃ XÁC NHẬN</strong> ngay khi nhân viên hoàn tất đối soát.
-        </p>
-
-        <!-- Nhóm nút điều hướng -->
-        <div class="stryke-receipt-actions">
-            <a href="<?= e(url('/account')) ?>" class="stryke-btn-primary-action">
-                Xem chi tiết lịch đặt sân của tôi ↗
-            </a>
-            <a href="<?= e(url('/')) ?>" class="stryke-btn-secondary-action">
-                Về trang chủ
-            </a>
-        </div>
-    </div>
+    <?php require __DIR__ . '/payment-result.php'; ?>
 
     <!-- KHUNG LƯỚI NỘI DUNG 2 CỘT (DESKTOP & MOBILE RESPONSIVE) -->
     <div class="stryke-checkout-container"
          data-payment-pending
-         <?= ($booking['trang_thai_dat_san'] !== 'CHO_THANH_TOAN' || !empty($receiptSubmitted) || $isReconcileState) ? 'hidden' : '' ?>>
+         <?= ($booking['trang_thai_dat_san'] !== 'CHO_THANH_TOAN' || !empty($receiptSubmitted) || $isReconcileState || ($payment['trang_thai'] ?? '') === 'THANH_CONG') ? 'hidden' : '' ?>>
 
         <div class="stryke-checkout-grid">
             <!-- ================= CỘT TRÁI: PHƯƠNG THỨC THANH TOÁN & TẢI ẢNH ================= -->
@@ -376,10 +260,10 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
 
                         <!-- Nút Sao chép & Tải ảnh -->
                         <div class="stryke-bank-actions">
-                            <button type="button" class="stryke-action-btn" data-copy-text="<?= e($bankAccount['so_tai_khoan']) ?>" title="Sao chép số tài khoản">
+                            <button type="button" class="stryke-bank-icon-btn" data-copy-text="<?= e($bankAccount['so_tai_khoan']) ?>" title="Sao chép số tài khoản">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                             </button>
-                            <a href="<?= e(url('/payment/qr') . '&booking_id=' . (int) $booking['ma_dat_san'] . '&ref=' . e($payment['ma_tham_chieu'] ?? '')) ?>" download="VietQR_DonHang_<?= e($booking['ma_dat_san']) ?>.png" target="_blank" class="stryke-action-btn" title="Tải ảnh mã QR">
+                            <a href="<?= e(url('/payment/qr') . '&booking_id=' . (int) $booking['ma_dat_san'] . '&download=1') ?>" data-download-qr class="stryke-bank-icon-btn" title="Tải ảnh mã QR" aria-label="Tải ảnh mã QR">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             </a>
                         </div>
@@ -524,12 +408,12 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
     <?php if (!$isReconcileState): ?>
         <div class="stryke-expired-center-box"
              data-payment-expired
-             <?= (!empty($receiptSubmitted) || ($booking['trang_thai_dat_san'] !== 'HET_HAN' && $booking['trang_thai_dat_san'] !== 'DA_HUY')) ? 'hidden' : '' ?>>
-            <div class="stryke-expired-icon-wrap">⏰</div>
+             <?= !$isExpiredOrCanceled ? 'hidden' : '' ?>>
+            <div class="stryke-expired-icon-wrap" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="18"/><path d="M24 13v12l8 5M24 6v3M6 24h3m30 0h3M24 39v3"/></svg></div>
             <h3 class="stryke-expired-title">Đã hết thời gian giữ sân</h3>
             <p class="stryke-expired-desc">
-                Thời hạn giữ chỗ 6 phút cho đơn đặt sân #<?= e($booking['ma_dat_san']) ?> đã kết thúc.<br>
-                Đơn hàng đã được tự động <strong>HỦY</strong> và khung giờ này đã được giải phóng để người khác có thể đặt.
+                Thời gian giữ chỗ cho đơn <strong>#<?= e($booking['ma_dat_san']) ?></strong> đã kết thúc.<br>
+                Khung giờ đã được giải phóng. Bạn có thể chọn lại lịch sân phù hợp để tiếp tục.
             </p>
             <div class="stryke-expired-btns">
                 <a href="<?= e(url('/')) ?>" class="stryke-btn-go-home">
@@ -545,21 +429,24 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
     <!-- THANH ĐIỀU HƯỚNG CỐ ĐỊNH Ở ĐÁY (STICKY BOTTOM BAR) -->
     <div class="stryke-bottom-bar"
          data-payment-pending
-         <?= ($booking['trang_thai_dat_san'] !== 'CHO_THANH_TOAN' || !empty($receiptSubmitted) || $isReconcileState) ? 'hidden' : '' ?>>
+         <?= ($booking['trang_thai_dat_san'] !== 'CHO_THANH_TOAN' || !empty($receiptSubmitted) || $isReconcileState || ($payment['trang_thai'] ?? '') === 'THANH_CONG') ? 'hidden' : '' ?>>
         <div class="stryke-bottom-inner">
-            <div class="stryke-bottom-total-row">
-                <span class="stryke-bottom-label">Thanh toán: <span class="stryke-bottom-desc">Tiền sân</span></span>
-                <div class="stryke-bottom-amount">
-                    <span class="stryke-total-label">Tổng : </span>
-                    <strong class="stryke-total-val"><?= e(Money::display($payment['so_tien'] ?? $booking['tong_tien_tam_tinh'])) ?></strong>
-                </div>
-            </div>
             <form id="booking-payment-retry" action="<?= e(url('/booking/payment')) ?>" method="post" hidden>
                 <?= csrf_field() ?><input type="hidden" name="id" value="<?= e($booking['ma_dat_san']) ?>">
             </form>
-            <button type="submit" form="form-submit-receipt" class="stryke-btn-continue" data-submit-payment <?= $payment && $payment['trang_thai'] !== 'CHO_THANH_TOAN' ? 'disabled' : '' ?>>
-                Xác nhận đã chuyển khoản &amp; Gửi ảnh biên lai ↗
-            </button>
+            <?php
+                $buttonText = 'XÁC NHẬN ĐÃ CHUYỂN KHOẢN';
+                $buttonType = 'submit';
+                $buttonDisabled = $payment && $payment['trang_thai'] !== 'CHO_THANH_TOAN';
+                $buttonClass = 'stryke-payment-submit';
+
+                $buttonAttributes = [
+                    'form' => 'form-submit-receipt',
+                    'data-submit-payment' => true,
+                ];
+
+                require dirname(__DIR__) . '/components/action-button.php';
+            ?>
         </div>
     </div>
 
@@ -581,20 +468,5 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
             </div>
         </div>
     <?php endif; ?>
-
-    <!-- THÔNG BÁO XÁC NHẬN THÀNH CÔNG -->
-    <div class="stryke-success-banner"
-         data-payment-success
-         <?= ($isReconcileState || ($booking['trang_thai_dat_san'] !== 'DA_XAC_NHAN' && $booking['trang_thai_dat_san'] !== 'HOAN_THANH')) ? 'hidden' : '' ?>>
-        <div class="stryke-success-icon">✓</div>
-        <h3>Thanh toán &amp; Xác nhận thành công!</h3>
-        <p>Đơn đặt sân #<?= e($booking['ma_dat_san']) ?> đã được xác nhận. Chúc bạn có những trận đấu thể thao tuyệt vời!</p>
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 14px;">
-            <a href="<?= e(url('/invoices/show') . '&booking_id=' . (int) $booking['ma_dat_san']) ?>" class="stryke-btn-view-acc" style="background: #22c55e; color: #000; font-weight: 700;">
-                🧾 Xem hóa đơn thanh toán ↗
-            </a>
-            <a href="<?= e(url('/account')) ?>" class="stryke-btn-view-acc">Xem chi tiết lịch đặt sân</a>
-        </div>
-    </div>
 
 </section>

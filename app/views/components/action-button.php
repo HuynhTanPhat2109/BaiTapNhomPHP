@@ -26,8 +26,15 @@ $attributes = '';
 foreach ($buttonAttributes as $name => $value) {
     // Chỉ cho phép các thuộc tính cần thiết
     if (!in_array($name, [
-        'formaction', 'formmethod', 'name', 'value',
-        'id', 'data-confirm-booking', 'aria-label'
+        'form',
+        'formaction',
+        'formmethod',
+        'name',
+        'value',
+        'id',
+        'data-confirm-booking',
+        'data-submit-payment',
+        'aria-label'
     ], true)) {
         continue;
     }

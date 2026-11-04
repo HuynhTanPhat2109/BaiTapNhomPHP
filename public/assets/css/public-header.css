@@ -1,0 +1,166 @@
+/* Public navigation only. Brand and account controls retain their existing styles. */
+.navbar.stryke-header {
+  position: relative;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.stryke-header .navbar__inner {
+  width: min(1680px, calc(100% - 64px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 20px;
+  min-height: 88px;
+}
+.stryke-header .navbar__brand { grid-column: 1; justify-self: start; }
+.stryke-header .navbar__links,
+.stryke-header__menu-content { display: contents; }
+.stryke-header__primary {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+/* ==========================================
+   STRYKE - GLASS NAVIGATION HOVER
+========================================== */
+
+.stryke-header__primary > a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+
+    min-height: 44px;
+    padding: 10px 15px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+
+    background: transparent;
+    box-shadow: none;
+    color: #eeefe6;
+
+    text-decoration: none;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 600;
+
+    transform: translateY(0);
+
+    transition:
+        transform 240ms cubic-bezier(.2, .8, .2, 1),
+        background-color 240ms ease,
+        border-color 240ms ease,
+        box-shadow 240ms ease,
+        color 240ms ease;
+}
+
+.stryke-header__primary > a::before,
+.stryke-header__primary > a::after {
+    content: none;
+}
+
+.stryke-header__primary svg {
+    width: 21px;
+    height: 21px;
+    flex: 0 0 21px;
+
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+
+    opacity: .85;
+
+    transition:
+        color 240ms ease,
+        opacity 240ms ease;
+}
+
+/* Hiệu ứng khi rê chuột */
+@media (hover: hover) {
+    .stryke-header__primary > a:hover {
+        transform: translateY(-4px);
+
+        background: rgba(70, 119, 72, .24);
+        border-color: rgba(200, 243, 107, .22);
+
+        box-shadow:
+            0 8px 24px rgba(0, 0, 0, .16),
+            inset 0 1px 0 rgba(255, 255, 255, .07);
+
+        color: #ffffff;
+
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+    }
+
+    .stryke-header__primary > a:hover svg {
+        color: #c8f36b;
+        opacity: 1;
+    }
+}
+
+/* Hiệu ứng nhấn */
+.stryke-header__primary > a:active {
+    transform: translateY(-1px) scale(.98);
+}
+
+/* Hỗ trợ bàn phím */
+.stryke-header__primary > a:focus-visible {
+    outline: 2px solid #c8f36b;
+    outline-offset: 3px;
+}
+.stryke-header__primary > a:active { transform: scale(.98); }
+.stryke-header__primary > a:focus-visible { outline: 2px solid #c8f36b; outline-offset: 2px; }
+.stryke-header__account {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+@media (min-width: 1101px) and (max-width: 1350px) {
+  .stryke-header .navbar__inner { width: calc(100% - 40px); gap: 12px; }
+  .stryke-header__primary { gap: 0; }
+  .stryke-header__primary > a { padding-inline: 10px; gap: 7px; font-size: 13px; }
+  .stryke-header__account { gap: 12px; }
+  .stryke-header__account .account-menu__name { max-width: 100px; }
+}
+@media (max-width: 1100px) {
+  .stryke-header .navbar__inner { width: calc(100% - 40px); grid-template-columns: 1fr auto; gap: 0; min-height: 76px; padding-block: 0; }
+  .stryke-header .navbar__brand { grid-row: 1; min-height: 76px; }
+  .stryke-header .navbar__toggle { grid-column: 2; grid-row: 1; justify-self: end; }
+  .nav-enhanced .stryke-header .navbar__toggle { display: block; }
+  .stryke-header .navbar__links { display: grid; grid-column: 1 / -1; grid-template-rows: 1fr; width: 100%; padding-block: 0; gap: 0; }
+  .stryke-header__menu-content { display: flex; flex-direction: column; min-height: 0; gap: 12px; padding-bottom: 18px; }
+  .stryke-header__primary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .stryke-header__primary > a { justify-content: flex-start; padding-inline: 14px; }
+  .stryke-header__account { justify-self: stretch; flex-wrap: wrap; gap: 16px; padding: 4px 14px 0; }
+  .stryke-header__account .nav-divider { display: none; }
+  .stryke-header .account-menu__panel { position: static; margin-top: 10px; }
+  .nav-enhanced .stryke-header .navbar__links {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    transition: grid-template-rows 200ms ease, opacity 180ms ease, visibility 200ms;
+  }
+  .nav-enhanced .stryke-header__menu-content { overflow: hidden; padding-bottom: 0; }
+  .nav-enhanced .stryke-header .navbar__links.is-open { grid-template-rows: 1fr; opacity: 1; visibility: visible; }
+  .nav-enhanced .stryke-header .navbar__links.is-open .stryke-header__menu-content { padding-bottom: 18px; }
+}
+@media (max-width: 380px) {
+  .stryke-header .navbar__inner { width: calc(100% - 24px); }
+  .stryke-header__primary { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stryke-header__primary > a,
+  .stryke-header__primary svg,
+  .nav-enhanced .stryke-header .navbar__links { transition: none; }
+  .stryke-header__primary > a:hover svg,
+  .stryke-header__primary > a:active { transform: none; }
+}

@@ -9,6 +9,7 @@ $router->get('/courts/prices', [$courtBrowser, 'prices']);
 $booking = new App\Controllers\BookingController($app);
 $bookingHistory = new App\Controllers\BookingHistoryController($app);
 $router->get('/booking/history', [$bookingHistory, 'index'], [new App\Middleware\RoleMiddleware($app, ['KHACH_HANG'])]);
+$router->get('/booking/history/receipt', [$bookingHistory, 'receipt'], [new App\Middleware\RoleMiddleware($app, ['KHACH_HANG'])]);
 $router->post('/booking/quote', [$booking, 'quote']);
 $router->post('/booking/start', [$booking, 'start']);
 $router->get('/booking/details', [$booking, 'details']);

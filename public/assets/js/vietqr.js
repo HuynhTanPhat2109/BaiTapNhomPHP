@@ -6,6 +6,57 @@
 (() => {
     'use strict';
 
+    document.querySelector('[data-download-qr]')?.addEventListener('click', async event => {
+        event.preventDefault();
+        const button = event.currentTarget;
+        if (button.getAttribute('aria-busy') === 'true') return;
+        button.setAttribute('aria-busy', 'true');
+        try {
+            const response = await fetch(button.href, {credentials:'same-origin', redirect:'error', cache:'no-store'});
+            const type = (response.headers.get('Content-Type') || '').split(';')[0];
+            const extension = {'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/svg+xml':'png'}[type];
+            if (!response.ok || !extension) throw new Error('Invalid QR response');
+            let blob = await response.blob();
+            if (!blob.size) throw new Error('Empty QR');
+            if (type === 'image/svg+xml') {
+                // Render the exact provider image, not a newly generated QR.
+                // data: images are already allowed by the site's CSP; blob: images are not.
+                const source = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+                const image = new Image();
+                image.src = source;
+                await image.decode();
+                if (!image.naturalWidth || !image.naturalHeight) throw new Error('Invalid SVG size');
+                const canvas = document.createElement('canvas');
+                canvas.width = image.naturalWidth;
+                canvas.height = image.naturalHeight;
+                canvas.getContext('2d').drawImage(image, 0, 0);
+                blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                if (!blob?.size) throw new Error('PNG conversion failed');
+            } else {
+                const bitmap = await createImageBitmap(blob);
+                bitmap.close();
+            }
+            const fileUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const bookingId = new URL(button.href).searchParams.get('booking_id');
+            link.href = fileUrl;
+            link.download = 'VietQR_DonHang_' + bookingId + '.' + extension;
+            document.body.append(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(fileUrl), 60000);
+        } catch {
+            showToast('Không thể tải ảnh mã QR. Vui lòng kiểm tra phiên đăng nhập, thời hạn thanh toán và thử lại.');
+        } finally {
+            button.removeAttribute('aria-busy');
+        }
+    });
+
     // 1. SAO CHÉP VĂN BẢN VÀO CLIPBOARD
     document.addEventListener('click', (event) => {
         const button = event.target.closest('[data-copy-text]');
@@ -19,9 +70,7 @@
             : new Promise((resolve, reject) => {
                 const tempInput = document.createElement('textarea');
                 tempInput.value = text;
-                tempInput.style.position = 'fixed';
-                tempInput.style.left = '-9999px';
-                tempInput.style.top = '-9999px';
+                tempInput.className = 'stryke-clipboard-temp';
                 document.body.appendChild(tempInput);
                 tempInput.focus();
                 tempInput.select();
@@ -63,18 +112,24 @@
 
     if (fileInput && dropzone) {
         function handleFile(file) {
-            if (!file) return;
+            if (!file) return false;
 
-            // Kiểm tra định dạng ảnh
-            if (!file.type.match(/^image\/(png|jpe?g)$/i)) {
-                showToast('Chỉ chấp nhận file ảnh PNG hoặc JPG.');
-                return;
+            const allowedTypes = [
+                'image/png',
+                'image/jpeg',
+                'image/webp'
+            ];
+
+            if (!allowedTypes.includes(file.type)) {
+                showToast('Chỉ chấp nhận ảnh PNG, JPG hoặc WebP.');
+                fileInput.value = '';
+                return false;
             }
 
-            // Kiểm tra dung lượng (tối đa 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 showToast('Dung lượng ảnh không được vượt quá 5MB.');
-                return;
+                fileInput.value = '';
+                return false;
             }
 
             const reader = new FileReader();
@@ -90,6 +145,7 @@
                 showToast('Ảnh chỉ được xem trước trên thiết bị, chưa gửi lên hệ thống.');
             };
             reader.readAsDataURL(file);
+            return true;
         }
 
         fileInput.addEventListener('change', () => {
@@ -160,30 +216,92 @@
         }
     });
 
-    // 5. NÚT TIẾP TỤC THANH TOÁN (TH1: BẮT BUỘC CHỌN ẢNH BIÊN LAI MỚI ĐƯỢC XÁC NHẬN)
+    // 5. XÁC NHẬN ĐÃ CHUYỂN KHOẢN
     const submitBtn = document.querySelector('[data-submit-payment]');
     const receiptForm = document.getElementById('form-submit-receipt');
 
-    if (submitBtn) {
+    if (submitBtn && receiptForm) {
+        let isSubmitting = false;
+
         submitBtn.addEventListener('click', (e) => {
-            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            if (isSubmitting) {
                 e.preventDefault();
-                showToast('Vui lòng chọn ảnh chụp biên lai chuyển khoản trước khi bấm xác nhận.');
-                if (dropzone) {
-                    dropzone.style.borderColor = '#ef4444';
-                    dropzone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    setTimeout(() => { dropzone.style.borderColor = ''; }, 2500);
-                }
-                return false;
+                return;
             }
-            if (receiptForm) {
+
+            const file = fileInput?.files?.[0];
+
+            if (!file) {
+                e.preventDefault();
+
+                showToast(
+                    'Vui lòng chọn ảnh chụp biên lai chuyển khoản trước khi bấm xác nhận.'
+                );
+
+                if (dropzone) {
+                    dropzone.classList.add('is-invalid');
+                    dropzone.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+
+                    setTimeout(() => {
+                        dropzone.classList.remove('is-invalid');
+                    }, 2500);
+                }
+
+                return;
+            }
+
+            const allowedTypes = [
+                'image/png',
+                'image/jpeg',
+                'image/webp'
+            ];
+
+            if (!allowedTypes.includes(file.type) ||
+                file.size > 5 * 1024 * 1024) {
+                e.preventDefault();
+                showToast('Ảnh biên lai không hợp lệ hoặc vượt quá 5MB.');
+            }
+        });
+
+        receiptForm.addEventListener('submit', (e) => {
+            if (isSubmitting) {
+                e.preventDefault();
+                return;
+            }
+
+            isSubmitting = true;
+
+            const textEl = submitBtn.querySelector(
+                '.stryke-action-btn__text'
+            );
+
+            if (textEl) {
+                textEl.textContent = 'ĐANG TẢI ẢNH BIÊN LAI LÊN...';
+            }
+
+            // Khóa nút sau khi trình duyệt xử lý submit.
+            setTimeout(() => {
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Đang tải ảnh biên lai lên...';
-                receiptForm.submit();
+            }, 0);
+        });
+
+        window.addEventListener('pageshow', () => {
+            isSubmitting = false;
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+
+                const textEl = submitBtn.querySelector('.stryke-action-btn__text');
+
+                if (textEl) {
+                    textEl.textContent = 'XÁC NHẬN ĐÃ CHUYỂN KHOẢN';
+                }
             }
         });
     }
-
     // 6. TOAST TIỆN ÍCH
     function showToast(message) {
         const existing = document.querySelector('.stryke-toast');
@@ -195,96 +313,9 @@
         document.body.appendChild(toast);
 
         setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.3s ease';
+            toast.classList.add('is-hiding');
             setTimeout(() => toast.remove(), 300);
         }, 3000);
     }
 
-    // 7. KIỂM TRA HẾT GIỜ ĐỂ TỰ ĐỘNG HỦY VÀ HIỂN THỊ NÚT QUAY LẠI TRANG CHỦ (TH2)
-    const expiredCard = document.querySelector('[data-payment-expired]');
-    const bottomBar = document.querySelector('.stryke-bottom-bar');
-    const counterEl = document.querySelector('[data-countdown]');
-    const waitMsgEl = document.querySelector('[data-wait-message]');
-    const waitingRoot = document.querySelector('[data-booking-wait]');
-    let expiredInterval = null;
-    let autoExpireSent = false;
-
-    function checkExpiredState() {
-        if (!expiredCard) {
-            if (expiredInterval) { clearInterval(expiredInterval); expiredInterval = null; }
-            return;
-        }
-
-        const successCard = document.querySelector('[data-payment-success]');
-        if (successCard && !successCard.hidden) {
-            if (expiredInterval) { clearInterval(expiredInterval); expiredInterval = null; }
-            return;
-        }
-
-        const receiptWaitingCard = document.querySelector('[data-receipt-waiting]');
-        if (receiptWaitingCard && !receiptWaitingCard.hidden) {
-            if (expiredInterval) { clearInterval(expiredInterval); expiredInterval = null; }
-            return;
-        }
-
-        const timeText = counterEl ? counterEl.textContent.trim() : '';
-        const msgText = (waitMsgEl ? waitMsgEl.textContent : '').toLowerCase();
-
-        const isTimeUp = (timeText === '00:00' || timeText === '0:00');
-        const isExpiredState = msgText.includes('hết') || msgText.includes('hủy');
-
-        if (isTimeUp || isExpiredState) {
-            expiredCard.hidden = false;
-            if (bottomBar) bottomBar.hidden = true;
-
-            // TH2: Tự động gửi request cập nhật Database sang trạng thái HỦY ngay lập tức
-            if (!autoExpireSent && waitingRoot && waitingRoot.dataset.bookingId && waitingRoot.dataset.receiptSubmitted !== '1') {
-                autoExpireSent = true;
-                const fd = new FormData();
-                fd.append('id', waitingRoot.dataset.bookingId);
-                fetch(waitingRoot.dataset.expireUrl || '/booking/expire', {
-                    method: 'POST',
-                    body: fd,
-                    headers: { 'Accept': 'application/json' }
-                }).catch(() => {});
-            }
-
-            // Chuyển nút quay lại ở header thành link điều hướng trực tiếp nếu đang là form hủy
-            const cancelFormEl = document.querySelector('form[data-booking-cancel]');
-            if (cancelFormEl) {
-                const backUrl = document.querySelector('[data-booking-navigation]')?.dataset.backUrl || '/';
-                const link = document.createElement('a');
-                link.className = 'court-flow-back';
-                link.href = backUrl;
-                link.setAttribute('aria-label', 'Về lịch sân');
-                link.innerHTML = cancelFormEl.querySelector('button')?.innerHTML || '';
-                cancelFormEl.replaceWith(link);
-            }
-
-            if (expiredInterval) {
-                clearInterval(expiredInterval);
-                expiredInterval = null;
-            }
-        }
-    }
-
-    // Điều hướng tức thì khi bấm nút quay lại trang chủ hoặc chọn lại khung giờ
-    document.addEventListener('click', (event) => {
-        const goHomeBtn = event.target.closest('.stryke-btn-go-home');
-        if (goHomeBtn) {
-            event.preventDefault();
-            location.href = goHomeBtn.href;
-            return;
-        }
-        const reselectBtn = event.target.closest('.stryke-btn-reselect');
-        if (reselectBtn) {
-            event.preventDefault();
-            location.href = reselectBtn.href;
-            return;
-        }
-    });
-
-    checkExpiredState();
-    expiredInterval = setInterval(checkExpiredState, 500);
 })();
