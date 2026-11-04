@@ -11,7 +11,7 @@ $roleRoot = match ($scope['role'] ?? '') {
     default => ['/admin', 'Quản trị'],
 };
 ?>
-<section class="container catalog-page catalog-workspace admin-list">
+<section class="container catalog-page catalog-workspace admin-list invoice-list">
     <nav class="catalog-nav" aria-label="Điều hướng quản lý hóa đơn">
         <a href="<?= e(url($roleRoot[0])) ?>"><?= e($roleRoot[1]) ?></a>
         <span aria-hidden="true">/</span>
@@ -109,72 +109,71 @@ $roleRoot = match ($scope['role'] ?? '') {
     </form>
 
     <!-- BẢNG DANH SÁCH HÓA ĐƠN -->
-    <div class="catalog-table-wrap" tabindex="0" role="region" aria-label="Danh sách hóa đơn" style="background: var(--surface, #fff); border: 1px solid var(--border, #e0e0e0); border-radius: 8px; overflow-x: auto;">
-        <table class="catalog-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+    <div class="catalog-table-wrap" tabindex="0" role="region" aria-label="Danh sách hóa đơn">
+        <table class="catalog-table">
+            <colgroup><col class="invoice-col-stt"><col class="invoice-col-code"><col class="invoice-col-booking"><col><col><col><col><col class="invoice-col-date"><col class="invoice-col-status"><col class="invoice-col-actions"></colgroup>
             <thead>
-                <tr style="border-bottom: 2px solid var(--border, #e0e0e0); background: #f8faf9;">
-                    <th class="list-stt" scope="col" style="padding: 12px 14px;">STT</th>
-                    <th scope="col" style="padding: 12px 14px;">Số HĐ / Mã HĐ</th>
-                    <th scope="col" style="padding: 12px 14px;">Mã Booking</th>
-                    <th scope="col" style="padding: 12px 14px;">Khách hàng</th>
-                    <th scope="col" style="padding: 12px 14px;">Cơ sở thể thao</th>
-                    <th scope="col" style="padding: 12px 14px;">Tiền sân / Dịch vụ</th>
-                    <th scope="col" style="padding: 12px 14px;">Tổng tiền</th>
-                    <th scope="col" style="padding: 12px 14px;">Ngày lập</th>
-                    <th scope="col" style="padding: 12px 14px;">Trạng thái</th>
-                    <th scope="col" style="padding: 12px 14px; text-align: center;">Thao tác</th>
+                <tr>
+                    <th class="list-stt" scope="col">STT</th>
+                    <th scope="col">Số HĐ / Mã HĐ</th>
+                    <th scope="col">Mã Booking</th>
+                    <th scope="col">Khách hàng</th>
+                    <th scope="col">Cơ sở thể thao</th>
+                    <th scope="col">Tiền sân / Dịch vụ</th>
+                    <th scope="col">Tổng tiền</th>
+                    <th scope="col">Ngày lập</th>
+                    <th scope="col">Trạng thái</th>
+                    <th scope="col">Thao tác</th>
                 </tr>
             </thead>
             <tbody>
             <?php foreach ($items as $index => $row): ?>
                 <?php
                 $stt = ($page - 1) * $per_page + $index + 1;
-                $isDaLap = ($row['trang_thai'] ?? '') === 'DA_LAP';
-                $statusColor = $isDaLap ? 'background: #e6f4ea; color: #137333;' : 'background: #fce8e6; color: #c5221f;';
                 ?>
-                <tr style="border-bottom: 1px solid var(--border, #f0f0f0);">
-                    <td class="list-stt" style="padding: 12px 14px; color: #666;"><?= $stt ?></td>
-                    <td style="padding: 12px 14px;">
-                        <strong style="color: #1a73e8; font-family: monospace; font-size: 0.95rem; display: block;">
+                <tr>
+                    <td class="list-stt" data-label="STT"><?= $stt ?></td>
+                    <th scope="row" class="invoice-code">
+                        <strong class="invoice-number">
                             <?= e($row['so_hoa_don'] ?: ('HD' . str_pad($row['ma_hoa_don'], 6, '0', STR_PAD_LEFT))) ?>
                         </strong>
-                        <span style="font-size: 0.78rem; color: #888;">ID: #<?= (int) $row['ma_hoa_don'] ?></span>
-                    </td>
-                    <td style="padding: 12px 14px;">
-                        <a href="<?= e(url('/admin/bookings/show') . '&id=' . $row['ma_dat_san']) ?>" style="font-weight: 600; color: #333; text-decoration: underline;" title="Xem chi tiết đơn booking">
+                        <small class="workspace-secondary">ID: #<?= (int) $row['ma_hoa_don'] ?></small>
+                    </th>
+                    <td data-label="Mã Booking">
+                        <a href="<?= e(url('/admin/bookings/show') . '&id=' . $row['ma_dat_san']) ?>" title="Xem chi tiết đơn booking">
                             #<?= (int) $row['ma_dat_san'] ?> ↗
                         </a>
                     </td>
-                    <td style="padding: 12px 14px;">
-                        <div style="font-weight: 600;"><?= e($row['ten_khach_hang']) ?></div>
-                        <div style="font-size: 0.8rem; color: #666;"><?= e($row['sdt_khach_hang']) ?></div>
+                    <td data-label="Khách hàng">
+                        <div><?= e($row['ten_khach_hang']) ?></div>
+                        <small class="workspace-secondary"><?= e($row['sdt_khach_hang']) ?></small>
                     </td>
-                    <td style="padding: 12px 14px;">
-                        <span style="font-weight: 500;"><?= e($row['ten_co_so']) ?></span>
+                    <td data-label="Cơ sở thể thao">
+                        <span><?= e($row['ten_co_so']) ?></span>
                     </td>
-                    <td style="padding: 12px 14px; font-size: 0.85rem; color: #555;">
+                    <td class="invoice-amounts" data-label="Tiền sân / Dịch vụ">
                         <div>Sân: <?= number_format((float) $row['tien_san'], 0, ',', '.') ?> đ</div>
                         <div>DV: <?= number_format((float) $row['tien_dich_vu'], 0, ',', '.') ?> đ</div>
                     </td>
-                    <td style="padding: 12px 14px; font-weight: 700; color: #0f5132; font-size: 0.95rem;">
+                    <td class="invoice-total" data-label="Tổng tiền">
                         <?= number_format((float) $row['tong_tien'], 0, ',', '.') ?> đ
                     </td>
-                    <td style="padding: 12px 14px; font-size: 0.85rem; color: #444;">
-                        <div><?= e(date('d/m/Y', strtotime($row['ngay_lap']))) ?></div>
-                        <div style="font-size: 0.78rem; color: #888;"><?= e(date('H:i:s', strtotime($row['ngay_lap']))) ?></div>
+                    <td data-label="Ngày lập">
+                        <div class="invoice-date"><?= e(date('d/m/Y', strtotime($row['ngay_lap']))) ?></div>
+                        <small class="workspace-secondary"><?= e(date('H:i:s', strtotime($row['ngay_lap']))) ?></small>
                     </td>
-                    <td style="padding: 12px 14px;">
-                        <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; <?= $statusColor ?>">
+                    <td data-label="Trạng thái">
+                        <span class="catalog-status<?= $row['trang_thai'] === 'HUY' ? ' invoice-status--cancelled' : '' ?>">
                             <?= e($statusLabels[$row['trang_thai']] ?? $row['trang_thai']) ?>
                         </span>
                     </td>
-                    <td style="padding: 12px 14px; text-align: center; white-space: nowrap;">
-                        <div style="display: inline-flex; gap: 6px; align-items: center;">
-                            <a class="btn btn--outline" href="<?= e(url('/admin/invoices/show') . '&id=' . $row['ma_hoa_don']) ?>" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none;" title="Xem chi tiết hóa đơn">
-                                Chi tiết ↗
+                    <td data-label="Thao tác">
+                        <div class="invoice-actions" role="group" aria-label="Thao tác hóa đơn #<?= (int) $row['ma_hoa_don'] ?>">
+                            <a class="btn btn--outline" href="<?= e(url('/admin/invoices/show') . '&id=' . $row['ma_hoa_don']) ?>" title="Xem chi tiết hóa đơn">
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h5"/></svg>Chi tiết
                             </a>
-                            <a class="btn btn--primary" href="<?= e(url('/admin/invoices/print') . '&id=' . $row['ma_hoa_don']) ?>" target="_blank" rel="noopener" style="padding: 6px 10px; font-size: 0.85rem; font-weight: 700; text-decoration: none;" title="Mở trang in hóa đơn trong tab mới">
-                                🖨 In
+                            <a class="btn btn--primary" href="<?= e(url('/admin/invoices/print') . '&id=' . $row['ma_hoa_don']) ?>" target="_blank" rel="noopener" title="Mở trang in hóa đơn trong tab mới">
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7zM16 11h1"/></svg>In
                             </a>
                         </div>
                     </td>
@@ -183,7 +182,7 @@ $roleRoot = match ($scope['role'] ?? '') {
 
             <?php if (!$items): ?>
                 <tr>
-                    <td colspan="10" style="padding: 30px; text-align: center; color: #666;">
+                    <td colspan="10">
                         Không tìm thấy hóa đơn nào phù hợp với bộ lọc hiện tại.
                     </td>
                 </tr>

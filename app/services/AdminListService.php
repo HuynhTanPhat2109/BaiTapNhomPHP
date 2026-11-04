@@ -14,7 +14,7 @@ final class AdminListService
         [$links, $options] = match ($path) {
             '/admin/companies' => [[], ['trang_thai' => ['HOAT_DONG', 'NGUNG_HOAT_DONG']]],
             '/admin/contracts' => [['ma_cong_ty'], ['trang_thai' => ['HIEU_LUC', 'HET_HAN', 'CHAM_DUT']]],
-            '/admin/employees' => [['ma_cong_ty'], ['trang_thai' => ['DANG_LAM', 'DA_NGHI'], 'vai_tro' => ['QUAN_LY_CONG_TY']]],
+            '/admin/employees' => [['ma_cong_ty'], ['trang_thai' => ['DANG_LAM', 'DA_NGHI'], 'vai_tro' => ['QUAN_TRI_TAP_DOAN', 'QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO', 'NHAN_VIEN']]],
             '/company/employees' => [['ma_co_so'], ['trang_thai' => ['DANG_LAM', 'DA_NGHI'], 'vai_tro' => ['QUAN_LY_CO_SO', 'NHAN_VIEN']]],
             default => throw new \LogicException('Unknown management list'),
         };

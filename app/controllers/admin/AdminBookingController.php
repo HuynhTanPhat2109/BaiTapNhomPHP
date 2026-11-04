@@ -3,6 +3,7 @@
 namespace App\Controllers\admin;
 
 use App\Models\AdminBooking;
+use App\Models\CoSo;
 use App\Services\BookingManagementService;
 use App\Services\ValidationException;
 use Core\Application;
@@ -35,12 +36,21 @@ final class AdminBookingController extends Controller
         $filters = $this->service->validateFilters($_GET, $scope);
 
         $facilities = $this->model->facilities($scope);
-        $courts = !empty($filters['facility_id']) ? $this->model->courtsByFacility((int) $filters['facility_id']) : [];
+        if (!empty($filters['facility_id']) && $scope['company'] !== null) {
+            $facility = (new CoSo($this->app->pdo()))->find((int) $filters['facility_id']);
+            if (!$facility || (int) $facility['ma_cong_ty'] !== $scope['company']) {
+                throw new HttpException(403, 'Cơ sở nằm ngoài phạm vi công ty của bạn.');
+            }
+        }
+        $courts = !empty($filters['facility_id']) ? $this->model->courtsByFacility((int) $filters['facility_id'], $scope) : [];
 
         $data = $this->model->page($filters, $scope);
 
         $notice = $_SESSION['booking_notice'] ?? null;
         $error = $_SESSION['booking_error'] ?? null;
+        $validationErrors = $_SESSION['booking_validation_errors'] ?? [];
+        $oldInput = $_SESSION['booking_old'] ?? [];
+        unset($_SESSION['booking_validation_errors'], $_SESSION['booking_old']);
         unset($_SESSION['booking_notice'], $_SESSION['booking_error']);
 
         $this->render('admin/bookings/index', [
@@ -57,6 +67,8 @@ final class AdminBookingController extends Controller
             'per_page' => $data['per_page'],
             'notice' => $notice,
             'error' => $error,
+            'validationErrors' => $validationErrors,
+            'oldInput' => $oldInput,
         ]);
     }
 
@@ -150,7 +162,7 @@ final class AdminBookingController extends Controller
             $_SESSION['booking_error'] = 'Lỗi xử lý xác nhận: ' . $e->getMessage();
         }
 
-        $this->redirect('/admin/bookings/show?id=' . $id);
+        $this->redirectAfterAction($id, $user);
     }
 
     /**
@@ -169,6 +181,7 @@ final class AdminBookingController extends Controller
         }
 
         $actualAmount = trim((string) ($_POST['so_tien_thuc_nhan'] ?? '0'));
+        if ($actualAmount === '') $actualAmount = '0';
         $bankTxnId = trim((string) ($_POST['ma_giao_dich'] ?? ''));
         $reason = trim((string) ($_POST['ly_do_doi_soat'] ?? ''));
 
@@ -189,7 +202,7 @@ final class AdminBookingController extends Controller
             $_SESSION['booking_error'] = 'Lỗi xử lý đối soát: ' . $e->getMessage();
         }
 
-        $this->redirect('/admin/bookings/show?id=' . $id);
+        $this->redirectAfterAction($id, $user);
     }
 
     /**
@@ -225,6 +238,16 @@ final class AdminBookingController extends Controller
             $_SESSION['booking_error'] = 'Lỗi xử lý hủy đơn đặt sân: ' . $e->getMessage();
         }
 
+        $this->redirectAfterAction($id, $user);
+    }
+
+    private function redirectAfterAction(int $id, array $user): void
+    {
+        if (($_POST['from_list'] ?? '') === '1') {
+            $query = is_array($_POST['list'] ?? null) ? $_POST['list'] : [];
+            $filters = $this->service->validateFilters($query, BookingManagementService::resolveScope($user));
+            $this->redirect('/admin/bookings?' . http_build_query($filters));
+        }
         $this->redirect('/admin/bookings/show?id=' . $id);
     }
 }

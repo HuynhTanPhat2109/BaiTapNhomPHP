@@ -1,6 +1,6 @@
 <?php
 $bodyClass = 'page-catalog';
-$listPath = '/admin/san';
+$listPath = ($managementRoot ?? '/admin') . '/san';
 $listLabel = 'sân';
 $statusLabels = ['HOAT_DONG' => 'Hoạt động', 'BAO_TRI' => 'Bảo trì', 'TAM_NGUNG' => 'Tạm ngừng'];
 $filterFields = [
@@ -13,7 +13,7 @@ $filterFields = [
 <section class="container catalog-page catalog-workspace admin-list workspace-page">
     <header class="catalog-heading module-heading">
         <div><p class="eyebrow">STRYKE / Sân thể thao</p><h1>Quản lý sân</h1><p class="module-subtitle">Sân thể thao và liên kết cơ sở, loại sân.</p></div>
-        <a class="btn btn--primary" href="<?= e(admin_context_url('/admin/san/create')) ?>">Thêm sân</a>
+        <?php if ($canCreate ?? true): ?><a class="btn btn--primary" href="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/san/create')) ?>">Thêm sân</a><?php endif; ?>
     </header>
     <?php if (!empty($notice)): ?><p class="alert alert--success" role="status"><?= e($notice) ?></p><?php endif; ?>
     <?php require __DIR__ . '/../partials/list-toolbar.php'; ?>
@@ -27,9 +27,9 @@ $filterFields = [
                 <tr>
                     <td class="list-stt" data-label="STT"><?= e(($page - 1) * $filters['per_page'] + $index + 1) ?></td>
                     <th scope="row"><?= e($row['ten_san']) ?></th>
-                    <td data-label="Cơ sở"><a class="admin-table-link" href="<?= e(url('/admin/co-so/show') . '&id=' . $row['ma_co_so']) ?>"><?= e($row['ten_co_so']) ?></a></td>
+                    <td data-label="Cơ sở"><a class="admin-table-link" href="<?= e(url(($managementRoot ?? '/admin') . '/co-so/show') . '&id=' . $row['ma_co_so']) ?>"><?= e($row['ten_co_so']) ?></a></td>
 
-                    <td data-label="Bộ môn / Loại sân"><small class="workspace-secondary"><?= e($row['ten_bo_mon']) ?></small><a class="admin-table-link" href="<?= e(url('/admin/loai-san/show') . '&id=' . $row['ma_loai_san']) ?>"><?= e($row['ten_loai_san']) ?></a></td>
+                    <td data-label="Bộ môn / Loại sân"><small class="workspace-secondary"><?= e($row['ten_bo_mon']) ?></small><?php if ($canDelete ?? true): ?><a class="admin-table-link" href="<?= e(url('/admin/loai-san/show') . '&id=' . $row['ma_loai_san']) ?>"><?= e($row['ten_loai_san']) ?></a><?php else: ?><?= e($row['ten_loai_san']) ?><?php endif; ?></td>
                     <td class="workspace-number" data-label="Trạng thái"><span class="catalog-status" data-status="<?= e($row['trang_thai']) ?>"><?= e(['HOAT_DONG' => 'Hoạt động', 'BAO_TRI' => 'Bảo trì', 'TAM_NGUNG' => 'Tạm ngừng'][$row['trang_thai']]) ?></span></td>
                     <td class="workspace-number" data-label="Thao tác"><?php $recordId = $row['ma_san']; require __DIR__ . '/../partials/list-actions.php'; ?></td>
                 </tr>

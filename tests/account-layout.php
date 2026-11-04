@@ -58,7 +58,10 @@ try {
                 foreach ($xpath->query('//aside[@id="admin-sidebar"]//a[@href]') as $link) {
                     parse_str(parse_url($link->getAttribute('href'), PHP_URL_QUERY) ?? '', $query);
                     $path = $query['route'] ?? '';
-                    checkAccountLayout($path === $home || str_starts_with($path, $home . '/') || str_starts_with($path, '/admin/'), "$role Sidebar stays in own role area");
+                    // The bank list is a shared, role/scope-protected workspace route.
+                    $sharedBank = $path === '/facility/bank' && in_array($role,
+                        ['QUAN_TRI_TAP_DOAN', 'QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO', 'NHAN_VIEN'], true);
+                    checkAccountLayout($path === $home || str_starts_with($path, $home . '/') || str_starts_with($path, '/admin/') || $sharedBank, "$role Sidebar stays in own role area or permitted bank list");
                 }
             }
             $forms = $xpath->query('//main//form[@method="post"]');

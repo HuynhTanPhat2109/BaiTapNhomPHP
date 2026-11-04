@@ -5,12 +5,20 @@
 Service nội bộ: `App\Services\BookingInventoryService::deductForPayment(int $bookingId): array`.
 Chưa được gọi từ checkout, PaymentService, webhook hay route nào. Chưa phải luồng thanh toán
 hoàn chỉnh. Không xác minh giao dịch, đổi trạng thái booking/payment, lập hóa đơn hoặc hoàn kho.
-Không thay đổi schema hoặc code booking của Phát.
+Không thay đổi schema. Cập nhật 04/11/2026: người dùng đã duyệt mở CHO_THUE trong
+BookingService theo cùng hợp đồng giữ ảo/xuất tồn hiện có; không bổ sung giao–nhận/hoàn đồ thuê.
+
+**Cập nhật kiểm tra PR6 (03/11/2026):** đã có xác nhận thủ công trong
+`BookingManagementService::confirmBookingAndPayment()`, tự trừ tồn bằng SQL riêng và lập hóa đơn.
+Luồng này **chưa gọi hook trên**; không thêm hook vào cạnh đoạn trừ tồn hiện tại vì sẽ trừ hai lần.
+Hai regression mới tái hiện việc phục hồi booking đã hủy/hết hạn khi payment cần đối soát.
+Chi tiết bằng chứng, test PASS/FAIL/BLOCKED/NOT RUN và patch chờ Phát/Duy duyệt:
+[báo cáo PR6](pr6-service-inventory-review.md).
 
 Đọc cùng [hợp đồng booking/payment hiện có](booking-payment-contract.md). Duy cần tích hợp
 hook vào đúng một đường xác nhận thanh toán; không được có đường xác nhận khác bỏ qua xuất tồn.
-Hiện chưa có đường xác nhận thành công trong source, nên PR này không thể cưỡng chế yêu cầu
-đó cho code thanh toán chưa được viết hoặc cho thao tác SQL ngoài ứng dụng.
+Đường xác nhận thủ công hiện tại cần được Duy thống nhất lại trước khi thay SQL xuất tồn bằng
+hook. Hợp đồng này không thể cưỡng chế yêu cầu đó đối với code chưa tích hợp hoặc SQL ngoài ứng dụng.
 
 ## A. Snapshot đã được kiểm tra
 
@@ -24,8 +32,8 @@ Hiện chưa có đường xác nhận thành công trong source, nên PR này k
   giá catalog đổi thành 15.000 và đổi tên không đổi snapshot/tổng. Kiểm tra cả sau xác nhận,
   đổi đơn vị hợp lệ sau hoàn tất, và giá 0.
 - `Booking::visit` ở nhánh hiện tại chưa đọc danh sách dịch vụ, trang chờ chưa hiển thị chi tiết
-  snapshot dịch vụ. Đây là khoảng trống đọc/hiển thị, không phải snapshot bị sửa; PR này không
-  sửa giao diện hoặc luồng booking theo phạm vi đã chốt.
+  snapshot dịch vụ. Lịch sử khách hàng (`Booking::history`) và chi tiết Admin đã đọc snapshot.
+  Đây là khoảng trống riêng ở trang chờ, không phải snapshot bị sửa; PR6 không tự sửa luồng của Phát.
 
 ## B. Giữ tồn ảo hiện có
 
@@ -48,8 +56,10 @@ mô phỏng tuần tự; không phải bằng chứng hai transaction MySQL ch�
 - Duy sở hữu cùng PDO/transaction, khóa booking `FOR UPDATE`, kiểm tra pending và còn hạn,
   nhận diện lần xử lý đầu tiên trước khi gọi. Service kiểm tra lại pending/thời hạn và khóa
   dịch vụ theo ID tăng dần; kiểm tra cơ sở, đơn vị và số lượng snapshot hợp lệ.
-- Không hỗ trợ xuất đồ thuê: checkout hiện cũng không cho đặt CHO_THUE. Dịch vụ ngừng cung cấp
-  sau khi giữ không tự làm đổi snapshot; giá/tên catalog không dùng để xuất tồn.
+- CHO_THUE đã được duyệt dùng cùng cơ chế tồn: có thể chọn trong checkout và xuất số lượng
+  snapshot khi thanh toán, với NULL vẫn là không theo dõi tồn. Không quản lý lịch thuê theo giờ,
+  giao–nhận hoặc tự hoàn lại vợt. Dịch vụ ngừng cung cấp sau khi giữ không tự làm đổi snapshot;
+  giá/tên catalog không dùng để xuất tồn. Hook vẫn chưa nối vào writer thanh toán thực tế.
 - Đọc snapshot số lượng/đơn vị, bỏ qua stock NULL, kiểm tra toàn bộ dòng trước khi ghi.
   Trừ đúng số lượng bằng UPDATE có điều kiện `so_luong_ton IS NOT NULL AND so_luong_ton >= quantity`;
   số dòng ảnh hưởng phải là 1. Tồn 0 không được xuất số lượng dương. Không cập nhật snapshot.
@@ -101,9 +111,11 @@ Không được commit xuất tồn trong khi booking vẫn pending: như vậy 
   deadlock/race bằng MySQL thật trong PR này.
 - NULL/theo dõi tồn chưa có snapshot riêng. Chế độ hiện tại được đọc khi khóa dịch vụ;
   catalog đã chặn đổi chế độ trong lúc có giữ ảo còn hạn. Không dùng Service cho booking đã hết hạn.
-- `Booking::expire` hiện vẫn có thể chuyển paid-but-pending thành HET_HAN; nó bảo toàn payment
-  thành công nhưng không có điều kiện loại booking paid khỏi UPDATE. Không sửa expire ở PR này.
-  Duy phải tránh commit trạng thái trung gian đó và phối hợp Phát xử lý dữ liệu lệch/đối soát.
+- `Booking::expire` hiện đã loại pending có payment THANH_CONG/CAN_DOI_SOAT, khóa booking rồi payment
+  và ghi log đối soát. PR6 kiểm tra trong bộ nhớ: không đổi các hàng bảo vệ, không trừ/cộng tồn.
+  Giữ ảo quá hạn vẫn được giải phóng; không dùng ngoại lệ này làm quyền xác nhận muộn.
+  Frontend hiện còn suy diễn payment thành công thành booking thành công; test polling gốc
+  đang FAIL, cần Phát phối hợp sửa (xem báo cáo PR6).
 
 ## D. Kiểm thử và phần dành PR6
 

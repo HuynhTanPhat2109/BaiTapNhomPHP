@@ -18,6 +18,10 @@ $workspaceHome = ['QUAN_TRI_TAP_DOAN' => '/admin', 'QUAN_LY_CONG_TY' => '/compan
     <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/admin-catalog.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/admin-catalog.css')) ?>">
     <script src="<?= e(base_path() . '/assets/js/app.js?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/js/app.js')) ?>" defer></script>
     <script src="<?= e(base_path() . '/assets/js/admin.js?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/js/admin.js')) ?>" defer></script>
+    <?php if (!empty($dashboardPage)): ?>
+    <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/dashboard.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/dashboard.css')) ?>">
+    <script src="<?= e(base_path() . '/assets/js/dashboard.js?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/js/dashboard.js')) ?>" defer></script>
+    <?php endif; ?>
 </head>
 <body class="page-admin page-catalog <?= e($bodyClass ?? '') ?>">
 <a class="skip-link" href="#main-content">Bỏ qua điều hướng</a>
@@ -71,8 +75,8 @@ $workspaceHome = ['QUAN_TRI_TAP_DOAN' => '/admin', 'QUAN_LY_CONG_TY' => '/compan
             ?>
             <nav class="workspace-breadcrumb" aria-label="Đường dẫn">
                 <a href="<?= e(url($workspaceHome)) ?>"><?= e($workspaceRoleLabel) ?></a>
-                <?php if (str_starts_with($template, 'facility/bank/')): ?><span aria-hidden="true">/</span><a href="<?= e(url('/facility/bank') . '&facility_id=' . (int) $data['facility']['ma_co_so']) ?>">Ngân hàng cơ sở</a><?php endif; ?>
-                <?php if ($workspaceSection && $workspaceSection['route'] !== $workspaceHome): ?><span aria-hidden="true">/</span><a href="<?= e(admin_context_url($workspaceSection['route'])) ?>"><?= e($workspaceSection['label']) ?></a><?php endif; ?>
+                <?php if (str_starts_with($template, 'facility/bank/')): ?><span aria-hidden="true">/</span><a href="<?= e(url('/facility/bank') . (isset($data['facility']['ma_co_so']) ? '&facility_id=' . (int) $data['facility']['ma_co_so'] : '')) ?>">Tài khoản ngân hàng</a><?php endif; ?>
+                <?php if ($workspaceSection && $workspaceSection['route'] !== $workspaceHome && !str_starts_with($template, 'facility/bank/')): ?><span aria-hidden="true">/</span><a href="<?= e(admin_context_url($workspaceSection['route'])) ?>"><?= e($workspaceSection['label']) ?></a><?php endif; ?>
                 <?php if ($workspaceLeafLabel): ?><span aria-hidden="true">/</span><span aria-current="page"><?= e($workspaceLeafLabel) ?></span><?php endif; ?>
             </nav>
             <div class="admin-workspace catalog-workspace admin-catalog"><?= $content /* Trusted templates escape dynamic values. */ ?></div>

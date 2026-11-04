@@ -1,6 +1,6 @@
 <?php
 $bodyClass = 'page-catalog';
-$listPath = '/admin/bang-gia';
+$listPath = ($managementRoot ?? '/admin') . '/bang-gia';
 $listLabel = 'bảng giá';
 $formatPrice = require __DIR__ . '/format-price.php';
 $dayLabels = ['NGAY_THUONG' => 'Ngày thường (T2–T6)', 'CUOI_TUAN' => 'Cuối tuần (T7–CN)'];
@@ -16,7 +16,7 @@ $filterFields = [
 <section class="container catalog-page catalog-workspace admin-list pricing-list data-list data-list--admin workspace-page">
     <header class="catalog-heading module-heading">
         <div class="module-heading__copy"><span class="module-heading__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12V4h8l10 10-8 8L3 12Z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg></span><div><p class="eyebrow">STRYKE / Giá sân thể thao</p><h1>Quản lý bảng giá</h1><p class="module-subtitle">Thiết lập đơn giá theo cơ sở, loại sân và thời gian áp dụng.</p></div></div>
-        <a class="btn btn--primary" href="<?= e(admin_context_url('/admin/bang-gia/create')) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Thêm bảng giá</a>
+        <?php if ($canCreate ?? true): ?><a class="btn btn--primary" href="<?= e(admin_context_url(($managementRoot ?? '/admin') . '/bang-gia/create')) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Thêm bảng giá</a><?php endif; ?>
     </header>
     <?php if ($notice): ?><p class="alert alert--success" role="status"><?= e($notice) ?></p><?php endif; ?>
     <?php require __DIR__ . '/../partials/list-toolbar.php'; ?>
@@ -31,8 +31,8 @@ $filterFields = [
                 <tr>
                     <td class="list-stt" data-label="STT"><?= e(($page - 1) * $filters['per_page'] + $index + 1) ?></td>
                     <th scope="row"><span class="pricing-copy" title="<?= e($row['ten_bang_gia']) ?>"><?= e($row['ten_bang_gia']) ?></span></th>
-                    <td class="data-list-facility cell-text" data-label="Cơ sở"><a class="admin-table-link pricing-copy pricing-facility" title="<?= e($row['ten_co_so']) ?>" href="<?= e(url('/admin/co-so/show') . '&id=' . $row['ma_co_so']) ?>"><?= e($row['ten_co_so']) ?></a></td>
-                    <td class="data-list-name cell-text" data-label="Bộ môn / Loại sân"><a class="admin-table-link pricing-type" title="<?= e($row['ten_bo_mon'] . ' / ' . $row['ten_loai_san']) ?>" href="<?= e(url('/admin/loai-san/show') . '&id=' . $row['ma_loai_san']) ?>"><small><?= e($row['ten_bo_mon']) ?></small><span class="pricing-copy"><?= e($row['ten_loai_san']) ?></span></a></td>
+                    <td class="data-list-facility cell-text" data-label="Cơ sở"><a class="admin-table-link pricing-copy pricing-facility" title="<?= e($row['ten_co_so']) ?>" href="<?= e(url(($managementRoot ?? '/admin') . '/co-so/show') . '&id=' . $row['ma_co_so']) ?>"><?= e($row['ten_co_so']) ?></a></td>
+                    <td class="data-list-name cell-text" data-label="Bộ môn / Loại sân"><?php if ($canDelete ?? true): ?><a class="admin-table-link pricing-type" title="<?= e($row['ten_bo_mon'] . ' / ' . $row['ten_loai_san']) ?>" href="<?= e(url('/admin/loai-san/show') . '&id=' . $row['ma_loai_san']) ?>"><?php endif; ?><small><?= e($row['ten_bo_mon']) ?></small><span class="pricing-copy"><?= e($row['ten_loai_san']) ?></span><?php if ($canDelete ?? true): ?></a><?php endif; ?></td>
                     <td data-label="Loại ngày"><span><?= $row['loai_ngay'] === 'CUOI_TUAN' ? 'Cuối tuần' : 'Ngày thường' ?></span><small class="pricing-secondary"><?= $row['loai_ngay'] === 'CUOI_TUAN' ? '(T7–CN)' : '(T2–T6)' ?></small></td>
                     <td class="pricing-hours" data-label="Khung giờ"><time><?= e(substr($row['gio_bat_dau'], 0, 5)) ?></time> – <time><?= e(substr($row['gio_ket_thuc'], 0, 5)) ?></time></td>
                     <td data-label="Đơn giá"><data class="pricing-money" title="<?= e($formatPrice($row['don_gia'])) ?>" value="<?= e($row['don_gia']) ?>"><?= e($formatPrice($row['don_gia'])) ?></data></td>

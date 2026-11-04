@@ -18,6 +18,7 @@ Core\Session::start();
 
 final class NavigationMemoryPDO extends PDO
 {
+    public array $preparedQueries = [];
     public function __construct()
     {
         parent::__construct('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
@@ -26,6 +27,7 @@ final class NavigationMemoryPDO extends PDO
     }
     public function prepare(string $query, array $options = []): PDOStatement|false
     {
+        $this->preparedQueries[] = $query;
         return parent::prepare(preg_replace('/\s+FOR UPDATE\b/i', '', $query), $options);
     }
     public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
@@ -77,13 +79,18 @@ for ($id = 1; $id <= $count; $id++) {
         'ngay_ky' => '2020-01-01', 'ngay_bat_dau' => ($id % 2 ? '2020' : '2022') . '-01-01', 'ngay_ket_thuc' => '2030-12-31',
         'phi_nhuong_quyen' => '60000.00', 'ty_le_phi' => '5.00', 'trang_thai' => 'HIEU_LUC'];
     foreach ([$id => [2, $id % 2 + 1, null], 1000 + $id => [$id % 2 ? 3 : 4, 1, $id % 2 ? 2 : 4], 2000 + $id => [4, 2, 3]] as $employeeId => [$roleId, $companyId, $facilityId]) {
-        $seed['tai_khoan'][] = ['ma_tai_khoan' => $employeeId, 'ma_vai_tro' => $roleId, 'ten_dang_nhap' => 'memory.' . $employeeId, 'trang_thai' => 'HOAT_DONG'];
+        $seed['tai_khoan'][] = ['ma_tai_khoan' => $employeeId, 'ma_vai_tro' => $roleId, 'ten_dang_nhap' => 'memory.' . $employeeId, 'mat_khau' => 'FIXTURE_SECRET_NEVER_RENDER', 'trang_thai' => 'HOAT_DONG'];
         $seed['nhan_vien'][] = ['ma_nhan_vien' => $employeeId, 'ma_tai_khoan' => $employeeId, 'ma_cong_ty' => $companyId, 'ma_co_so' => $facilityId,
             'ho_ten' => sprintf('UX Employee %03d', $employeeId), 'email' => "ux$employeeId@example.test", 'so_dien_thoai' => sprintf('09%08d', $employeeId),
             'trang_thai' => 'DANG_LAM', 'ngay_vao_lam' => '2020-01-01'];
     }
 }
 $seed['co_so'][2]['ma_cong_ty'] = 2; // Facility 3 belongs to the other company.
+if (getenv('STRYKE_AUTHORIZATION_TEST') === '1') {
+    // Give the authorization suite explicit foreign court/price IDs, in RAM only.
+    $seed['san'][2]['ma_co_so'] = 3;
+    $seed['bang_gia'][2]['ma_co_so'] = 3;
+}
 $seed['nhan_vien'][] = ['ma_nhan_vien' => 9000, 'ma_tai_khoan' => null, 'ma_cong_ty' => 1, 'ma_co_so' => null,
     'ho_ten' => 'UX No account', 'email' => 'noaccount@example.test', 'trang_thai' => 'DANG_LAM'];
 if (($_GET['fixture'] ?? '') === 'reset') unset($_SESSION['_navigation_tables']);
@@ -121,7 +128,9 @@ if (($_GET['fixture'] ?? '') === 'reset') {
 try {
     $navigationRoute = request_path();
     // Fixture exposes only Admin UI routes. No booking, payment or account writes.
-    if (!str_starts_with($navigationRoute, '/admin') && !preg_match('~\A/company/employees(?:/(?:create|edit|update|status))?\z~', $navigationRoute)) throw new Core\HttpException(404, 'Not a navigation test route');
+    if (!str_starts_with($navigationRoute, '/admin')
+        && !preg_match('~\A/company/employees(?:/(?:show|create|edit|update|status))?\z~', $navigationRoute)
+        && !preg_match('~\A/(?:company|facility|staff)/(?:co-so|san|bang-gia)(?:/(?:show|create|store|edit|update|delete|status))?\z~', $navigationRoute)) throw new Core\HttpException(404, 'Not a navigation test route');
     $router = new Core\Router();
     require $root . '/routes/web.php';
     $router->dispatch($_SERVER['REQUEST_METHOD'], $navigationRoute);

@@ -1,5 +1,13 @@
 # Booking → payment handoff
 
+**PR6 audit — 03/11/2026:** this document records the required handoff contract; it is
+not evidence that every newer payment path complies. Manual confirmation now exists in
+`BookingManagementService`, uses inline inventory SQL, and does not call Vũ's inventory hook.
+Receipt upload and `CHO_XAC_NHAN` handling also exist now. The cancelled/expired reconciliation
+regressions and the original paid-but-pending polling assertion are currently failing.
+See [the PR6 review](pr6-service-inventory-review.md) before integrating the hook or changing
+confirmation/expiry rules. No booking/payment implementation or migration was changed by PR6.
+
 PR5 creates pending payment requests using Duy's PaymentService after booking commit.
 It does not verify transfers, confirm paid bookings, deduct stock or create invoices.
 Run database/migrations/20261031_booking_request_key.sql once on an existing database;
@@ -16,7 +24,7 @@ slots + services + note. A retry returns the original booking, including expired
 - inspect(id, customerId): read-only owned view for GET; projects overdue holds as HET_HAN without database writes, except protected THANH_CONG/CAN_DOI_SOAT anomalies.
 - expirePending(): run via `php bin/expire-bookings.php --run` every minute; bounded batches and database-scoped job lock. See [scheduler setup](booking-expiry-scheduler.md).
 - expiryReport(): last bulk run's count/batches, overlap/backlog flags and bounded reconciliation ID sample.
-- Booking::history() / effectiveStatusSql(): shared GET projection for cards, counts, filters and pages; never persist expiry on GET. Admin booking list is not yet implemented and must reuse this rule.
+- Booking::history() / effectiveStatusSql(): shared customer-history GET projection for cards, counts, filters and pages; never persist expiry on GET. Admin lists now use AdminBooking separately; do not assume they already share this projection.
 - lockPayable(id): **requires a caller-owned transaction**, locks booking and rejects anything
   except CHO_THANH_TOAN with expiry strictly after server time. It performs no payment writes.
 

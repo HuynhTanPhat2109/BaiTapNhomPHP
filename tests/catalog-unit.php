@@ -138,6 +138,16 @@ try {
         'related' => ['loai_san' => 0, 'loai_san_dang_dung' => 0, 'san' => 0,
             'san_dang_dung' => 0, 'bang_gia' => 0, 'bang_gia_dang_dung' => 0],
     ];
+    // The redesigned Dashboard consumes an explicit read-model snapshot, not catalog counters alone.
+    $viewData['dashboard'] = [
+        'filters' => App\Services\DashboardService::filters(['period' => 'today']),
+        'scope' => ['role' => 'QUAN_TRI_TAP_DOAN', 'company' => null, 'facility' => null],
+        'companyOptions' => [], 'facilityOptions' => [], 'companies' => [], 'facilities' => [],
+        'totals' => ['total' => '0', 'courts' => '0', 'services' => '0', 'bookings' => 0], 'lifetime' => ['total' => '0'],
+        'states' => array_fill_keys(['CHO_XAC_NHAN', 'CHO_THANH_TOAN', 'DA_XAC_NHAN', 'HOAN_THANH', 'DA_HUY', 'HET_HAN'], 0),
+        'assets' => ['companies' => 0, 'facilities' => 0, 'active_facilities' => 0, 'courts' => 0, 'services' => 0],
+        'groups' => [], 'groupType' => 'company', 'timeline' => [], 'recent' => [], 'popular_courts' => [], 'popular_services' => [],
+    ];
     $templates = ['admin/dashboard', 'admin/companies/index', 'admin/companies/create', 'admin/companies/edit'];
     foreach (['bo-mon', 'loai-san'] as $module) {
         foreach (['index', 'form', 'show', 'delete'] as $page) {
@@ -175,8 +185,9 @@ try {
         checkCatalogUnit(strpos($html, '/assets/css/admin.css') !== false, $template . ': isolated Admin styles');
         checkCatalogUnit(strpos($html, 'role-notice') === false, $template . ': dedicated Admin content');
         if ($template === 'admin/dashboard') {
-            checkCatalogUnit(strpos($html, 'data-stat="bo_mon">7</p>') !== false, 'dashboard uses supplied sport count');
-            checkCatalogUnit(strpos($html, 'data-stat="loai_san">12</p>') !== false, 'dashboard uses supplied type count');
+            checkCatalogUnit($xpath->query('//*[@data-stat="bo_mon" and normalize-space()="7"]')->length === 1, 'dashboard uses supplied sport count');
+            checkCatalogUnit($xpath->query('//*[@data-stat="loai_san" and normalize-space()="12"]')->length === 1, 'dashboard uses supplied type count');
+            checkCatalogUnit($xpath->query('//*[@data-kpi="revenue" and normalize-space()="0 đ"]')->length === 1, 'dashboard renders supplied zero revenue');
             checkCatalogUnit(strpos($html, '<strong>&lt;Admin&gt;</strong>') !== false, 'dashboard escapes username');
         }
     }

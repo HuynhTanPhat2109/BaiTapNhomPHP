@@ -4,11 +4,15 @@ use App\Controllers\admin\BangGiaController;
 use App\Middleware\RoleMiddleware;
 
 $prices = new BangGiaController($app);
-$pricesAdminOnly = [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])];
-$router->get('/admin/bang-gia', [$prices, 'index'], $pricesAdminOnly);
-$router->get('/admin/bang-gia/create', [$prices, 'create'], $pricesAdminOnly);
-$router->get('/admin/bang-gia/show', [$prices, 'show'], $pricesAdminOnly);
-$router->get('/admin/bang-gia/edit', [$prices, 'edit'], $pricesAdminOnly);
-$router->post('/admin/bang-gia/store', [$prices, 'store'], $pricesAdminOnly);
-$router->post('/admin/bang-gia/update', [$prices, 'update'], $pricesAdminOnly);
-$router->post('/admin/bang-gia/status', [$prices, 'changeStatus'], $pricesAdminOnly);
+foreach (['/admin' => 'QUAN_TRI_TAP_DOAN', '/company' => 'QUAN_LY_CONG_TY', '/facility' => 'QUAN_LY_CO_SO', '/staff' => 'NHAN_VIEN'] as $root => $role) {
+    $allowed = [new RoleMiddleware($app, [$role])];
+    $prefix = $root . '/bang-gia';
+    $router->get($prefix, [$prices, 'index'], $allowed);
+    $router->get($prefix . '/show', [$prices, 'show'], $allowed);
+    if ($role === 'NHAN_VIEN') continue;
+    $router->get($prefix . '/create', [$prices, 'create'], $allowed);
+    $router->get($prefix . '/edit', [$prices, 'edit'], $allowed);
+    $router->post($prefix . '/store', [$prices, 'store'], $allowed);
+    $router->post($prefix . '/update', [$prices, 'update'], $allowed);
+    $router->post($prefix . '/status', [$prices, 'changeStatus'], $allowed);
+}

@@ -328,14 +328,16 @@ final class BookingAdminMemoryStatement extends PDOStatement
             return true;
         }
 
-        // 9. UPDATE dich_vu SET so_luong_ton = so_luong_ton - :qty
+        // 9. Stock deduction uses distinct quantity/minimum named bindings.
         if (str_starts_with($this->sql, 'UPDATE dich_vu')) {
             $serviceId = (int) ($params[':service_id'] ?? $params['service_id'] ?? 0);
-            $qty = (int) ($params[':qty'] ?? $params['qty'] ?? 0);
+            $qty = (int) ($params[':qty_deduct'] ?? $params['qty_deduct'] ?? 0);
+            $minimum = (int) ($params[':qty_min'] ?? $params['qty_min'] ?? 0);
+            if ($qty <= 0 || $minimum !== $qty) throw new RuntimeException('Invalid stock quantity/minimum bindings');
             $this->affectedRows = 0;
             if (isset($this->db->services[$serviceId])) {
                 $cur = $this->db->services[$serviceId]['so_luong_ton'];
-                if ($cur !== null && $cur >= $qty) {
+                if ($cur !== null && $cur >= $minimum) {
                     $this->db->services[$serviceId]['so_luong_ton'] -= $qty;
                     $this->affectedRows = 1;
                 }
@@ -977,7 +979,16 @@ assertBooking($dbStaff->bookings[1]['trang_thai_dat_san'] === 'DA_XAC_NHAN', 'Bo
 assertBooking((int) $dbStaff->bookings[1]['ma_nhan_vien'] === 22, 'Staff ID 22 recorded on booking');
 assertBooking(!empty($confResStaff['invoice_id']), 'Invoice successfully generated with staff confirmation');
 
-// C. Quản lý cơ sở F1 hủy đơn quá hạn cho đơn F1
+// Expired bookings cannot be cancelled again; a live pending booking can be cancelled.
+try {
+    $mgrStaff->cancelBookingByAdmin(2, 'Không được hủy lại đơn quá hạn', $mgrF1);
+    assertBooking(false, 'Expired cancellation must be rejected');
+} catch (ValidationException $e) {
+    assertBooking(isset($e->errors['booking']), 'Expired cancellation rejected by backend');
+}
+$dbStaff->bookings[2]['trang_thai_dat_san'] = 'CHO_THANH_TOAN';
+$dbStaff->bookings[2]['het_han_giu_san_luc'] = date('Y-m-d H:i:s', time() + 360);
+$dbStaff->payments[2]['trang_thai'] = 'CHO_THANH_TOAN';
 $cancelResMgr = $mgrStaff->cancelBookingByAdmin(2, 'Quản lý cơ sở hủy đơn khách không đến', $mgrF1);
 assertBooking($cancelResMgr['success'] === true, 'Facility Manager at F1 successfully cancelled booking at F1');
 assertBooking($dbStaff->bookings[2]['trang_thai_dat_san'] === 'DA_HUY', 'Booking 2 cancelled by Facility Manager');

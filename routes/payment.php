@@ -9,9 +9,10 @@ $bankController = new BankController($app);
 $paymentController = new PaymentController($app);
 
 // 1. Quản lý tài khoản ngân hàng của cơ sở (Dành cho Quản trị viên, Quản lý công ty, Quản lý cơ sở)
-$managerRoles = [new AuthMiddleware($app), new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN', 'QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO'])];
+$managerRoles = [new AuthMiddleware($app), new RoleMiddleware($app, ['QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO'])];
+$bankReadRoles = [new AuthMiddleware($app), new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN', 'QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO', 'NHAN_VIEN'])];
 
-$router->get('/facility/bank', [$bankController, 'index'], $managerRoles);
+$router->get('/facility/bank', [$bankController, 'index'], $bankReadRoles);
 $router->get('/facility/bank/create', [$bankController, 'create'], $managerRoles);
 $router->post('/facility/bank/store', [$bankController, 'store'], $managerRoles);
 $router->get('/facility/bank/edit', [$bankController, 'edit'], $managerRoles);

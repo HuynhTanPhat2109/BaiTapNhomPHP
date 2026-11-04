@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use PDO;
+use App\Services\FacilityScope;
 
 final class BangGia
 {
@@ -12,16 +13,17 @@ final class BangGia
         JOIN loai_san l ON l.ma_loai_san = g.ma_loai_san
         JOIN bo_mon b ON b.ma_bo_mon = l.ma_bo_mon';
     private const COLUMNS = 'g.*, f.ten_co_so, f.trang_thai AS trang_thai_co_so,
-        c.ten_cong_ty, c.trang_thai AS trang_thai_cong_ty, l.ten_loai_san, l.ma_bo_mon,
+        f.ma_cong_ty, c.ten_cong_ty, c.trang_thai AS trang_thai_cong_ty, l.ten_loai_san, l.ma_bo_mon,
         l.trang_thai AS trang_thai_loai_san, b.ten_bo_mon, b.trang_thai AS trang_thai_bo_mon';
 
     public function __construct(private PDO $pdo) {}
 
-    public function page(array $filters): array
+    public function page(array $filters, array $scope = FacilityScope::ADMIN): array
     {
+        [$where, $params] = FacilityScope::where($scope);
         return AdminList::page($this->pdo, self::JOINS, self::COLUMNS, 'g.ma_bang_gia',
             ['ma_co_so' => 'g.ma_co_so', 'ma_loai_san' => 'g.ma_loai_san', 'loai_ngay' => 'g.loai_ngay',
-                'trang_thai' => 'g.trang_thai', 'q' => 'g.ten_bang_gia'], $filters);
+                'trang_thai' => 'g.trang_thai', 'q' => 'g.ten_bang_gia'], $filters, $where, $params);
     }
 
     public function find(int $id, bool $lock = false): ?array

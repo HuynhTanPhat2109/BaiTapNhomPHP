@@ -24,7 +24,7 @@ $roleRoot = match ($scope['role'] ?? '') {
     default => ['/admin', 'Quản trị'],
 };
 ?>
-<section class="container catalog-page catalog-workspace admin-list">
+<section class="container catalog-page catalog-workspace admin-list booking-admin-list">
     <nav class="catalog-nav" aria-label="Điều hướng quản lý booking">
         <a href="<?= e(url($roleRoot[0])) ?>"><?= e($roleRoot[1]) ?></a>
         <span aria-hidden="true">/</span>
@@ -42,19 +42,6 @@ $roleRoot = match ($scope['role'] ?? '') {
             </span>
         </div>
     </header>
-
-    <!-- THÔNG BÁO TÍNH NĂNG TỰ ĐỘNG ĐANG PHÁT TRIỂN (THEO QUY ĐỊNH) -->
-    <div class="alert alert--info" style="margin-bottom: 24px; display: flex; align-items: flex-start; gap: 12px; background: #eef6fc; border-left: 4px solid #1a73e8; padding: 14px 18px; border-radius: 6px; color: #15467e;">
-        <svg width="22" height="22" style="width: 22px !important; height: 22px !important; min-width: 22px !important; min-height: 22px !important; max-width: 22px !important; max-height: 22px !important; flex: 0 0 22px !important; flex-shrink: 0 !important; margin-top: 2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-        <div style="flex: 1; min-width: 0;">
-            <strong style="display: block; font-size: 0.95rem; margin-bottom: 4px;">Xác nhận thanh toán tự động — Đang trong quá trình phát triển</strong>
-            <span style="font-size: 0.9rem; line-height: 1.5;">Hệ thống đang phát triển tính năng tự động đối soát giao dịch ngân hàng. Trong thời gian này, vui lòng nhân viên hoặc chủ cơ sở kiểm tra biến động số dư tài khoản ngân hàng của cơ sở và nhấn vào chi tiết đơn để đối soát và xác nhận thanh toán thủ công.</span>
-        </div>
-    </div>
 
     <?php if (!empty($notice)): ?>
         <p class="alert alert--success" role="status" style="margin-bottom: 20px;"><?= e($notice) ?></p>
@@ -271,9 +258,15 @@ $roleRoot = match ($scope['role'] ?? '') {
                         </span>
                     </td>
                     <td style="padding: 12px 14px; text-align: center;">
-                        <a class="btn btn--outline" href="<?= e(url('/admin/bookings/show') . '&id=' . $row['ma_dat_san']) ?>" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none;">
-                            Chi tiết &amp; Đối soát ↗
-                        </a>
+                        <?php
+                        $actions = App\Services\BookingManagementService::actions($row);
+                        ob_start(); ?>
+                        <a href="<?= e(url('/admin/bookings/show?id=' . $row['ma_dat_san'])) ?>">Xem chi tiết</a>
+                        <?php if ($actions['view_reconciliation']): ?><a href="<?= e(url('/admin/bookings/show?id=' . $row['ma_dat_san']) . '#booking-operations') ?>">Xem đối soát</a><?php endif; ?>
+                        <?php foreach (['confirm' => 'Xác nhận thanh toán', 'cancel' => 'Từ chối / Hủy', 'reconcile' => $actions['late'] ? 'Ghi nhận tiền chuyển muộn' : 'Đối soát giao dịch'] as $action => $label): if (!$scope['can_confirm'] || !$actions[$action]) continue; ?>
+                        <button type="button" data-booking-action="<?= e($action) ?>" data-booking-target="booking-dialog-<?= (int) $row['ma_dat_san'] ?>"><?= e($label) ?></button>
+                        <?php endforeach; ?>
+                        <?php $rowMenuContent = ob_get_clean(); $rowMenuId = 'booking-menu-' . $row['ma_dat_san']; $rowMenuLabel = 'booking #' . $row['ma_dat_san']; $rowMenuHasForms = false; $rowMenuUsePopover = true; require dirname(__DIR__) . '/partials/row-menu.php'; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -289,6 +282,13 @@ $roleRoot = match ($scope['role'] ?? '') {
         </table>
     </div>
 
+    <?php foreach ($items as $row):
+        $actions = App\Services\BookingManagementService::actions($row);
+        $paymentSt = $row['trang_thai_thanh_toan'] ?? '';
+        if ($scope['can_confirm'] && ($actions['confirm'] || $actions['cancel'] || $actions['reconcile'])) require __DIR__ . '/action-dialog.php';
+    endforeach; ?>
+    <?php if (!empty($validationErrors)): ?><div class="alert alert--danger" role="alert"><ul><?php foreach ($validationErrors as $message): ?><li><?= e($message) ?></li><?php endforeach; ?></ul><button type="button" class="btn btn--outline" data-booking-action="<?= e($oldInput['booking_action'] ?? '') ?>" data-booking-target="booking-dialog-<?= (int) ($oldInput['id'] ?? 0) ?>">Mở lại thông tin vừa nhập</button></div><?php endif; ?>
+    <script src="<?= e(base_path() . '/assets/js/booking-actions.js?v=' . filemtime(dirname(__DIR__, 4) . '/public/assets/js/booking-actions.js')) ?>" defer></script>
     <!-- PHÂN TRANG -->
     <?php if ($pages > 1): ?>
         <nav class="catalog-pagination" aria-label="Phân trang đơn đặt sân" style="margin-top: 24px; display: flex; justify-content: center; gap: 8px;">

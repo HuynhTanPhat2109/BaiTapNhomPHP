@@ -16,7 +16,7 @@ final class BangGiaService
 {
     private BangGia $prices;
 
-    public function __construct(private PDO $pdo)
+    public function __construct(private PDO $pdo, private array $scope = FacilityScope::ADMIN)
     {
         $this->prices = new BangGia($pdo);
     }
@@ -122,6 +122,7 @@ final class BangGiaService
 
     public function save(array $data, ?int $id = null): int
     {
+        FacilityScope::write($this->scope);
         if ($errors = self::validate($data)) {
             throw new ValidationException($errors);
         }
@@ -130,6 +131,7 @@ final class BangGiaService
 
     public function changeStatus(int $id, $status): void
     {
+        FacilityScope::write($this->scope);
         if (!in_array($status, ['DANG_AP_DUNG', 'NGUNG'], true)) {
             throw new ValidationException(['trang_thai' => 'Trạng thái không hợp lệ.']);
         }
@@ -142,6 +144,7 @@ final class BangGiaService
         if ($id !== null && !$before) {
             throw new HttpException(404, 'Không tìm thấy bảng giá.');
         }
+        if ($before) FacilityScope::check($before, $this->scope);
         $scope = $data ?? $before;
         $this->pdo->beginTransaction();
         try {
@@ -224,6 +227,7 @@ final class BangGiaService
             if (!$rows[$parentId]) {
                 throw new ValidationException(['ma_co_so' => 'Cơ sở không tồn tại.']);
             }
+            FacilityScope::check($rows[$parentId], $this->scope);
         }
         foreach ($typeIds as $parentId) {
             $typeRows[$parentId] = $types->find($parentId);
@@ -243,6 +247,7 @@ final class BangGiaService
             if (!$locked || (int) $locked['ma_cong_ty'] !== (int) $rows[$parentId]['ma_cong_ty']) {
                 throw new HttpException(409, 'Liên kết cơ sở vừa thay đổi. Vui lòng tải lại trang.');
             }
+            FacilityScope::check($locked, $this->scope);
             $rows[$parentId] = $locked;
         }
         $sportIds = array_unique(array_column($typeRows, 'ma_bo_mon'));

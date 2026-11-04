@@ -184,11 +184,10 @@ final class VietQRMemoryStatement extends PDOStatement
         }
 
         // 3. UPDATE tai_khoan_ngan_hang_co_so SET la_mac_dinh = 1
-        if (str_contains($sql, 'SET la_mac_dinh = 1, trang_thai = \'HOAT_DONG\'')) {
+        if (str_contains($sql, 'SET la_mac_dinh = 1')) {
             $id = (int) $p['id'];
             if (isset($this->db->bankAccounts[$id])) {
                 $this->db->bankAccounts[$id]['la_mac_dinh'] = 1;
-                $this->db->bankAccounts[$id]['trang_thai'] = 'HOAT_DONG';
             }
             return true;
         }
@@ -336,7 +335,7 @@ final class VietQRMemoryStatement extends PDOStatement
     public function fetchColumn(int $column = 0): mixed
     {
         $row = array_shift($this->rows);
-        return $row ? $row[$column] : false;
+        return $row ? array_values($row)[$column] : false;
     }
 }
 

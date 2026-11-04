@@ -19,7 +19,8 @@ $company = new CongTyNhuongQuyen($pdo); $contract = new HopDongNhuongQuyen($pdo)
 $models = ['companies' => $company, 'contracts' => $contract, 'employees' => $employee];
 foreach ($models as $module => $model) {
     $path = '/admin/' . $module;
-    $parse = static fn($query) => AdminListService::managementFilters($path, $query);
+    // Preserve the original company-manager paging cases, and test the expanded Admin scope below.
+    $parse = static fn($query) => AdminListService::managementFilters($path, $module === 'employees' ? $query + ['vai_tro' => 'QUAN_LY_CONG_TY'] : $query);
     foreach ([10, 20, 50] as $size) {
         $ids = [];
         $key = ['companies' => 'ma_cong_ty', 'contracts' => 'ma_hop_dong', 'employees' => 'ma_nhan_vien'][$module];
@@ -66,6 +67,8 @@ foreach ([['tu_ngay' => []], ['den_ngay' => '2026-02-30'], ['tu_ngay' => '2026-1
     catch (HttpException $e) { managementCheck($e->status === 422, 'contract invalid date filter rejected'); }
 }
 $companyFilters = static fn($query) => AdminListService::managementFilters('/company/employees', $query);
+$allPersonnel = $employee->page(AdminListService::managementFilters('/admin/employees', []));
+managementCheck($allPersonnel['total'] === 361, 'approved Admin sees all 360 employee accounts plus one personnel record without account');
 $result = $employee->page($companyFilters(['ma_cong_ty' => '2']), 1);
 managementCheck($result['total'] === 121 && !array_filter($result['items'], fn($row) => $row['ma_cong_ty'] !== 1 || ($row['ten_vai_tro'] ?? '') === 'QUAN_LY_CONG_TY'), 'company scope excludes foreign employees/managers; client cannot override actor company');
 $result = $employee->page($companyFilters(['ma_co_so' => '2', 'vai_tro' => 'QUAN_LY_CO_SO', 'trang_thai' => 'DANG_LAM']), 1);
@@ -78,6 +81,16 @@ $result = $employee->page($companyFilters(['q' => 'ux2001@example.test']), 1);
 managementCheck($result['total'] === 0, 'OR search cannot escape company scope');
 $result = $employee->page($companyFilters(['q' => 'No account']), 1);
 managementCheck($result['total'] === 1, 'existing access to own employees without account retained');
+$queryStart = count($pdo->preparedQueries);
+$result = $employee->page($companyFilters(['q' => 'ux1001@example.test']), 1);
+managementCheck($result['items'][0]['ten_cong_ty'] === 'UX Tied' && $result['items'][0]['ten_co_so'] === 'UX co_so 02', 'employee names are joined from the actual company/facility, including an updated company name');
+managementCheck(count($pdo->preparedQueries) - $queryStart === 2, 'employee names require only paginated count/select, no per-row lookups');
+$pdo->exec("INSERT INTO nhan_vien (ma_nhan_vien,ma_cong_ty,ma_co_so,ho_ten,trang_thai) VALUES (9001,1,3,'Invalid facility fixture','DANG_LAM')");
+$result = $employee->page($companyFilters(['q' => 'Invalid facility fixture']), 1);
+managementCheck($result['total'] === 1 && $result['items'][0]['ten_co_so'] === null, 'inconsistent assignment never discloses another company facility name');
+$pdo->exec("INSERT INTO nhan_vien (ma_nhan_vien,ma_cong_ty,ma_co_so,ho_ten,trang_thai) VALUES (9002,99999,99999,'Missing parents fixture','DANG_LAM')");
+$result = $employee->page(AdminListService::managementFilters('/admin/employees', ['q' => 'Missing parents fixture']));
+managementCheck($result['total'] === 1 && $result['items'][0]['ten_cong_ty'] === null && $result['items'][0]['ten_co_so'] === null, 'LEFT JOIN retains orphan personnel safely without breaking pagination');
 $formatMoney = require dirname(__DIR__) . '/app/views/admin/partials/format-money.php';
 foreach ([['60000.00', '60.000 đ'], ['150000', '150.000 đ'], ['1200000', '1.200.000 đ'], ['9999999999999.99', '9.999.999.999.999,99 đ'], ['0', '0 đ'], ['0.01', '0,01 đ'], ['', '—'], ['-1', '—'], ['1.001', '—']] as [$raw, $expected]) {
     managementCheck($formatMoney($raw) === $expected, 'shared money display preserves decimal precision');

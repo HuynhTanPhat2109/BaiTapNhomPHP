@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const nodes = Object.fromEntries(['data-countdown','data-wait-message','data-payment-success','data-payment-expired','.stryke-bottom-bar']
-    .map(key => [key, {hidden:true, textContent:''}]));
+    .map(key => [key, {hidden:true, textContent:'', style:{}}]));
 const pending = {hidden:false};
 const timers = new Map();
 let timerId = 0, calls = 0;

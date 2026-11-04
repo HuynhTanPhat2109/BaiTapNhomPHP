@@ -14,7 +14,7 @@ if ($listPath === '/company/employees') {
 }
 if (basename($listPath) === 'employees') {
     $filterFields['vai_tro'] = ['label' => 'Vai trò', 'options' => $listPath === '/admin/employees'
-        ? ['QUAN_LY_CONG_TY' => 'Quản lý công ty'] : ['QUAN_LY_CO_SO' => 'Quản lý cơ sở', 'NHAN_VIEN' => 'Nhân viên']];
+        ? ['QUAN_TRI_TAP_DOAN' => 'Quản trị tập đoàn', 'QUAN_LY_CONG_TY' => 'Quản lý công ty', 'QUAN_LY_CO_SO' => 'Quản lý cơ sở', 'NHAN_VIEN' => 'Nhân viên'] : ['QUAN_LY_CO_SO' => 'Quản lý cơ sở', 'NHAN_VIEN' => 'Nhân viên']];
 }
 $filterFields['trang_thai'] = ['label' => 'Trạng thái', 'options' => match (basename($listPath)) {
     'companies' => ['HOAT_DONG' => 'Hoạt động', 'NGUNG_HOAT_DONG' => 'Ngừng hoạt động'],
@@ -27,10 +27,10 @@ if ($listPath === '/admin/contracts') {
 }
 $filterFields['sort'] = ['label' => 'Sắp xếp', 'options' => $listPath === '/admin/contracts'
     ? App\Services\AdminListService::CONTRACT_SORTS : App\Services\AdminListService::NAME_SORTS];
-$managementLayout = in_array($listPath, ['/admin/companies', '/admin/contracts', '/admin/employees'], true) ? basename($listPath) : null;
+$managementLayout = in_array($listPath, ['/admin/companies', '/admin/contracts', '/admin/employees', '/company/employees'], true) ? basename($listPath) : null;
 ?>
 <?php if (!empty($notice)): ?><p class="alert alert--success" role="status"><?= e($notice) ?></p><?php endif; ?>
-<?php if ($managementLayout): ?><div class="management-filters management-filters--<?= e($managementLayout) ?>"><?php endif; ?>
+<?php if ($managementLayout): ?><div class="management-filters management-filters--<?= e($managementLayout) ?><?= $listPath === '/company/employees' ? ' management-filters--company-employees' : '' ?>"><?php endif; ?>
 <?php require __DIR__ . '/list-toolbar.php'; ?>
 <?php if ($managementLayout): ?></div><?php endif; ?>
 <?php if ($listPath === '/admin/contracts'): ?><p class="form-hint">Lọc hợp đồng có thời hạn giao với khoảng ngày đã chọn; có thể để trống một đầu.</p><?php endif; ?>

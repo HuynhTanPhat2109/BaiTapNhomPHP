@@ -40,7 +40,7 @@ final class BookingInventoryService
             if ($quantity === false) throw new HttpException(409, 'Số lượng snapshot không hợp lệ.');
             $service = $model->lock('dich_vu', 'ma_dich_vu', $serviceId);
             if (!$service || (int) $service['ma_co_so'] !== (int) $booking['ma_co_so']) throw new HttpException(409, 'Dịch vụ không thuộc cơ sở của booking.');
-            if ($service['loai_dich_vu'] === 'CHO_THUE' || $service['don_vi_tinh'] !== $line['don_vi_tinh_snapshot']) {
+            if ($service['don_vi_tinh'] !== $line['don_vi_tinh_snapshot']) {
                 throw new HttpException(409, 'Loại hoặc đơn vị dịch vụ cần được kiểm tra trước khi xuất tồn.');
             }
             if ($service['so_luong_ton'] === null) { $untracked[] = $serviceId; continue; }

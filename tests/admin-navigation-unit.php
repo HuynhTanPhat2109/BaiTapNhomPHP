@@ -16,8 +16,12 @@ function navigationQuery(string $url): array
     parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $query);
     return $query;
 }
-foreach (['bo-mon', 'loai-san', 'co-so', 'san', 'bang-gia', 'dich-vu'] as $slug) {
-    $list = '/admin/' . $slug;
+$lists = array_map(static fn($slug) => '/admin/' . $slug, ['bo-mon', 'loai-san', 'co-so', 'san', 'bang-gia', 'dich-vu']);
+foreach (['/company', '/facility', '/staff'] as $root) {
+    foreach (['co-so', 'san', 'bang-gia'] as $slug) $lists[] = $root . '/' . $slug;
+}
+foreach ($lists as $list) {
+    $slug = $list;
     $filters = ['page' => 2, 'per_page' => 20, 'q' => 'Tên & % + sân'];
     $_GET = ['route' => $list] + array_map('strval', $filters);
     $return = admin_context_url($list);
@@ -33,6 +37,7 @@ foreach (['bo-mon', 'loai-san', 'co-so', 'san', 'bang-gia', 'dich-vu'] as $slug)
     $_POST = [];
     foreach (['https://evil.test' . $return, '//evil.test' . $return, 'file:' . $return,
         '/outside/index.php?route=' . rawurlencode($list), url('/admin/companies') . '&page=2',
+        url('/company/employees') . '&page=2', url($list === '/admin/san' ? '/staff/san' : '/admin/san') . '&page=2',
         $return . '#fragment', ['bad'], $return . '&page[]=2', $return . '&per_page=15',
         $return . '&q=%0D%0ALocation%3Aevil', $return . '&q=' . rawurlencode(str_repeat('á', 151))] as $unsafe) {
         $_GET['return_to'] = $unsafe;
