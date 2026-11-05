@@ -16,7 +16,11 @@ $receipt = $receiptDetails[$id];
         <div><dt>Cơ sở / Sân</dt><dd><?= e($row['ten_co_so']) ?> · <?= e($row['cac_san'] ?: '—') ?></dd></div>
         <div><dt>Khoảng lịch chơi</dt><dd><?= $row['ngay_choi_dau'] ? e(date('d/m/Y', strtotime($row['ngay_choi_dau']))) : '—' ?><?php if (!empty($row['ngay_choi_cuoi']) && $row['ngay_choi_cuoi'] !== $row['ngay_choi_dau']): ?>–<?= e(date('d/m/Y', strtotime($row['ngay_choi_cuoi']))) ?><?php endif; ?> · <?= e(substr($row['gio_bat_dau_som'] ?? '', 0, 5)) ?>–<?= e(substr($row['gio_ket_thuc_muon'] ?? '', 0, 5)) ?></dd></div>
         <div><dt>Tạo booking lúc</dt><dd><?= e($date($row['ngay_tao'])) ?></dd></div>
+        <?php if ($row['trang_thai_dat_san'] === 'CHO_THANH_TOAN'): ?>
         <div><dt>Hạn giữ sân</dt><dd><?= e($date($row['het_han_giu_san_luc'])) ?></dd></div>
+        <?php elseif ($row['trang_thai_dat_san'] === 'CHO_XAC_NHAN'): ?>
+        <div><dt>Trạng thái giữ chỗ</dt><dd>Đang giữ lịch – chờ xác nhận thanh toán</dd></div>
+        <?php endif; ?>
         <div><dt>Trạng thái booking</dt><dd><?= e($bookingStatusLabels[$row['trang_thai_dat_san']] ?? $row['trang_thai_dat_san']) ?></dd></div>
         <div><dt>Số tiền cần thanh toán</dt><dd class="booking-action-amount"><?= e($money($expected)) ?></dd></div>
         <div><dt>Mã tham chiếu chuyển khoản</dt><dd><?= e($row['ma_tham_chieu'] ?: 'Chưa tạo') ?></dd></div>

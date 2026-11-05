@@ -45,10 +45,16 @@ final class BookingHistoryController extends Controller
             throw new HttpException(422, 'Bộ lọc hoặc số trang không hợp lệ.');
         }
         $history = (new Booking($this->app->pdo()))->history((int) $user['ma_khach_hang'], $status, (int) $page, $from, $to, $sort);
+        $receipts = new \App\Services\BookingReceiptService($this->app->pdo());
         foreach ($history['items'] as &$item) {
-            $item['receipt_url'] = $this->receiptPath((int)$item['ma_dat_san'], $item['payment_note'] ?? null)
+            $item['receipt_url'] = $receipts->info([
+                'ma_dat_san' => (int)$item['ma_dat_san'],
+                'ghi_chu' => $item['payment_note'] ?? null,
+                'anh_minh_chung' => $item['receipt_image'] ?? null,
+                'minh_chung_gui_luc' => $item['receipt_sent_at'] ?? null,
+            ])
                 ? url('/booking/history/receipt') . '&id=' . (int)$item['ma_dat_san'] : null;
-            unset($item['payment_note']);
+            unset($item['payment_note'], $item['receipt_image'], $item['receipt_sent_at']);
         }
         unset($item);
         header('Cache-Control: private, no-store');
@@ -59,14 +65,6 @@ final class BookingHistoryController extends Controller
         ]);
     }
 
-    private function receiptPath(int $id, ?string $note): ?string
-    {
-        $path = \App\Services\ReceiptImage::getReceiptFromNote($note);
-        // Never infer submission from orphan files, or accept another booking's filename.
-        return $path && str_starts_with($path, 'uploads/receipts/receipt_'.$id.'_')
-            && is_file(dirname(__DIR__,2).'/public/'.$path) ? $path : null;
-    }
-
     public function receipt(): void
     {
         $user = $this->app->auth()->user();
@@ -75,14 +73,12 @@ final class BookingHistoryController extends Controller
         $id = $_GET['id'] ?? '';
         if (!is_string($id) || !\App\Services\CoSoService::validId($id)) throw new HttpException(404,'Không tìm thấy ảnh minh chứng.');
         $row = (new Booking($this->app->pdo()))->historyReceipt((int)$id, (int)$user['ma_khach_hang']);
-        $path = $this->receiptPath((int)$id, $row['ghi_chu'] ?? null);
-        if (!$path) throw new HttpException(404,'Không tìm thấy ảnh minh chứng.');
-        $file = dirname(__DIR__,2).'/public/'.$path;
-        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($file);
-        if (!in_array($mime, ['image/png','image/jpeg','image/webp'], true)) throw new HttpException(404,'Ảnh minh chứng không hợp lệ.');
-        header('Content-Type: '.$mime);
+        $image = $row ? (new \App\Services\BookingReceiptService($this->app->pdo()))->info($row) : null;
+        if (!$image) throw new HttpException(404,'Không tìm thấy ảnh minh chứng.');
+        header('Content-Type: '.$image['mime']);
         header('X-Content-Type-Options: nosniff');
         header('Cache-Control: private, no-store');
-        readfile($file);
+        header('Content-Length: '.filesize($image['absolute']));
+        readfile($image['absolute']);
     }
 }

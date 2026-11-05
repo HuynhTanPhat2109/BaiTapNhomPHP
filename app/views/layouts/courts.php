@@ -4,7 +4,7 @@ $backLabel = $template === 'courts/index' ? 'Trang chủ' : '';
 $backUrl = $bookingBackUrl ?? url($backRoute);
 if ($template === 'courts/prices') $backUrl = $priceBackUrl;
 $cancelHold = $template === 'courts/booking-wait' && ($booking['trang_thai_dat_san'] ?? '') === 'CHO_THANH_TOAN';
-$isPaymentResultPage = false;
+$isPaymentResultPage = $template === 'courts/payment-result';
 
 if ($template === 'courts/booking-wait') {
     $bookingState = $booking['trang_thai_dat_san'] ?? '';

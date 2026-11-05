@@ -18,7 +18,7 @@ final class BookingInventoryService
 
     /**
      * Internal payment hook, NOT independently idempotent.
-     * Duy verifies payment and locks the pending booking BEFORE calling this ONCE.
+     * Duy verifies payment and locks the pending/review booking BEFORE calling this ONCE.
      * Deduction, verified payment and conditional confirmation MUST commit together.
      * No booking/payment writes or transaction management here; caller rolls back ANY failure.
      */
@@ -64,6 +64,10 @@ final class BookingInventoryService
 
     private function requirePayable(array $booking): void
     {
+        if ($booking['trang_thai_dat_san'] === 'CHO_XAC_NHAN') {
+            (new BookingService($this->pdo))->lockPayable((int)$booking['ma_dat_san'], true);
+            return;
+        }
         if ($booking['trang_thai_dat_san'] !== BookingService::PENDING
             || empty($booking['het_han_giu_san_luc'])
             || $booking['het_han_giu_san_luc'] <= CourtScheduleService::now()->format('Y-m-d H:i:s')) {

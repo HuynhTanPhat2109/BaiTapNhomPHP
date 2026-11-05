@@ -142,8 +142,6 @@ final class BookingController extends Controller
         if (!is_string($id) || !\App\Services\CoSoService::validId($id)) throw new HttpException(404,'Không tìm thấy booking.');
         $booking=$this->service()->inspect((int)$id,(int)$user['ma_khach_hang']);
         $now=CourtScheduleService::now();
-        if ($booking['trang_thai_dat_san'] === 'CHO_XAC_NHAN'
-            && $booking['het_han_giu_san_luc'] <= $now->format('Y-m-d H:i:s')) $booking['trang_thai_dat_san'] = 'HET_HAN';
         header('Cache-Control: no-store');
         if (($_GET['status']??'')==='1') {
             $paymentStatus = null;
@@ -217,7 +215,7 @@ final class BookingController extends Controller
         }
 
         // Only a committed database receipt is evidence of submission; orphan files are not.
-        $receiptSubmitted = \App\Services\ReceiptImage::getReceiptFromNote($payment['ghi_chu'] ?? null) !== null;
+        $receiptSubmitted = $payment && $this->receipts()->info($payment) !== null;
         $isReconcile = ($payment && $payment['trang_thai'] === 'CAN_DOI_SOAT');
         $reconcileReason = $isReconcile ? \App\Services\ReceiptImage::stripReceiptTag($payment['ghi_chu'] ?? '') : '';
 
@@ -264,10 +262,18 @@ final class BookingController extends Controller
             } catch (\Throwable) {}
         }
 
-        $this->render('courts/booking-wait', compact(
+        $isConfirmedBooking = $confirmed && !$isReconcile;
+        $isReceiptWait = $receiptSubmitted && !$isReconcile
+            && in_array($booking['trang_thai_dat_san'], ['CHO_THANH_TOAN', 'CHO_XAC_NHAN'], true)
+            && in_array($payment['trang_thai'] ?? '', ['CHO_THANH_TOAN', 'CHO_XAC_NHAN'], true)
+            && ($booking['trang_thai_dat_san'] === 'CHO_XAC_NHAN'
+                || $booking['het_han_giu_san_luc'] > $now->format('Y-m-d H:i:s'));
+        $showResult = $isConfirmedBooking || $isReceiptWait;
+        $this->render($showResult ? 'courts/payment-result' : 'courts/booking-wait', compact(
             'booking', 'now', 'user', 'customer', 'facility', 'bookingBackUrl',
             'payment', 'bankAccount', 'qrUrl', 'paymentError', 'receiptImage',
-            'receiptSubmitted', 'receiptNotice', 'isReconcile', 'reconcileReason'
+            'receiptSubmitted', 'receiptNotice', 'isReconcile', 'reconcileReason',
+            'isConfirmedBooking', 'isReceiptWait'
         ) + ['title' => $pageTitle]);
     }
 
@@ -297,6 +303,8 @@ final class BookingController extends Controller
         try {
             $this->receipts()->upload($bookingId, (int) $user['ma_khach_hang'], $_FILES['bien_lai'] ?? null);
             $_SESSION['booking_receipt_notice'][$bookingId] = 'Đã gửi minh chứng – Chờ xác nhận thanh toán';
+            $this->go('/booking/result', 'id', (string)$bookingId);
+            return;
         } catch (\App\Services\ValidationException $e) {
             $_SESSION['booking_payment_error'][$bookingId] = $e->errors['bien_lai'] ?? 'Lỗi tải ảnh biên lai.';
         } catch (HttpException $e) {
@@ -357,12 +365,17 @@ final class BookingController extends Controller
             if (!$user || $user['ten_vai_tro'] !== 'KHACH_HANG') throw new HttpException(403, 'Vui lòng đăng nhập tài khoản khách hàng.');
             $id = post_string('id');
             if (!\App\Services\CoSoService::validId($id)) throw new HttpException(404, 'Không tìm thấy booking.');
-            $booking = $this->service()->cancelHold((int)$id, (int)$user['ma_khach_hang']);
+            // Existing Back/navigation requests send only id + CSRF. Leaving is not cancellation.
+            // A destructive customer request must explicitly submit action=cancel.
+            $explicitCancel = post_string('action') === 'cancel';
+            $booking = $explicitCancel
+                ? $this->service()->cancelHold((int)$id, (int)$user['ma_khach_hang'])
+                : $this->service()->visit((int)$id, (int)$user['ma_khach_hang']);
             $state = $booking['trang_thai_dat_san'];
             // A successful payment with a still-pending booking requires reconciliation, never cancellation.
-            if ($state === BookingService::PENDING) throw new HttpException(409, 'Booking đã có giao dịch thành công. Không thể hủy giữ; vui lòng tải lại trang.');
+            if ($explicitCancel && $state === BookingService::PENDING) throw new HttpException(409, 'Booking đã có giao dịch thành công hoặc minh chứng. Không thể hủy giữ; vui lòng tải lại trang.');
             $back = $this->scheduleUrl((int)$booking['ma_co_so'], $booking['lines'][0]['ngay_choi'] ?? CourtScheduleService::now()->format('Y-m-d'));
-            if ($state === 'DA_HUY') $_SESSION['booking_notice'] = 'Đã hủy giữ sân. Bạn có thể chọn lại khung giờ.';
+            if ($explicitCancel && $state === 'DA_HUY') $_SESSION['booking_notice'] = 'Đã hủy giữ sân. Bạn có thể chọn lại khung giờ.';
             if ($json) { $this->json(['state' => $state, 'redirect' => $back]); return; }
             header('Location: '.$back, true, 303);
         } catch (HttpException $error) {

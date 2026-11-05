@@ -16,6 +16,7 @@ $router->get('/booking/details', [$booking, 'details']);
 $router->post('/booking/review', [$booking, 'review']);
 $router->post('/booking/confirm', [$booking, 'confirm']); // Controller checks draft owner + customer role.
 $router->get('/booking/wait', [$booking, 'waiting'], [new App\Middleware\RoleMiddleware($app, ['KHACH_HANG'])]);
+$router->get('/booking/result', [$booking, 'waiting'], [new App\Middleware\RoleMiddleware($app, ['KHACH_HANG'])]);
 $router->post('/booking/receipt', [$booking, 'uploadReceipt'], [new App\Middleware\RoleMiddleware($app, ['KHACH_HANG'])]);
 $router->get('/booking/receipt', [$booking, 'receipt'], [new App\Middleware\AuthMiddleware($app), new App\Middleware\RoleMiddleware($app,
     ['KHACH_HANG','QUAN_TRI_TAP_DOAN','QUAN_LY_CONG_TY','QUAN_LY_CO_SO','NHAN_VIEN'])]);

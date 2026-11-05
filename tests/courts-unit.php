@@ -24,7 +24,7 @@ foreach (['CHO_XAC_NHAN' => 'held', 'DA_HUY' => 'free', 'HET_HAN' => 'free', 'DA
 $interval['het_han_giu_san_luc'] = '2026-10-23 16:30:00';
 courtCheck($build([$interval])['rows'][0]['cells'][2]['state'] === 'free');
 $interval['trang_thai_dat_san'] = 'CHO_XAC_NHAN';
-courtCheck($build([$interval])['rows'][0]['cells'][2]['state'] === 'free');
+courtCheck($build([$interval])['rows'][0]['cells'][2]['state'] === 'held');
 $interval['het_han_giu_san_luc'] = '2026-10-23 16:36:00';
 courtReject(fn() => Schedule::selection($build([$interval]), '1', '17:00', '17:30'));
 $interval['trang_thai_dat_san'] = 'DA_XAC_NHAN';

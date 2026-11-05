@@ -12,12 +12,15 @@ final class BookingReceiptService
     public function info(array $payment): ?array
     {
         $note = $payment['ghi_chu'] ?? null;
-        $path = ReceiptImage::getReceiptFromNote($note) ?? ($payment['anh_minh_chung'] ?? null);
-        if (!$path) return null;
-        $file = ReceiptImage::file($path, (int) $payment['ma_dat_san'], $this->storageRoot);
-        $sentAt = ReceiptImage::sentAt($note) ?? ($payment['minh_chung_gui_luc'] ?? null);
+        // Prefer the explicit receipt columns; retain legacy links without copying files.
+        $file = null;
+        foreach (array_unique(array_filter([$payment['anh_minh_chung'] ?? null, ReceiptImage::getReceiptFromNote($note)])) as $path) {
+            $file = ReceiptImage::file($path, (int) $payment['ma_dat_san'], $this->storageRoot);
+            if ($file) break;
+        }
+        $sentAt = $payment['minh_chung_gui_luc'] ?? ReceiptImage::sentAt($note);
         return $file ? $file + ['sent_at' => $sentAt,
-            'version' => hash('sha256', $path . '|' . ($sentAt ?? ''))] : null;
+            'version' => hash('sha256', $file['path'] . '|' . ($sentAt ?? ''))] : null;
     }
 
     public function authorized(int $id, array $user): array
@@ -62,26 +65,41 @@ final class BookingReceiptService
             $booking = $model->findBooking($id, true);
             if (!$booking || (int) $booking['ma_khach_hang'] !== $customerId) throw new HttpException(404, 'Không tìm thấy booking.');
             $payment = $model->findByBookingId($id, true);
-            if (!$payment || !in_array($booking['trang_thai_dat_san'], ['CHO_THANH_TOAN', 'CHO_XAC_NHAN'], true)
+            // A committed review is idempotent, including after its original deadline.
+            // Never replace the accepted file or reacquire an expired/cancelled booking.
+            if ($payment && $booking['trang_thai_dat_san'] === 'CHO_XAC_NHAN'
+                && in_array($payment['trang_thai'], ['CHO_THANH_TOAN', 'CHO_XAC_NHAN'], true)
+                && $this->info($payment)) {
+                $this->pdo->commit();
+                return;
+            }
+            if (!$payment || $booking['trang_thai_dat_san'] !== 'CHO_THANH_TOAN'
                 || empty($booking['het_han_giu_san_luc']) || $booking['het_han_giu_san_luc'] <= BookingManagementService::now()->format('Y-m-d H:i:s')
                 || !in_array($payment['trang_thai'], ['CHO_THANH_TOAN', 'CHO_XAC_NHAN'], true)) {
                 throw new ValidationException(['bien_lai' => 'Booking không còn đủ điều kiện gửi minh chứng. Chuyển muộn cần liên hệ cơ sở để đối soát.']);
             }
-            $saved = ReceiptImage::store($file, $id, $this->storageRoot);
+            $existing = $this->info($payment);
+            $saved = $existing ? null : ReceiptImage::store($file, $id, $this->storageRoot);
             $sentAt = BookingManagementService::now()->format('Y-m-d H:i:s');
             // Duy's existing schema stores the explicit image link in ghi_chu.
             // Upload must not depend on the separate manual-confirmation migration.
-            $params = ['note' => ReceiptImage::appendReceiptToNote($payment['ghi_chu'] ?? null, $saved, $sentAt), 'id' => $payment['ma_thanh_toan']];
+            $path = $existing['path'] ?? $saved;
+            $sentAt = $existing['sent_at'] ?? $sentAt;
+            $params = ['note' => ReceiptImage::appendReceiptToNote($payment['ghi_chu'] ?? null, $path, $sentAt), 'id' => $payment['ma_thanh_toan']];
             $columns = '';
             if (array_key_exists('anh_minh_chung', $payment) && array_key_exists('minh_chung_gui_luc', $payment)) {
                 $columns = ', anh_minh_chung=:path, minh_chung_gui_luc=:sent';
-                $params += ['path' => $saved, 'sent' => $sentAt];
+                $params += ['path' => $path, 'sent' => $sentAt];
             }
             $stmt = $this->pdo->prepare('UPDATE thanh_toan SET ghi_chu=:note' . $columns . ' WHERE ma_thanh_toan=:id');
             $stmt->execute($params);
-            // Receipt submission is separate from booking confirmation. Keep its original
-            // pending state/deadline so existing six-minute court and stock holds still apply.
-            if ($booking['het_han_giu_san_luc'] <= BookingManagementService::now()->format('Y-m-d H:i:s')) throw new ValidationException(['bien_lai' => 'Thời hạn giữ sân đã kết thúc.']);
+            // Same booking/payment locks as expiry. Check the DB clock again after file I/O.
+            // Do not alter the original timestamps or mark the payment successful.
+            $stmt = $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san='CHO_XAC_NHAN'
+                WHERE ma_dat_san=? AND trang_thai_dat_san='CHO_THANH_TOAN'
+                AND het_han_giu_san_luc>CURRENT_TIMESTAMP");
+            $stmt->execute([$id]);
+            if ($stmt->rowCount() !== 1) throw new ValidationException(['bien_lai' => 'Thời hạn giữ sân đã kết thúc.']);
             $this->pdo->commit();
         } catch (\Throwable $e) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();

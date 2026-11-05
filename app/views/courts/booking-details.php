@@ -403,9 +403,8 @@ use App\Services\BookingPricingService as Money;
                                             ? 'Cho thuê: liên hệ cơ sở'
                                             : ($offer['available'] === null
                                                 ? 'Không theo dõi tồn'
-                                                : ($offer['available'] > 0 ? 'Còn hàng · Khả dụng: ' . $offer['available'] : 'Hết hàng')) ?>
+                                                : ($offer['available'] > 0 ? 'Còn hàng: ' . $offer['available'] : 'Hết hàng')) ?>
                                     </small>
-                                    <?php if ($offer['available'] !== null): ?><small class="booking-stock">Tồn vật lý: <?= e($offer['so_luong_ton'] ?? $offer['available']) ?> · Đang giữ: <?= e(max(0, (int) ($offer['so_luong_ton'] ?? $offer['available']) - $offer['available'])) ?></small><?php endif; ?>
                                 </div>
 
                                 <div class="booking-service-controls">

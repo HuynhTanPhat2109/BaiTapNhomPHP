@@ -738,7 +738,7 @@
     color: #c8f36b; background: radial-gradient(circle at 35% 25%, #355436, #142b1f);
     box-shadow: 0 0 40px #a3d75510;
 }
-.stryke-expired-icon-wrap svg { width: 52px; height: 52px; }
+.stryke-expired-icon-wrap svg { width: 42px; height: 42px; fill:#ffffff;}
 .stryke-expired-center-box .stryke-expired-title {
     font-size: clamp(24px, 3vw, 36px); line-height: 1.25;
     color: #eff6ed; margin: 0 0 18px; letter-spacing: -.025em;

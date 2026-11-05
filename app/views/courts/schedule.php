@@ -301,10 +301,6 @@ $labels = [
             </div>
         </div>
 
-        <p id="selection-feedback" class="booking-selection-feedback" role="status" aria-live="polite" aria-atomic="true">
-            Chưa giữ sân
-        </p>
-
         <?php
             $buttonText = 'TIẾP THEO';
             $buttonType = 'submit';

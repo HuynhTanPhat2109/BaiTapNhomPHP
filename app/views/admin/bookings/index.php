@@ -247,9 +247,6 @@ $roleRoot = match ($scope['role'] ?? '') {
                             <?= e($bookingStatusLabels[$bookingSt] ?? $bookingSt) ?>
                         </span>
                         <?php if ($bookingSt === 'CHO_THANH_TOAN' && !empty($row['het_han_giu_san_luc'])): ?>
-                            <div style="font-size: 0.72rem; color: #c05621; margin-top: 3px;">
-                                Giữ đến: <?= e(date('H:i', strtotime($row['het_han_giu_san_luc']))) ?>
-                            </div>
                         <?php endif; ?>
                     </td>
                     <td style="padding: 12px 14px;">

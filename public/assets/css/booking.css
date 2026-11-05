@@ -855,10 +855,6 @@
     margin-top: 46px;
 }
 
-.booking-wait .booking-heading {
-    margin-bottom: 28px;
-}
-
 .booking-hold-status {
     display: flex;
     justify-content: space-between;
@@ -1105,11 +1101,6 @@
 @media (max-width: 520px) {
     .booking-page {
         padding: 0 16px;
-    }
-
-    .booking-heading {
-        flex-direction: column;
-        gap: 12px;
     }
 
     .booking-section-title--action {
