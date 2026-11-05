@@ -44,7 +44,18 @@ let browser;
       await page.setViewportSize({ width, height: 1000 });
       check((await page.goto(url('/admin/bookings', { reset: '1' }))).ok(), `${role}/${width}: real scoped list loads`);
       const menu = page.locator('[data-row-actions]:has(summary[aria-label="Thao tác cho booking #1"])');
+      const triggerGeometry = await menu.locator('summary').evaluate(trigger => {
+        const box=trigger.getBoundingClientRect(),cell=trigger.closest('td').getBoundingClientRect(),icon=trigger.querySelector('svg').getBoundingClientRect();
+        const header=trigger.closest('table').querySelector('thead th:last-child').getBoundingClientRect();
+        return {width:box.width,height:box.height,cellDelta:Math.abs((box.left+box.right-cell.left-cell.right)/2),
+          headerDelta:header.width?Math.abs((box.left+box.right-header.left-header.right)/2):0,
+          iconX:Math.abs((box.left+box.right-icon.left-icon.right)/2),iconY:Math.abs((box.top+box.bottom-icon.top-icon.bottom)/2),
+          label:trigger.getAttribute('aria-label'),expanded:trigger.getAttribute('aria-expanded')};
+      });
+      check(triggerGeometry.width===40&&triggerGeometry.height===40&&triggerGeometry.cellDelta<1&&triggerGeometry.headerDelta<1
+        &&triggerGeometry.iconX<1&&triggerGeometry.iconY<1&&triggerGeometry.label&&triggerGeometry.expanded==='false',`${role}/${width}: 40px trigger/icon centered under action heading ${JSON.stringify(triggerGeometry)}`);
       await menu.locator('summary').click();
+      check(await menu.locator('summary').getAttribute('aria-expanded')==='true',`${role}/${width}: expanded state follows open menu`);
       const styles = await menu.locator('.list-action-menu__panel > .list-action').evaluateAll(items => items.map(item => ({ width: item.getBoundingClientRect().width,
         background: getComputedStyle(item).backgroundColor, icons: item.querySelectorAll('svg').length, height: item.getBoundingClientRect().height })));
       check(styles.length === 4 && styles.every(item => item.icons === 1 && Math.abs(item.width - styles[0].width) < 1 && item.height >= 40)
@@ -112,6 +123,10 @@ let browser;
     await form.locator('[type="submit"]').click();
     await Promise.all([page.waitForNavigation(),page.locator('[data-confirm-accept]').evaluate(b=>{b.click();b.click();})]);
     let after=await meta(context), paid=after.payments.find(p=>p.ma_dat_san===1);
+    if (!(submissions===1 && Number(after.stock)===Number(initial.stock)-2 && Number(after.invoices)===1)) {
+      fs.writeFileSync(out+'/confirmation-failure.json',JSON.stringify({role,submissions,stock:after.stock,initialStock:initial.stock,invoices:after.invoices,
+        booking:after.bookings[0],payment:paid,notices:await page.locator('.alert, [role="alert"]').allTextContents()},null,2));
+    }
     check(submissions===1 && Number(after.stock)===Number(initial.stock)-2 && Number(after.invoices)===1, `${role}: double click sends one POST, one stock deduction and invoice`);
     check(paid.trang_thai==='THANH_CONG' && after.bookings[0].trang_thai_dat_san==='DA_XAC_NHAN', `${role}: atomic payment and booking confirmation`);
     check(paid.ma_giao_dich===null && paid.ngay_thanh_toan===null && Number(paid.ma_tai_khoan_xac_nhan)===1 && Boolean(paid.xac_nhan_thu_cong_luc), `${role}: actor/time audit kept separate from actual bank fields`);

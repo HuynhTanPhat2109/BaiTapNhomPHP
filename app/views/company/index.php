@@ -35,13 +35,15 @@ $formatMoney = require dirname(__DIR__) . '/admin/partials/format-money.php';
         <?php if (!$facilities): ?><div class="workspace-empty" role="status"><h2 id="company-facilities-heading">Chưa có cơ sở</h2><p>Công ty hiện chưa có cơ sở trong dữ liệu được phân quyền.</p></div>
         <?php else: ?>
         <div class="catalog-table-wrap" tabindex="0" role="region" aria-label="Danh sách cơ sở"><table class="catalog-table workspace-table">
-            <colgroup><col><col><col><col class="workspace-col-status"></colgroup>
-            <thead><tr><th scope="col" id="company-facilities-heading">Cơ sở</th><th scope="col">Liên hệ</th><th scope="col">Giờ hoạt động</th><th class="workspace-number" scope="col">Trạng thái</th></tr></thead>
+            <colgroup><col><col><col><col class="workspace-col-number"><col class="workspace-col-status"><col></colgroup>
+            <thead><tr><th scope="col" id="company-facilities-heading">Cơ sở</th><th scope="col">Liên hệ</th><th scope="col">Giờ hoạt động</th><th class="workspace-number" scope="col">Số sân</th><th class="workspace-number" scope="col">Trạng thái</th><th scope="col">Chi tiết</th></tr></thead>
             <tbody><?php foreach ($facilities as $facility): ?><tr>
                 <th scope="row"><?= $value($facility['ten_co_so'] ?? null) ?><small class="workspace-secondary"><?= $value($facility['dia_chi'] ?? null) ?></small></th>
                 <td data-label="Liên hệ"><?= $value($facility['so_dien_thoai'] ?? null) ?><small class="workspace-secondary"><?= $value($facility['email'] ?? null) ?></small></td>
                 <td data-label="Giờ hoạt động"><?= $value($facility['gio_mo_cua'] ?? null) ?> – <?= $value($facility['gio_dong_cua'] ?? null) ?></td>
+                <td class="workspace-number" data-label="Số sân"><?= (int) ($facility['so_san'] ?? 0) ?></td>
                 <td class="workspace-number" data-label="Trạng thái"><span class="catalog-status" data-status="<?= e($facility['trang_thai'] ?? '') ?>"><?= ($facility['trang_thai'] ?? '') === 'HOAT_DONG' ? 'Hoạt động' : 'Tạm ngưng' ?></span></td>
+                <td data-label="Chi tiết"><a class="list-action list-action--view" href="<?= e(url('/company/co-so/show') . '&id=' . (int) $facility['ma_co_so']) ?>">Xem chi tiết</a></td>
             </tr><?php endforeach; ?></tbody>
         </table></div><?php endif; ?>
     </section>

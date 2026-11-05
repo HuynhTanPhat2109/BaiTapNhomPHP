@@ -37,7 +37,7 @@ $roleLabels = ['QUAN_LY_CONG_TY' => 'Quản lý công ty', 'QUAN_LY_CO_SO' => 'Q
                 <div><dt>Vai trò</dt><dd><?= e($account === null ? 'Chưa có vai trò tài khoản' : ($roleLabels[$account['ten_vai_tro']] ?? $account['ten_vai_tro'])) ?></dd></div>
                 <div><dt>Trạng thái nhân viên</dt><dd><?= e($detailStatusLabel) ?></dd></div>
                 <div><dt>Công ty</dt><dd><?= e($company['ten_cong_ty'] ?? 'Chưa có thông tin') ?></dd></div>
-                <div><dt>Cơ sở</dt><dd><?= e($facility['ten_co_so'] ?? 'Chưa gán cơ sở') ?></dd></div>
+                <div><dt>Cơ sở</dt><dd><?= e($facility['ten_co_so'] ?? 'Chưa phân công') ?></dd></div>
             </dl>
         </section>
     </div>

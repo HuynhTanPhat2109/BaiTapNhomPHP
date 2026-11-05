@@ -13,7 +13,7 @@ final class EmployeeService
     private NhanVien $employees;
     private AccountService $accounts;
 
-    public function __construct(private PDO $pdo)
+    public function __construct(private PDO $pdo, private ?array $actor = null)
     {
         $this->employees = new NhanVien($pdo);
         $this->accounts = new AccountService($pdo);
@@ -25,26 +25,33 @@ final class EmployeeService
         if ($actorRole === 'QUAN_TRI_TAP_DOAN') {
             return $this->employees->all();
         }
-        return $this->employees->byCompany($companyId);
+        return $this->employees->byCompany($companyId, $this->actorFacilityId($actorRole, $companyId));
     }
 
-    public function getEmployee(string $actorRole, $actorCompanyId, $employeeId): array
+    public function getEmployee(string $actorRole, $actorCompanyId, $employeeId, bool $forWrite = false): array
     {
         $companyId = $this->actorCompanyId($actorRole, $actorCompanyId);
         $id = self::requireId($employeeId, 'ma_nhan_vien');
         $employee = $actorRole === 'QUAN_TRI_TAP_DOAN'
             ? $this->employees->find($id)
-            : $this->employees->findForCompany($id, $companyId);
+            : $this->employees->findForCompany($id, $companyId, false, $this->actorFacilityId($actorRole, $companyId));
         if (!$employee) {
             throw new HttpException(404, 'Không tìm thấy nhân viên.');
         }
         $employee['ten_vai_tro'] = $this->employees->accountRoleForEmployee($id);
+        if ($forWrite && !self::canManage($actorRole, $employee['ten_vai_tro'])) {
+            throw new HttpException(403, 'Không được quản lý nhân viên có vai trò ngang hoặc cao hơn.');
+        }
         return $employee;
     }
 
     public function getOptions(string $actorRole, $actorCompanyId = null, $currentFacilityId = null): array
     {
         $companyId = $this->actorCompanyId($actorRole, $actorCompanyId);
+        $assignedFacility = $this->actorFacilityId($actorRole, $companyId);
+        if ($assignedFacility !== null) {
+            return ['companies' => [], 'facilities' => [$this->requireFacility($assignedFacility, $companyId)]];
+        }
         if ($actorRole === 'QUAN_TRI_TAP_DOAN') {
             return ['companies' => $this->companyOptions(), 'facilities' => (new \App\Models\CoSo($this->pdo))->all()];
         }
@@ -62,6 +69,7 @@ final class EmployeeService
         $companyId = $this->companyForWrite($actorRole, $actorCompanyId, $data);
         $clean = self::validatedData($data);
         $facilityId = $this->facilityForWrite($actorRole, $companyId, $clean['ma_co_so']);
+        $clean['ma_co_so'] = $facilityId;
         $role = $this->accountRole($actorRole, $account, $facilityId);
 
         try {
@@ -95,12 +103,13 @@ final class EmployeeService
             $companyId = self::requireId($data['ma_cong_ty'] ?? null, 'ma_cong_ty');
         }
         $facilityId = $this->facilityForWrite($actorRole, $companyId, $clean['ma_co_so'], true);
+        $clean['ma_co_so'] = $facilityId;
 
         try {
             $this->pdo->beginTransaction();
             $current = $actorRole === 'QUAN_TRI_TAP_DOAN'
                 ? $this->employees->find($id, true)
-                : $this->employees->findForCompany($id, $companyId, true);
+                : $this->employees->findForCompany($id, $companyId, true, $this->actorFacilityId($actorRole, $companyId));
             if (!$current) {
                 throw new HttpException(404, 'Không tìm thấy nhân viên.');
             }
@@ -117,6 +126,9 @@ final class EmployeeService
                 }
             }
             $linkedRole = $this->employees->accountRoleForEmployee($id);
+            if (!self::canManage($actorRole, $linkedRole)) {
+                throw new HttpException(403, 'Không được quản lý nhân viên có vai trò ngang hoặc cao hơn.');
+            }
             if (($linkedRole === 'QUAN_LY_CONG_TY' && $facilityId !== null)
                 || (in_array($linkedRole, ['QUAN_LY_CO_SO', 'NHAN_VIEN'], true) && $facilityId === null)) {
                 throw new ValidationException(['ma_co_so' => 'Cơ sở không phù hợp với vai trò tài khoản hiện tại.']);
@@ -146,9 +158,12 @@ final class EmployeeService
             $this->pdo->beginTransaction();
             $employee = $actorRole === 'QUAN_TRI_TAP_DOAN'
                 ? $this->employees->find($id, true)
-                : $this->employees->findForCompany($id, $companyId, true);
+                : $this->employees->findForCompany($id, $companyId, true, $this->actorFacilityId($actorRole, $companyId));
             if (!$employee) {
                 throw new HttpException(404, 'Không tìm thấy nhân viên.');
+            }
+            if (!self::canManage($actorRole, $this->employees->accountRoleForEmployee($id))) {
+                throw new HttpException(403, 'Không được đổi trạng thái nhân viên có vai trò ngang hoặc cao hơn.');
             }
             $updated = $this->employees->changeStatus($id, (int) $employee['ma_cong_ty'], $status);
             if (!$updated) {
@@ -181,20 +196,50 @@ final class EmployeeService
 
     private function actorCompanyId(string $role, $companyId): ?int
     {
+        if ($this->actor !== null && (!AuthService::isActive($this->actor) || ($this->actor['ten_vai_tro'] ?? '') !== $role)) {
+            throw new HttpException(403, 'Tài khoản không có quyền quản lý nhân viên.');
+        }
         if ($role === 'QUAN_TRI_TAP_DOAN') {
             return null;
         }
-        if ($role !== 'QUAN_LY_CONG_TY') {
+        if (!in_array($role, ['QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO'], true)) {
             throw new HttpException(403, 'Không có quyền thực hiện thao tác này.');
         }
         $companyId = self::requireId($companyId, 'ma_cong_ty');
+        if ($this->actor !== null && (int) ($this->actor['ma_cong_ty'] ?? 0) !== $companyId) {
+            throw new HttpException(403, 'Công ty nằm ngoài phạm vi quản lý.');
+        }
         $this->requireCompany($companyId);
+        $this->actorFacilityId($role, $companyId);
         return $companyId;
+    }
+
+    private function actorFacilityId(string $role, ?int $companyId): ?int
+    {
+        if ($role !== 'QUAN_LY_CO_SO') return null;
+        // Assignment comes from the authenticated identity, never a form/filter value.
+        if ($this->actor === null || !self::validId($this->actor['ma_co_so'] ?? null)) {
+            throw new HttpException(403, 'Chưa được phân công cơ sở hợp lệ.');
+        }
+        $id = (int) $this->actor['ma_co_so'];
+        $this->requireFacility($id, $companyId);
+        return $id;
+    }
+
+    public static function canManage(string $role, ?string $targetRole): bool
+    {
+        return match ($role) {
+            'QUAN_TRI_TAP_DOAN' => true,
+            'QUAN_LY_CONG_TY' => $targetRole === null || in_array($targetRole, ['QUAN_LY_CO_SO', 'NHAN_VIEN'], true),
+            'QUAN_LY_CO_SO' => $targetRole === null || $targetRole === 'NHAN_VIEN',
+            default => false,
+        };
     }
 
     private function companyForWrite(string $role, $actorCompanyId, array $data): int
     {
         if ($role === 'QUAN_TRI_TAP_DOAN') {
+            $this->actorCompanyId($role, $actorCompanyId);
             return self::requireId($data['ma_cong_ty'] ?? null, 'ma_cong_ty');
         }
         return $this->actorCompanyId($role, $actorCompanyId);
@@ -202,6 +247,13 @@ final class EmployeeService
 
     private function facilityForWrite(string $role, int $companyId, ?int $facility, bool $updating = false): ?int
     {
+        $assigned = $this->actorFacilityId($role, $companyId);
+        if ($assigned !== null) {
+            if ($facility !== null && $facility !== $assigned) {
+                throw new HttpException(403, 'Không được gán nhân viên sang cơ sở khác.');
+            }
+            return $assigned;
+        }
         if ($role === 'QUAN_TRI_TAP_DOAN' && $facility !== null && !$updating) {
             throw new ValidationException(['ma_co_so' => 'Quản lý công ty không được gán cơ sở.']);
         }
@@ -214,7 +266,12 @@ final class EmployeeService
             return null;
         }
         $role = $account['role'] ?? null;
-        $allowed = $actorRole === 'QUAN_TRI_TAP_DOAN' ? ['QUAN_LY_CONG_TY'] : ['QUAN_LY_CO_SO', 'NHAN_VIEN'];
+        $allowed = match ($actorRole) {
+            'QUAN_TRI_TAP_DOAN' => ['QUAN_LY_CONG_TY'],
+            'QUAN_LY_CONG_TY' => ['QUAN_LY_CO_SO', 'NHAN_VIEN'],
+            'QUAN_LY_CO_SO' => ['NHAN_VIEN'],
+            default => [],
+        };
         if (!is_string($role) || !in_array($role, $allowed, true)) {
             throw new ValidationException(['role' => 'Vai trò tài khoản không được phép cấp.']);
         }

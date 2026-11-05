@@ -55,7 +55,7 @@ final class CompanyController extends Controller
         $this->render('company/index', [
             'title' => $company['ten_cong_ty'],
             'company' => $company,
-            'facilities' => (new CoSo($this->app->pdo()))->byCompany($companyId),
+            'facilities' => (new CoSo($this->app->pdo()))->all(\App\Services\FacilityScope::forUser($user)),
             'contracts' => (new ContractService($this->app->pdo()))->byCompany($companyId),
         ]);
     }

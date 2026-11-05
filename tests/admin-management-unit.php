@@ -70,10 +70,10 @@ $companyFilters = static fn($query) => AdminListService::managementFilters('/com
 $allPersonnel = $employee->page(AdminListService::managementFilters('/admin/employees', []));
 managementCheck($allPersonnel['total'] === 361, 'approved Admin sees all 360 employee accounts plus one personnel record without account');
 $result = $employee->page($companyFilters(['ma_cong_ty' => '2']), 1);
-managementCheck($result['total'] === 121 && !array_filter($result['items'], fn($row) => $row['ma_cong_ty'] !== 1 || ($row['ten_vai_tro'] ?? '') === 'QUAN_LY_CONG_TY'), 'company scope excludes foreign employees/managers; client cannot override actor company');
+managementCheck($result['total'] === 181 && !array_filter($result['items'], fn($row) => $row['ma_cong_ty'] !== 1), 'company sees all own personnel including managers; client cannot override actor company');
 $result = $employee->page($companyFilters(['ma_co_so' => '2', 'vai_tro' => 'QUAN_LY_CO_SO', 'trang_thai' => 'DANG_LAM']), 1);
 managementCheck($result['total'] === 60, 'employee facility/role/status combined filter');
-foreach (['ux1001@example.test', '0900001001'] as $search) {
+foreach (['ux1001@example.test', '0900001001', 'memory.1001'] as $search) {
     $result = $employee->page($companyFilters(['q' => $search]), 1);
     managementCheck($result['total'] === 1 && $result['items'][0]['ma_nhan_vien'] === 1001, 'employee searches email/phone in authorized company');
 }

@@ -29,7 +29,7 @@ $canManage = in_array($role, ['QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO'], true);
             <td class="list-stt" data-label="STT"><?= $index + 1 ?></td>
             <th scope="row"><?= e($acc['ten_ngan_hang']) ?></th>
             <td class="bank-beneficiary" data-label="Tài khoản thụ hưởng"><strong><?= e($acc['so_tai_khoan']) ?></strong><small class="workspace-secondary"><?= e($acc['ten_chu_tai_khoan']) ?></small></td>
-            <td data-label="Mặc định"><?php if ($acc['la_mac_dinh'] == 1): ?><span class="catalog-status" data-status="HOAT_DONG">Nhận tiền chính</span><?php else: ?><span class="workspace-secondary">Chưa đặt mặc định</span><?php endif; ?></td>
+            <td class="bank-default" data-label="Mặc định"><?php if ($acc['la_mac_dinh'] == 1): ?><span class="catalog-status" data-status="HOAT_DONG">Nhận tiền chính</span><?php else: ?><span class="workspace-secondary">Chưa đặt mặc định</span><?php endif; ?></td>
             <td data-label="Trạng thái"><span class="catalog-status" data-status="<?= e($acc['trang_thai']) ?>"><?= $acc['trang_thai'] === 'HOAT_DONG' ? 'Hoạt động' : 'Ngừng' ?></span></td>
             <?php if ($canManage): ?>
             <td data-label="Thao tác">

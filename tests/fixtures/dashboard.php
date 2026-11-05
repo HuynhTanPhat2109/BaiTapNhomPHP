@@ -103,6 +103,7 @@ try {
     if ($_SERVER['REQUEST_METHOD'] !== 'GET' || !in_array($route, ['/admin', '/company', '/facility', '/staff', '/admin/revenue', '/company/revenue', '/facility/revenue', '/staff/revenue', '/admin/invoices', '/admin/invoices/show', '/admin/invoices/print'], true)) throw new Core\HttpException(404, 'Only read-only Dashboard/revenue/invoice routes are exposed');
     if (($_GET['fixture'] ?? '') === 'empty') foreach (['chi_tiet_dat_san', 'chi_tiet_dich_vu_dat', 'hoa_don', 'thanh_toan', 'dat_san'] as $table) $pdo->exec('DELETE FROM ' . $table);
     if (($_GET['fixture'] ?? '') === 'error') $pdo->exec('DROP TABLE thanh_toan');
+    if (($_GET['fixture'] ?? '') === 'long') $pdo->exec("UPDATE co_so SET ten_co_so='Tên cơ sở dài · Hoàng Quân – Khu liên hợp thể thao và dịch vụ phía Đông thuộc công ty trong phạm vi'");
     $pdo->exec('PRAGMA query_only=ON'); // Fail any accidental production write on a Dashboard GET.
     $app = dashboardFixtureApp($pdo, dashboardIdentity($_SERVER['HTTP_X_STRYKE_TEST_ROLE'] ?? 'QUAN_TRI_TAP_DOAN'));
     $router = new Core\Router();

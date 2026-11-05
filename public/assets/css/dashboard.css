@@ -34,18 +34,19 @@
 .dashboard-page .dashboard-unit { color: #6a7e70; font-size: 12px; white-space: nowrap; }
 .dashboard-page .dashboard-readonly { margin-bottom: 20px; padding: 12px 16px; border-radius: 9px; background: #eaf3e4; color: #44633b; font-size: 14px; }
 .dashboard-page .dashboard-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-bottom: 24px; }
-.dashboard-page .dashboard-kpi { position: relative; display: flex; flex-direction: column; min-height: 170px; padding: 22px; transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease; }
-.dashboard-page .dashboard-kpi h3 { max-width: calc(100% - 52px); min-height: 40px; margin: 0 0 10px; color: #5b7162; font-size: 14px; font-weight: 500; line-height: 1.5; }
-.dashboard-page .dashboard-kpi-value { margin: auto 0 8px; color: #1a3f2a; font-size: clamp(25px, 2.2vw, 32px); line-height: 1.3; font-weight: 600; letter-spacing: -.035em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.dashboard-page .dashboard-kpi small { display: block; min-height: 36px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.dashboard-page .dashboard-kpi { display: grid; grid-template-columns: minmax(0, 1fr) 40px; grid-template-rows: subgrid; grid-row: span 3; column-gap: 12px; row-gap: 10px; min-height: 190px; padding: 22px; transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease; }
+.dashboard-page .dashboard-kpi h3 { grid-area: 1 / 1; display: flex; align-items: center; align-self: stretch; min-width: 0; margin: 0; color: #5b7162; font-size: 14px; font-weight: 500; line-height: 1.5; }
+.dashboard-page .dashboard-kpi-value { grid-area: 2 / 1 / auto / -1; align-self: start; margin: 0; color: #1a3f2a; font-size: clamp(25px, 2.2vw, 32px); line-height: 1.3; font-weight: 600; letter-spacing: -.035em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.dashboard-page .dashboard-kpi small { grid-area: 3 / 1 / auto / -1; align-self: start; display: block; min-height: 36px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .dashboard-page .dashboard-kpi--revenue { border-color: #bcd8a8; background: #f3f9ed; }
 .dashboard-page .dashboard-kpi--pending .dashboard-kpi-icon { color: #976b2e; background: #fbf4e7; }
 .dashboard-page .dashboard-kpi--cancelled .dashboard-kpi-icon { color: #956061; background: #f7eded; }
-.dashboard-page .dashboard-kpi-icon { position: absolute; top: 20px; right: 20px; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #547c4310; border-radius: 12px; background: #edf4e9; color: #527c44; }
+.dashboard-page .dashboard-kpi-icon { grid-area: 1 / 2; align-self: center; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #547c4310; border-radius: 12px; background: #edf4e9; color: #527c44; }
 .dashboard-page .dashboard-kpi-icon svg, .dashboard-page .dashboard-empty svg { width: 21px; height: 21px; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .dashboard-page .dashboard-assets { margin-bottom: 24px; }
-.dashboard-page .dashboard-asset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 12px; }
-.dashboard-page .dashboard-asset { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 16px; border: 1px solid #e7eee4; border-radius: 12px; background: #fafcf8; }
+.dashboard-page .dashboard-asset-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.dashboard-page .dashboard-asset { display: flex; align-items: start; gap: 12px; min-width: 0; padding: 16px; border: 1px solid #e7eee4; border-radius: 12px; background: #fafcf8; }
+.dashboard-page .dashboard-asset > div { min-width: 0; }
 .dashboard-page .dashboard-asset svg { flex: 0 0 24px; width: 24px; height: 24px; color: #6b8a61; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .dashboard-page .dashboard-asset strong { display: block; color: #2b5938; font-size: 24px; line-height: 1.3; font-weight: 600; }
 .dashboard-page .dashboard-asset span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; }
@@ -98,6 +99,15 @@
 .dashboard-page table tbody th { font-weight: 500; }
 .dashboard-page table td strong { font-weight: 600; }
 .dashboard-page table td:has(.dashboard-badge) { text-align: left; }
+.dashboard-page .dashboard-table--recent :is(th, td) { padding: 15px 12px; text-align: left; vertical-align: middle; }
+.dashboard-page .dashboard-table--recent :is(th, td):last-child { text-align: right; white-space: nowrap; }
+.dashboard-page .dashboard-table--recent .dashboard-recent-booking { width: 18%; }
+.dashboard-page .dashboard-table--recent .dashboard-recent-facility { width: 26%; }
+.dashboard-page .dashboard-table--recent .dashboard-recent-status { width: 22%; }
+.dashboard-page .dashboard-table--recent .dashboard-recent-payment { width: 17%; }
+.dashboard-page .dashboard-table--recent .dashboard-recent-value { width: 17%; }
+.dashboard-page .dashboard-table--recent :is(th, td):nth-child(2) { max-width: 300px; white-space: normal; overflow-wrap: anywhere; }
+.dashboard-page .dashboard-table--recent .dashboard-badge { width: auto; white-space: nowrap; }
 .dashboard-page .dashboard-table tbody tr:hover { background: #fafcf8; }
 .dashboard-page table tfoot { background: #f4f9f0; font-weight: 600; }
 .dashboard-page table small { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; font-weight: 400; }
@@ -118,12 +128,13 @@
 .dashboard-page [aria-busy="true"] { opacity: .7; }
 @container (max-width: 960px) {
     .dashboard-page .dashboard-charts { grid-template-columns: minmax(0, 1fr); }
-    .dashboard-page .dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dashboard-page .dashboard-kpis, .dashboard-page .dashboard-asset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .dashboard-page .dashboard-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "heading heading" "period grouping" "from to" "actions actions" "note note"; }
     .dashboard-page .dashboard-filters--admin { grid-template-areas: "heading heading" "period grouping" "from to" "company company" "facility facility" "actions actions" "note note"; }
     .dashboard-page .dashboard-filters--company { grid-template-areas: "heading heading" "period grouping" "from to" "facility facility" "actions actions" "note note"; }
 }
 @container (max-width: 520px) {
+    .dashboard-page .dashboard-kpis, .dashboard-page .dashboard-asset-grid { grid-template-columns: minmax(0, 1fr); }
     .dashboard-page .dashboard-filters { grid-template-columns: minmax(0, 1fr); grid-template-areas: "heading" "period" "from" "to" "grouping" "actions" "note"; }
     .dashboard-page .dashboard-filters--admin { grid-template-areas: "heading" "period" "from" "to" "grouping" "company" "facility" "actions" "note"; }
     .dashboard-page .dashboard-filters--company { grid-template-areas: "heading" "period" "from" "to" "grouping" "facility" "actions" "note"; }
@@ -132,19 +143,16 @@
     .dashboard-page .dashboard-ranking li strong { flex-basis: 100%; }
 }
 @media (max-width: 767px) {
-    .dashboard-page .dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .dashboard-page .dashboard-card { padding: 18px; }
     .dashboard-page .dashboard-filter-actions { flex-wrap: wrap; }
 }
 @media (max-width: 480px) {
     .page-admin .dashboard-page .module-heading h1 { font-size: 27px !important; }
-    .dashboard-page .dashboard-kpis { grid-template-columns: minmax(0, 1fr); }
     .dashboard-page .dashboard-kpi-value { font-size: 28px; }
     .dashboard-page .dashboard-filter-field .form-control { font-size: 16px; }
     .dashboard-page .dashboard-filter-actions .btn { flex: 1 1 auto; }
     .dashboard-page .dashboard-donut-layout { justify-content: center; }
     .dashboard-page .dashboard-legend { flex-basis: 100%; }
-    .dashboard-page .dashboard-kpi-icon { top: 16px; right: 16px; }
 }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .dashboard-page .dashboard-kpi:hover { transform: translateY(-2px); border-color: #c2d8b6; box-shadow: 0 7px 20px #18382709; }

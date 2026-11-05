@@ -419,7 +419,7 @@
 .page-admin .admin-catalog .bank-page .catalog-table-wrap { container: bank-table / inline-size; }
 @media (min-width: 1101px) {
     .page-admin .admin-catalog .bank-page .bank-col-name { width: 16%; }
-    .page-admin .admin-catalog .bank-page .bank-col-default { width: 118px; }
+    .page-admin .admin-catalog .bank-page .bank-col-default { width: 160px; }
     .page-admin .admin-catalog .bank-page .bank-col-status { width: 104px; }
     .page-admin .admin-catalog .bank-page .bank-col-actions { width: 280px; }
     .page-admin .catalog-workspace.admin-catalog .bank-page .row-actions { flex-wrap: wrap; justify-content: center; }
@@ -558,6 +558,13 @@
 .page-admin .booking-admin-list .list-action-menu__panel > .list-action--reconcile { background: #edf3fb; color: #3f628a; }
 .page-admin .booking-admin-list .list-action-menu__panel > .list-action:hover { filter: brightness(.97); border-color: #c5d7c8; }
 .page-admin .booking-admin-list .list-action-menu__panel > .list-action:active { filter: brightness(.94); }
+.page-admin .catalog-workspace.admin-catalog .bank-page .catalog-table .bank-default,
+.page-admin .catalog-workspace.admin-catalog .bank-page .bank-default > span { white-space: nowrap; overflow-wrap: normal; }
+.page-admin .catalog-workspace.admin-catalog .bank-page .bank-default > span { display: inline-block; }
+.page-admin .catalog-workspace.admin-catalog .booking-admin-list .catalog-table .booking-row-actions { text-align: center; vertical-align: middle; padding: 12px; }
+.page-admin .catalog-workspace.admin-catalog .booking-admin-list .booking-row-actions > .list-action-menu { display: inline-block; vertical-align: middle; }
+.page-admin .catalog-workspace.admin-catalog .booking-admin-list .list-action-menu > summary { width: 40px; height: 40px; min-height: 40px; color: #315b42; }
+.page-admin .catalog-workspace.admin-catalog .booking-admin-list .list-action-menu > summary:focus-visible { outline: 2px solid #5e9566; outline-offset: 3px; }
 .page-admin .booking-action-dialog { width: min(840px, calc(100vw - 32px)); }
 .booking-action-dialog > header { position: sticky; top: -24px; z-index: 1; padding-block: 8px; background: #fff; }
 .booking-action-dialog .booking-action-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }

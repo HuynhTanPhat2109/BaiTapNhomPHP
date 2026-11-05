@@ -50,6 +50,10 @@ async function layout(page, label) {
     });
     check(metrics.scroll <= metrics.width + 1 && metrics.clipped.length === 0, `${label}: no overflow or clipped controls ${JSON.stringify(metrics)}`);
     check(!metrics.outsideCell && metrics.tableOverflow <= 1, `${label}: table/actions fit without hidden overflow`);
+    check(await page.locator('.bank-default > span').evaluateAll(labels => labels.every(element => {
+        const range=document.createRange();range.selectNodeContents(element);
+        return getComputedStyle(element).whiteSpace==='nowrap' && range.getClientRects().length===1;
+    })), `${label}: default and non-default account labels stay on one line`);
 }
 async function post(context, route, data) {
     return context.request.post(url(route), { form: data, maxRedirects: 0 });
