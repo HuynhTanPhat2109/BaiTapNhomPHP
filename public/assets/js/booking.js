@@ -390,14 +390,14 @@
             }
         }
 
-        const seconds = (!isReconcile && !hasReceipt && Number.isFinite(deadline))
+        const seconds = (Number.isFinite(deadline))
             ? Math.max(0, Math.ceil((deadline - epoch - (performance.now() - start)) / 1000))
             : 0;
 
-        const isConfirmed = (state==='DA_XAC_NHAN' || state==='HOAN_THANH' || paymentStatus === 'THANH_CONG') && !isReconcile;
-        // Khi khách đã nộp biên lai, đơn chuyển sang chờ xác nhận và KHÔNG bao giờ bị hủy tự động hay hết hạn
-        const isReceiptWaiting = (hasReceipt && !isConfirmed && !isReconcile && state!=='DA_HUY');
-        const isEnded = (!hasReceipt && !isReconcile && (state==='DA_HUY' || state==='HET_HAN'));
+        const isConfirmed = (state==='DA_XAC_NHAN' || state==='HOAN_THANH') && !isReconcile;
+        // Evidence does not extend the original hold or prove that money was received.
+        const isReceiptWaiting = (hasReceipt && !isConfirmed && !isReconcile && seconds>0 && !['DA_HUY','HET_HAN'].includes(state));
+        const isEnded = (!isConfirmed && !isReconcile && (state==='DA_HUY' || state==='HET_HAN' || seconds===0));
         const isWaiting = (state==='CHO_THANH_TOAN' && seconds>0 && !hasReceipt && !isReconcile);
 
         if (counter) {
@@ -412,7 +412,7 @@
             } else if (isConfirmed) {
                 message.textContent=labels[state] || 'Booking đã được xác nhận';
             } else if (isReceiptWaiting) {
-                message.textContent='Đã gửi yêu cầu thanh toán (Đang chờ nhân viên xác nhận)';
+                message.textContent='Đã gửi minh chứng – Chờ xác nhận thanh toán';
             } else if (isEnded) {
                 message.textContent=labels[state] || 'Đã hết thời gian giữ sân';
             } else if (seconds===0) {
@@ -470,7 +470,7 @@
 
         const expiredEl=waiting.querySelector('[data-payment-expired]');
         if (expiredEl) {
-            if (isReconcile || isConfirmed || hasReceipt || isReceiptWaiting) {
+            if (isReconcile || isConfirmed || isReceiptWaiting) {
                 expiredEl.hidden = true;
                 expiredEl.style.display = 'none';
             } else {
@@ -524,9 +524,8 @@
     tick();
     if (!isTerminal(state)) {
         const initPaymentStatus = waiting.dataset.paymentStatus;
-        const initHasReceipt = (waiting.dataset.receiptSubmitted === '1');
-        // Không bắt đầu tick đếm giây nếu đang ở trạng thái CAN_DOI_SOAT hoặc đã nộp biên lai
-        if (initPaymentStatus !== 'CAN_DOI_SOAT' && !initHasReceipt) {
+        // Keep the original hold countdown even after evidence is submitted.
+        if (initPaymentStatus !== 'CAN_DOI_SOAT') {
             tickTimer=setInterval(tick,1000);
         }
         pollTimer=setInterval(refresh,5000);

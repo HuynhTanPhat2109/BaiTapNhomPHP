@@ -7,6 +7,10 @@ final class Dashboard
 {
     public function __construct(private PDO $pdo) {}
 
+    private ?bool $manualReceipts = null;
+    private function manualReceipts(): bool { return $this->manualReceipts ??= (new ThanhToan($this->pdo))->supportsManualReceipt(); }
+    private function receivedAt(): string { return $this->manualReceipts() ? 'COALESCE(p.ngay_thanh_toan, p.xac_nhan_thu_cong_luc)' : 'p.ngay_thanh_toan'; }
+
     private function rows(string $sql, array $params = []): array
     {
         $stmt = $this->pdo->prepare($sql);
@@ -40,18 +44,22 @@ final class Dashboard
     private function paid(array $scope, ?array $range): array
     {
         [$where, $params] = $this->scope($scope);
+        $receivedAt = $this->receivedAt();
+        $evidence = "(p.ngay_thanh_toan IS NOT NULL AND p.ngay_thanh_toan >= '1000-01-01 00:00:00'
+            AND p.ma_giao_dich IS NOT NULL AND TRIM(p.ma_giao_dich) <> '')";
+        if ($this->manualReceipts()) $evidence = '(' . $evidence . ' OR (p.xac_nhan_thu_cong_luc IS NOT NULL
+            AND p.ma_tai_khoan_xac_nhan IS NOT NULL AND p.anh_minh_chung IS NOT NULL))';
         $sql = " FROM thanh_toan p JOIN dat_san d ON d.ma_dat_san = p.ma_dat_san
             JOIN co_so f ON f.ma_co_so = d.ma_co_so
             JOIN cong_ty_nhuong_quyen c ON c.ma_cong_ty = f.ma_cong_ty
             WHERE $where AND p.trang_thai = 'THANH_CONG'
             AND d.trang_thai_dat_san IN ('DA_XAC_NHAN', 'HOAN_THANH')
-            AND p.ngay_thanh_toan IS NOT NULL AND p.ngay_thanh_toan >= '1000-01-01 00:00:00'
-            AND p.ma_giao_dich IS NOT NULL AND TRIM(p.ma_giao_dich) <> ''
+            AND $evidence
             AND p.so_tien_thuc_nhan = p.so_tien AND p.so_tien = d.tong_tien_tam_tinh
             AND d.tong_tien_tam_tinh = d.tong_tien_san + d.tong_tien_dich_vu
             AND d.tong_tien_san >= 0 AND d.tong_tien_dich_vu >= 0";
         if ($range !== null) {
-            $sql .= ' AND p.ngay_thanh_toan >= :start AND p.ngay_thanh_toan < :end';
+            $sql .= " AND $receivedAt >= :start AND $receivedAt < :end";
             $params += ['start' => $range['start'], 'end' => $range['end']];
         }
         return [$sql, $params];
@@ -60,9 +68,10 @@ final class Dashboard
     public function revenue(array $scope, ?array $range, string $group = ''): array
     {
         [$from, $params] = $this->paid($scope, $range);
+        $receivedAt = $this->receivedAt();
         $key = match ($group) {
             'company' => 'c.ma_cong_ty', 'facility' => 'f.ma_co_so',
-            'day' => 'SUBSTR(p.ngay_thanh_toan, 1, 10)', 'month' => 'SUBSTR(p.ngay_thanh_toan, 1, 7)',
+            'day' => "SUBSTR($receivedAt, 1, 10)", 'month' => "SUBSTR($receivedAt, 1, 7)",
             default => null,
         };
         return $this->rows('SELECT ' . ($key ? "$key AS bucket, " : '')
@@ -97,10 +106,11 @@ final class Dashboard
     public function transactions(array $scope, array $range): array
     {
         [$from, $params] = $this->paid($scope, $range);
-        return $this->rows('SELECT d.ma_dat_san, f.ten_co_so, p.ngay_thanh_toan, p.ma_giao_dich,
+        $receivedAt = $this->receivedAt();
+        return $this->rows('SELECT d.ma_dat_san, f.ten_co_so, p.ngay_thanh_toan, ' . $receivedAt . ' AS ngay_ghi_nhan, p.ma_giao_dich,
             p.so_tien_thuc_nhan, d.tong_tien_san, d.tong_tien_dich_vu,
             (SELECT MIN(h.so_hoa_don) FROM hoa_don h WHERE h.ma_dat_san = d.ma_dat_san AND h.ma_thanh_toan = p.ma_thanh_toan) AS so_hoa_don'
-            . $from . ' ORDER BY p.ngay_thanh_toan DESC, p.ma_thanh_toan DESC LIMIT 50', $params);
+            . $from . " ORDER BY $receivedAt DESC, p.ma_thanh_toan DESC LIMIT 50", $params);
     }
 
     public function assets(array $scope): array

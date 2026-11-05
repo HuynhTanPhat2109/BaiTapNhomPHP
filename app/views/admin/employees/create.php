@@ -45,7 +45,7 @@ $gender = $value($old, 'gioi_tinh');
         <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">3</span>Tài khoản</h2>
         <div class="module-fields">
         <div class="form-group"><label for="username">Tên đăng nhập</label><input class="form-control" id="username" name="username" maxlength="15" value="<?= e($value($old, 'username')) ?>" required<?= field_error_attributes('username', $errors) ?>><?= field_error('username', $errors) ?></div>
-        <div class="form-group"><label for="password">Mật khẩu</label><input class="form-control" id="password" name="password" type="password" value="" required<?= field_error_attributes('password', $errors) ?>><?= field_error('password', $errors) ?></div>
+        <div class="form-group"><label for="password">Mật khẩu</label><div class="password-control employee-password"><input class="form-control" id="password" name="password" type="password" autocomplete="new-password" value="" required<?= field_error_attributes('password', $errors) ?>><button class="pw-toggle" type="button" data-target="password" aria-label="Hiện mật khẩu" aria-controls="password" aria-pressed="false" hidden></button></div><?= field_error('password', $errors) ?></div>
         <p>Vai trò tài khoản: <strong>Quản lý công ty</strong></p>
         <?= field_error('account', $errors) ?>
         </div></section>

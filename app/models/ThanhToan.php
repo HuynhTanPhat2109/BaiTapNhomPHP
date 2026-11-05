@@ -13,6 +13,16 @@ final class ThanhToan
         $this->pdo = $pdo;
     }
 
+    public function supportsManualReceipt(): bool
+    {
+        try {
+            $this->pdo->query('SELECT anh_minh_chung, minh_chung_gui_luc, ma_tai_khoan_xac_nhan, xac_nhan_thu_cong_luc FROM thanh_toan WHERE 1=0');
+            return true;
+        } catch (\PDOException $e) {
+            return false;
+        }
+    }
+
     /**
      * Tạo bản ghi yêu cầu thanh toán mới.
      *

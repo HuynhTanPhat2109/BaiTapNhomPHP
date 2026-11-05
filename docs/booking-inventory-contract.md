@@ -1,14 +1,20 @@
 # PR5 Vũ — snapshot, giữ ảo và xuất tồn
 
+**Cập nhật05/11/2026:** luồng xác nhận thường đã chuyển sang minh chứng + đối chiếu thủ công,
+cùng hook/transaction hiện có. Có migration riêng cho ảnh/người/giờ xác nhận, không tạo thông tin
+ngân hàng giả. [Hợp đồng và kiểm thử hiện tại](receipt-confirmation-review.md).
+
 ## Phạm vi và trạng thái tích hợp
 
 Service nội bộ: `App\Services\BookingInventoryService::deductForPayment(int $bookingId): array`.
-Chưa được gọi từ checkout, PaymentService, webhook hay route nào. Chưa phải luồng thanh toán
-hoàn chỉnh. Không xác minh giao dịch, đổi trạng thái booking/payment, lập hóa đơn hoặc hoàn kho.
+**Cập nhật 04/11/2026:** `BookingManagementService` đã gọi hook trong transaction xác nhận
+thủ công và xác nhận qua nguồn ngân hàng. SQL trừ tồn riêng đã được thay thế, không cộng thêm
+một writer thứ hai. PaymentService/checkout không xuất tồn. Chưa có webhook/API ngân hàng thật.
+Hook không xác minh giao dịch, đổi trạng thái booking/payment, lập hóa đơn hoặc hoàn kho.
 Không thay đổi schema. Cập nhật 04/11/2026: người dùng đã duyệt mở CHO_THUE trong
 BookingService theo cùng hợp đồng giữ ảo/xuất tồn hiện có; không bổ sung giao–nhận/hoàn đồ thuê.
 
-**Cập nhật kiểm tra PR6 (03/11/2026):** đã có xác nhận thủ công trong
+**Lịch sử kiểm tra PR6 (03/11/2026), trước bản tích hợp 04/11:** đã có xác nhận thủ công trong
 `BookingManagementService::confirmBookingAndPayment()`, tự trừ tồn bằng SQL riêng và lập hóa đơn.
 Luồng này **chưa gọi hook trên**; không thêm hook vào cạnh đoạn trừ tồn hiện tại vì sẽ trừ hai lần.
 Hai regression mới tái hiện việc phục hồi booking đã hủy/hết hạn khi payment cần đối soát.
@@ -17,8 +23,8 @@ Chi tiết bằng chứng, test PASS/FAIL/BLOCKED/NOT RUN và patch chờ Phát/
 
 Đọc cùng [hợp đồng booking/payment hiện có](booking-payment-contract.md). Duy cần tích hợp
 hook vào đúng một đường xác nhận thanh toán; không được có đường xác nhận khác bỏ qua xuất tồn.
-Đường xác nhận thủ công hiện tại cần được Duy thống nhất lại trước khi thay SQL xuất tồn bằng
-hook. Hợp đồng này không thể cưỡng chế yêu cầu đó đối với code chưa tích hợp hoặc SQL ngoài ứng dụng.
+Writer xác nhận hiện dùng chung hook theo yêu cầu đã duyệt ngày 04/11. Hợp đồng này không thể
+cưỡng chế yêu cầu đó đối với SQL ngoài ứng dụng. Xem [trạng thái đồng bộ ngân hàng](payment-synchronization-review.md).
 
 ## A. Snapshot đã được kiểm tra
 
@@ -59,7 +65,7 @@ mô phỏng tuần tự; không phải bằng chứng hai transaction MySQL ch�
 - CHO_THUE đã được duyệt dùng cùng cơ chế tồn: có thể chọn trong checkout và xuất số lượng
   snapshot khi thanh toán, với NULL vẫn là không theo dõi tồn. Không quản lý lịch thuê theo giờ,
   giao–nhận hoặc tự hoàn lại vợt. Dịch vụ ngừng cung cấp sau khi giữ không tự làm đổi snapshot;
-  giá/tên catalog không dùng để xuất tồn. Hook vẫn chưa nối vào writer thanh toán thực tế.
+  giá/tên catalog không dùng để xuất tồn. Writer xác nhận đã nối hook, trước khi đổi trạng thái booking.
 - Đọc snapshot số lượng/đơn vị, bỏ qua stock NULL, kiểm tra toàn bộ dòng trước khi ghi.
   Trừ đúng số lượng bằng UPDATE có điều kiện `so_luong_ton IS NOT NULL AND so_luong_ton >= quantity`;
   số dòng ảnh hưởng phải là 1. Tồn 0 không được xuất số lượng dương. Không cập nhật snapshot.
@@ -129,5 +135,6 @@ callback cùng sửa catalog/cancel/expire, thời hạn trôi qua khi chờ kh�
 giao dịch nhà cung cấp lặp/muộn và mọi đường xác nhận booking. Không chạy
 `booking-integration.php --run` trong phạm vi này vì script đó tạo database/fixture riêng.
 
-PR5 có thể review như một hook chưa nối thanh toán. Chưa đủ căn cứ công bố checkout/thanh toán
-đã xuất tồn đúng một lần; cần Duy tích hợp giao thức và PR6 kiểm chứng trước khi bật thực tế.
+Hook đã nối vào writer xác nhận; test RAM kiểm tra retry, rollback và tương thích giữ ảo.
+Chưa đủ căn cứ công bố đồng bộ ngân hàng hoặc chống race MySQL hoàn chỉnh: cần adapter thật,
+xác minh callback và kiểm thử hai transaction độc lập trước khi bật đồng bộ thực tế.

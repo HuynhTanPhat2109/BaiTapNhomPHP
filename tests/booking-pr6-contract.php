@@ -15,7 +15,7 @@ $stock = static fn() => (int) $pdo->query('SELECT so_luong_ton FROM dich_vu WHER
 $snapshot = $pdo->query('SELECT * FROM chi_tiet_dich_vu_dat')->fetchAll();
 try {
     $result = $manager->confirmBookingAndPayment(1, 'PR6-VALID', '60000.00', null, 'RAM contract only', $admin);
-    $check($result['success'] && $stock() === 198 && $row(1)['trang_thai_dat_san'] === 'DA_XAC_NHAN', 'current inline payment writer deducts 2 once (SQLite binding semantics only)');
+    $check($result['success'] && $stock() === 198 && $row(1)['trang_thai_dat_san'] === 'DA_XAC_NHAN', 'shared inventory hook deducts 2 once (SQLite binding semantics only)');
     $check($pdo->query('SELECT * FROM chi_tiet_dich_vu_dat')->fetchAll() === $snapshot, 'manual confirmation preserves snapshots and catalog price independence');
     try { $manager->confirmBookingAndPayment(1, 'PR6-VALID', '60000.00', null, null, $admin); $rejected = false; }
     catch (App\Services\ValidationException $e) { $rejected = true; }
@@ -61,10 +61,10 @@ try {
 } catch (Throwable $e) { $results[] = ['status' => 'FAIL', 'name' => 'Unexpected contract test error', 'exception' => get_class($e), 'message' => $e->getMessage()]; }
 $failures = count(array_filter($results, static fn($r) => $r['status'] === 'FAIL'));
 $report = ['mode' => 'SQLite :memory: only, actual manual confirmation service; not provider/MySQL concurrency', 'results' => $results,
-    'blocked' => ['PaymentService does not call deductForPayment', 'No provider callback verification endpoint to exercise'],
+    'blocked' => ['No provider callback verification endpoint to exercise'],
     'not_run' => ['Concurrent callbacks', 'Concurrent cancel/expire/payment', 'MySQL deadlock/retry', 'Real bank transfers']];
 $out = dirname(__DIR__) . '/storage/temp/pr6-review'; if (!is_dir($out)) mkdir($out, 0777, true);
 file_put_contents($out . '/contract-report.json', json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 foreach ($results as $r) echo $r['status'] . ': ' . $r['name'] . PHP_EOL;
-echo 'Result: ' . (count($results) - $failures) . " PASS, $failures FAIL; payment hook BLOCKED, concurrency NOT RUN.\n";
+echo 'Result: ' . (count($results) - $failures) . " PASS, $failures FAIL; payment hook connected through BookingManagementService, concurrency NOT RUN.\n";
 exit($failures ? 1 : 0);

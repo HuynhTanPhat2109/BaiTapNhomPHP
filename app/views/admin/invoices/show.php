@@ -217,7 +217,7 @@ $roleRoot = match ($scope['role'] ?? '') {
              =================================================================== -->
         <?php if (!empty($receiptImage)): ?>
             <div style="margin-top: 20px; text-align: center;">
-                <a href="<?= e(base_path() . '/' . $receiptImage) ?>" target="_blank" rel="noopener" class="btn btn--outline" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; border-color: #cbd5e1; background: #ffffff; color: #1e293b; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                <a href="<?= e($receiptImage) ?>" target="_blank" rel="noopener" class="btn btn--outline" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; border-color: #cbd5e1; background: #ffffff; color: #1e293b; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                     <span>Xem ảnh biên lai khách chuyển khoản (Mở tab mới) ↗</span>
                 </a>

@@ -29,15 +29,20 @@ final class BookingManagementService
     private AdminBooking $model;
     private BookingService $bookingService;
     private InvoiceService $invoiceService;
+    private PaymentVerificationService $verification;
 
     public function __construct(
         private PDO $pdo,
         ?BookingService $bookingService = null,
-        ?InvoiceService $invoiceService = null
+        ?InvoiceService $invoiceService = null,
+        ?PaymentVerificationService $verification = null,
+        private ?BookingReceiptService $receipts = null
     ) {
         $this->model = new AdminBooking($pdo);
         $this->bookingService = $bookingService ?? new BookingService($pdo);
         $this->invoiceService = $invoiceService ?? new InvoiceService($pdo);
+        $this->verification = $verification ?? new PaymentVerificationService($pdo);
+        $this->receipts ??= new BookingReceiptService($pdo);
     }
 
     public static function now(): DateTimeImmutable
@@ -174,8 +179,39 @@ final class BookingManagementService
         return $filters;
     }
 
+    public function confirmSyncedBookingAndPayment(int $bookingId, array $user): array
+    {
+        $scope = self::resolveScope($user);
+        $booking = $this->model->find($bookingId, $scope);
+        if (!$booking) throw new HttpException(404, 'Không tìm thấy đơn đặt sân trong phạm vi của bạn.');
+        $review = $this->verification->review($booking + ['so_tien' => $booking['so_tien_can_thanh_toan']]);
+        if (!$review['can_confirm']) throw new ValidationException(['bank_transaction' => $review['message']]);
+        $transaction = $review['transaction'];
+        return $this->finalizeBookingAndPayment($bookingId, $transaction['transaction_id'], $transaction['amount'],
+            $transaction['occurred_at'], null, $user, $transaction);
+    }
+
+    /** The final POST itself attests that this operator checked the receiving account. */
+    public function confirmReceiptPayment(int $bookingId, array $user, ?string $receiptVersion = null): array
+    {
+        return $this->finalizeBookingAndPayment($bookingId, '', '0', null, null, $user, receiptConfirmation: true, receiptVersion: $receiptVersion);
+    }
+
+    /** Existing exception workflow, restricted to a linked receipt and CAN_DOI_SOAT. */
+    public function confirmReconciledPayment(int $id, string $transaction, string $amount, string $paidAt, ?string $note, array $user, ?string $receiptVersion = null): array
+    {
+        return $this->finalizeBookingAndPayment($id, $transaction, $amount, $paidAt, $note, $user, reconciledReceipt: true, receiptVersion: $receiptVersion);
+    }
+
+    /** Existing, explicitly manual reconciliation entry point. */
+    public function confirmBookingAndPayment(int $bookingId, string $bankTxnId, float|string $actualAmount,
+        ?string $paidAt, ?string $note, array $user): array
+    {
+        return $this->finalizeBookingAndPayment($bookingId, $bankTxnId, $actualAmount, $paidAt, $note, $user);
+    }
+
     /**
-     * Xác nhận thanh toán và booking thủ công.
+     * Xác nhận thanh toán và booking trong cùng transaction.
      * Chạy toàn bộ kiểm tra và cập nhật trong 1 TRANSACTION nguyên tử duy nhất.
      *
      * @param int $bookingId ID đơn đặt sân
@@ -188,13 +224,17 @@ final class BookingManagementService
      * @throws ValidationException
      * @throws HttpException
      */
-    public function confirmBookingAndPayment(
+    private function finalizeBookingAndPayment(
         int $bookingId,
         string $bankTxnId,
         float|string $actualAmount,
         ?string $paidAt,
         ?string $note,
-        array $user
+        array $user,
+        ?array $verifiedTransaction = null,
+        bool $receiptConfirmation = false,
+        bool $reconciledReceipt = false,
+        ?string $receiptVersion = null
     ): array {
         $scope = self::resolveScope($user);
         if (!$scope['can_confirm']) {
@@ -203,14 +243,14 @@ final class BookingManagementService
 
         // 1. Kiểm tra tính hợp lệ của dữ liệu đầu vào
         $cleanTxnId = trim($bankTxnId);
-        if ($cleanTxnId === '') {
+        if (!$receiptConfirmation && $cleanTxnId === '') {
             throw new ValidationException(['ma_giao_dich' => 'Vui lòng nhập mã giao dịch ngân hàng từ biên lai/biến động số dư.']);
         }
-        if (mb_strlen($cleanTxnId, 'UTF-8') < 3 || mb_strlen($cleanTxnId, 'UTF-8') > 150) {
+        if (!$receiptConfirmation && (mb_strlen($cleanTxnId, 'UTF-8') < 3 || mb_strlen($cleanTxnId, 'UTF-8') > 150)) {
             throw new ValidationException(['ma_giao_dich' => 'Mã giao dịch ngân hàng phải từ 3 đến 150 ký tự.']);
         }
 
-        if (!is_numeric($actualAmount) || (float) $actualAmount <= 0) {
+        if (!$receiptConfirmation && (!is_numeric($actualAmount) || (float) $actualAmount <= 0)) {
             throw new ValidationException(['so_tien_thuc_nhan' => 'Số tiền thực nhận không hợp lệ (phải lớn hơn 0).']);
         }
         $formattedActual = number_format((float) $actualAmount, 2, '.', '');
@@ -342,13 +382,44 @@ final class BookingManagementService
                 throw new ValidationException(['booking' => $e->getMessage()]);
             }
 
+            $receipt = null;
+            if ($reconciledReceipt) {
+                if (($payment['trang_thai'] ?? '') !== 'CAN_DOI_SOAT'
+                    || !array_key_exists('xac_nhan_thu_cong_luc', $payment)
+                    || (int) ($user['ma_tai_khoan'] ?? 0) < 1
+                    || !($receipt = $this->receipts->info($payment))) {
+                    throw new ValidationException(['receipt' => 'Chỉ xử lý đối soát cho payment cần đối soát có minh chứng liên kết hợp lệ.']);
+                }
+                if ($receiptVersion !== null && !hash_equals($receipt['version'], $receiptVersion)) throw new ValidationException(['receipt' => 'Minh chứng đã thay đổi. Kiểm tra lại ảnh mới.']);
+            }
+            if ($receiptConfirmation) {
+                if ((int) ($user['ma_tai_khoan'] ?? 0) < 1) throw new HttpException(403, 'Không xác định được tài khoản xác nhận.');
+                $receipt = $this->receipts->requireConfirmation($payment + $booking);
+                if ($receiptVersion !== null && !hash_equals($receipt['version'], $receiptVersion)) {
+                    throw new ValidationException(['receipt' => 'Khách vừa thay minh chứng. Tải lại và kiểm tra ảnh mới trước khi xác nhận.']);
+                }
+                // A human attestation of full receipt, not data from a bank API.
+                $formattedActual = number_format((float) $payment['so_tien'], 2, '.', '');
+                if ($formattedActual !== number_format((float) $booking['tong_tien_tam_tinh'], 2, '.', '')) {
+                    throw new ValidationException(['payment' => 'Số tiền payment và booking không khớp. Vui lòng xem đối soát.']);
+                }
+            }
+
+            if ($verifiedTransaction !== null) {
+                $this->verification->requireMatch($verifiedTransaction, $payment + $booking
+                    + ['trang_thai_thanh_toan' => $payment['trang_thai']]);
+            }
+
             // G. Kiểm tra tính duy nhất của mã giao dịch ngân hàng (Chống xử lý lặp mã ngân hàng)
-            $checkTxnStmt = $this->pdo->prepare('SELECT ma_thanh_toan FROM thanh_toan WHERE ma_giao_dich = :txn_id AND ma_thanh_toan != :payment_id');
-            $checkTxnStmt->execute(['txn_id' => $cleanTxnId, 'payment_id' => $payment['ma_thanh_toan']]);
-            if ($checkTxnStmt->fetchColumn()) {
-                throw new ValidationException([
-                    'ma_giao_dich' => "Mã giao dịch ngân hàng '$cleanTxnId' đã được ghi nhận cho một đơn thanh toán khác. Vui lòng kiểm tra lại biên lai."
-                ]);
+            if (!$receiptConfirmation) {
+                $checkTxnStmt = $this->pdo->prepare('SELECT ma_thanh_toan FROM thanh_toan WHERE ma_giao_dich = :txn_id AND ma_thanh_toan != :payment_id');
+                $checkTxnStmt->execute(['txn_id' => $cleanTxnId, 'payment_id' => $payment['ma_thanh_toan']]);
+                if ($checkTxnStmt->fetchColumn()) {
+                    throw new ValidationException([
+                        'ma_giao_dich' => "Mã giao dịch ngân hàng '$cleanTxnId' đã được ghi nhận cho một đơn thanh toán khác. Vui lòng kiểm tra lại biên lai."
+                    ]);
+                }
+
             }
 
             // H. Kiểm tra số tiền thực nhận có khớp chính xác số tiền cần thanh toán không
@@ -359,14 +430,30 @@ final class BookingManagementService
                 ]);
             }
 
-            // 3. Thực thi cập nhật bảng thanh_toan -> THANH_CONG
-            $existingReceipt = ReceiptImage::findForBooking($bookingId, $payment['ghi_chu'] ?? '');
-            $finalPaymentNote = $cleanNote;
-            if ($existingReceipt) {
-                $finalPaymentNote = ReceiptImage::appendReceiptToNote($cleanNote, $existingReceipt);
+            // One stock writer, while the locked booking is still pending. Caller owns rollback.
+            try {
+                (new BookingInventoryService($this->pdo))->deductForPayment($bookingId);
+            } catch (HttpException $e) {
+                throw new ValidationException(['inventory' => $e->getMessage()]);
             }
 
-            $updatePaymentStmt = $this->pdo->prepare(
+            // 3. Thực thi cập nhật bảng thanh_toan -> THANH_CONG
+            $existingReceipt = ReceiptImage::findForBooking($bookingId, $payment['ghi_chu'] ?? '');
+            $finalPaymentNote = $verifiedTransaction !== null || $receiptConfirmation ? ($payment['ghi_chu'] ?? null) : $cleanNote;
+            if ($existingReceipt) {
+                $finalPaymentNote = ReceiptImage::appendReceiptToNote($finalPaymentNote, $existingReceipt, ReceiptImage::sentAt($payment['ghi_chu'] ?? null));
+            }
+
+            if ($receiptConfirmation) {
+                $updatePaymentStmt = $this->pdo->prepare("UPDATE thanh_toan SET trang_thai='THANH_CONG',
+                    so_tien_thuc_nhan=:amount, anh_minh_chung=:receipt,
+                    ma_tai_khoan_xac_nhan=:actor, xac_nhan_thu_cong_luc=:confirmed_at
+                    WHERE ma_thanh_toan=:id AND trang_thai IN ('CHO_THANH_TOAN','CHO_XAC_NHAN')");
+                $updatePaymentStmt->execute(['amount' => $formattedActual, 'receipt' => $receipt['path'],
+                    'actor' => (int) $user['ma_tai_khoan'], 'confirmed_at' => self::now()->format('Y-m-d H:i:s'), 'id' => $payment['ma_thanh_toan']]);
+                if ($updatePaymentStmt->rowCount() !== 1) throw new ValidationException(['payment' => 'Payment đã được xử lý.']);
+            } else {
+                $updatePaymentStmt = $this->pdo->prepare(
                 'UPDATE thanh_toan
                  SET trang_thai = :status,
                      ngay_thanh_toan = :paid_at,
@@ -383,6 +470,12 @@ final class BookingManagementService
                 'note' => $finalPaymentNote,
                 'id' => $payment['ma_thanh_toan'],
             ]);
+            if ($reconciledReceipt) {
+                $this->pdo->prepare('UPDATE thanh_toan SET anh_minh_chung=:receipt, ma_tai_khoan_xac_nhan=:actor,
+                    xac_nhan_thu_cong_luc=:confirmed WHERE ma_thanh_toan=:id')->execute(['receipt' => $receipt['path'],
+                    'actor' => (int) $user['ma_tai_khoan'], 'confirmed' => self::now()->format('Y-m-d H:i:s'), 'id' => $payment['ma_thanh_toan']]);
+            }
+            }
 
             // 4. Thực thi cập nhật bảng dat_san -> DA_XAC_NHAN
             $staffParam = $scope['staff_id'];
@@ -390,57 +483,18 @@ final class BookingManagementService
                 'UPDATE dat_san
                  SET trang_thai_dat_san = :status,
                      ma_nhan_vien = :staff_id
-                 WHERE ma_dat_san = :id'
+                 WHERE ma_dat_san = :id AND trang_thai_dat_san = :pending
+                   AND het_han_giu_san_luc > :confirmed_at'
             );
             $updateBookingStmt->execute([
                 'status' => 'DA_XAC_NHAN',
                 'staff_id' => $staffParam,
                 'id' => $bookingId,
+                'pending' => BookingService::PENDING,
+                'confirmed_at' => self::now()->format('Y-m-d H:i:s'),
             ]);
-
-            // 5. Trừ tồn kho dịch vụ thực tế (Chỉ với dịch vụ có quản lý số lượng tồn)
-            $serviceStmt = $this->pdo->prepare(
-                'SELECT c.ma_dich_vu, c.so_luong, d.ten_dich_vu, d.so_luong_ton
-                 FROM chi_tiet_dich_vu_dat c
-                 JOIN dich_vu d ON d.ma_dich_vu = c.ma_dich_vu
-                 WHERE c.ma_dat_san = :id'
-            );
-            $serviceStmt->execute(['id' => $bookingId]);
-            $services = $serviceStmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $deductStmt = $this->pdo->prepare(
-                'UPDATE dich_vu
-                 SET so_luong_ton = so_luong_ton - :qty_deduct
-                 WHERE ma_dich_vu = :service_id
-                   AND so_luong_ton IS NOT NULL
-                   AND so_luong_ton >= :qty_min'
-            );
-
-            foreach ($services as $srv) {
-                $qty = (int) $srv['so_luong'];
-                if ($qty <= 0) {
-                    continue;
-                }
-
-                // Dịch vụ không quản lý tồn kho (so_luong_ton === null) -> Bỏ qua, không trừ kho
-                if ($srv['so_luong_ton'] === null) {
-                    continue;
-                }
-
-                $deductStmt->execute([
-                    'qty_deduct' => $qty,
-                    'qty_min' => $qty,
-                    'service_id' => (int) $srv['ma_dich_vu'],
-                ]);
-
-                // Kiểm tra kết quả rowCount() sau UPDATE trừ tồn kho
-                if ($deductStmt->rowCount() === 0) {
-                    $svcName = $srv['ten_dich_vu'] ?? ('#' . $srv['ma_dich_vu']);
-                    $curStock = (int) $srv['so_luong_ton'];
-                    throw new ValidationException([
-                        'inventory' => "Dịch vụ '{$svcName}' không đủ số lượng tồn kho để hoàn tất đơn (cần {$qty}, hiện còn {$curStock}). Đã hủy thao tác xác nhận."
-                    ]);
-                }
+            if ($updateBookingStmt->rowCount() !== 1) {
+                throw new ValidationException(['booking' => 'Booking đã hết hạn hoặc thay đổi trong lúc xác nhận.']);
             }
 
             // 6. Lập hóa đơn chính thức (PR4) trong cùng một Transaction nguyên tử
@@ -545,7 +599,7 @@ final class BookingManagementService
             $existingReceipt = ReceiptImage::findForBooking($bookingId, $payment['ghi_chu'] ?? '');
             $finalReconcileNote = $cleanReason;
             if ($existingReceipt) {
-                $finalReconcileNote = ReceiptImage::appendReceiptToNote($cleanReason, $existingReceipt);
+                $finalReconcileNote = ReceiptImage::appendReceiptToNote($cleanReason, $existingReceipt, ReceiptImage::sentAt($payment['ghi_chu'] ?? null));
             }
 
             $stmt = $this->pdo->prepare(
@@ -672,7 +726,7 @@ final class BookingManagementService
                 $existingReceipt = ReceiptImage::findForBooking($bookingId, $payment['ghi_chu'] ?? '');
                 $finalPayNote = $cleanReason;
                 if ($existingReceipt) {
-                    $finalPayNote = ReceiptImage::appendReceiptToNote($cleanReason, $existingReceipt);
+                    $finalPayNote = ReceiptImage::appendReceiptToNote($cleanReason, $existingReceipt, ReceiptImage::sentAt($payment['ghi_chu'] ?? null));
                 }
 
                 $updateP = $this->pdo->prepare(

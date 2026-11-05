@@ -112,10 +112,10 @@ final class InventoryMemoryStatement extends PDOStatement
         } elseif (str_starts_with($sql, 'UPDATE thanh_toan t JOIN dat_san')) {
             // These fixtures have no pending payment requests to synchronize.
         } elseif (str_starts_with($sql, 'SELECT c.so_luong FROM chi_tiet_dich_vu_dat c')) {
-            if (!str_contains($sql, "b.trang_thai_dat_san = 'CHO_THANH_TOAN' AND b.het_han_giu_san_luc > ?")) throw new RuntimeException('Reservation query lost state/expiry predicates');
+            if (!str_contains($sql, "b.trang_thai_dat_san IN ('CHO_THANH_TOAN','CHO_XAC_NHAN') AND b.het_han_giu_san_luc > ?")) throw new RuntimeException('Reservation query lost state/expiry predicates');
             foreach ($this->db->serviceLines as $line) {
                 $b = $this->db->bookings[$line['ma_dat_san']];
-                if ($line['ma_dich_vu'] === $p[0] && $b['trang_thai_dat_san'] === 'CHO_THANH_TOAN' && $b['het_han_giu_san_luc'] > $p[1]) $this->rows[] = ['so_luong' => $line['so_luong']];
+                if ($line['ma_dich_vu'] === $p[0] && in_array($b['trang_thai_dat_san'], ['CHO_THANH_TOAN','CHO_XAC_NHAN'], true) && $b['het_han_giu_san_luc'] > $p[1]) $this->rows[] = ['so_luong' => $line['so_luong']];
             }
         } elseif (str_contains($sql, 'FROM chi_tiet_dich_vu_dat WHERE ma_dat_san=?')) {
             $this->rows = array_values(array_filter($this->db->serviceLines, fn($r) => $r['ma_dat_san'] === $p[0]));

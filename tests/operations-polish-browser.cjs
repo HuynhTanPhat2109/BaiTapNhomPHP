@@ -60,16 +60,13 @@ let browser;
       await menu.locator('[data-booking-action="confirm"]').click();
       const dialog = page.locator('#booking-dialog-1');
       check(await dialog.evaluate(element => element.open) && !(await menu.evaluate(element => element.open)), `${role}/${width}: action closes menu and opens modal`);
-      check(await dialog.locator('dt').count() === 6 && (await dialog.innerText()).includes('60.000'), `${role}/${width}: modal displays booking/customer/facility/time/payment summary`);
+      check(await dialog.locator('.booking-action-section').count() === 2 && (await dialog.innerText()).includes('60.000') && (await dialog.innerText()).includes('Hạn giữ sân') && (await dialog.innerText()).includes('Tạo booking lúc'), `${role}/${width}: system booking and payment summaries include original context and deadlines`);
       const form = dialog.locator('[data-booking-form="confirm"]');
       check((await form.getAttribute('action')).includes('confirm') && await form.locator('[name="_token"]').count() === 1 && await form.locator('[name="id"]').inputValue() === '1', `${role}/${width}: original POST endpoint, CSRF and booking id`);
       check(await form.locator('[name="list[page]"]').inputValue() === '1', `${role}/${width}: modal keeps server list context`);
-      await form.locator('[name="so_tien_thuc_nhan"]').fill('60000');
-      await form.locator('[name="ma_giao_dich"]').fill('UI-ONLY-NEVER-SUBMITTED');
-      await form.locator('button[type="submit"]').click();
-      check(await page.locator('#workspace-confirm').evaluate(element => element.open), `${role}/${width}: important write requires second confirmation`);
-      await page.locator('[data-confirm-cancel]').click();
-      check(await dialog.evaluate(element => element.open), `${role}/${width}: cancelling confirmation keeps entered form`);
+      check(await form.locator('[name="so_tien_thuc_nhan"], [name="ma_giao_dich"], [name="ngay_thanh_toan"], [name="da_doi_chieu"]').count() === 0, `${role}/${width}: normal confirmation is read-only without manual proof inputs`);
+      check(await form.locator('[type="submit"]').isDisabled(), `${role}/${width}: unavailable bank proof cannot confirm`);
+      check(new URL(await form.getByRole('link', { name: 'Xem đối soát' }).getAttribute('href'), page.url()).searchParams.get('route') === '/admin/bookings/show', `${role}/${width}: manual reconciliation remains accessible on original detail route`);
       const size = await dialog.evaluate(element => { const r = element.getBoundingClientRect(); return { left: r.left, right: r.right, scroll: element.scrollWidth, client: element.clientWidth }; });
       check(size.left >= 0 && size.right <= width && size.scroll <= size.client + 1, `${role}/${width}: modal fits without horizontal overflow`);
       if (role === 'QUAN_TRI_TAP_DOAN') {
@@ -84,7 +81,7 @@ let browser;
     }
     for (const width of widths) {
       await page.setViewportSize({ width, height: 1000 });
-      for (const [state, query, forms] of [['pending', { id: '1' }, 2], ['expired', { id: '3' }, 1], ['cancelled', { id: '2' }, 1], ['reconcile', { id: '1', operations_reconcile: '1' }, 2]]) {
+      for (const [state, query, forms] of [['pending', { id: '1' }, 1], ['expired', { id: '3' }, 1], ['cancelled', { id: '2' }, 1], ['reconcile', { id: '1', operations_reconcile: '1' }, 2]]) {
         await visit(page, bookingUrl('/admin/bookings/show', { fixture_role: role, ...query }));
         const operations = page.locator('.booking-operations');
         check(!(await page.locator('.admin-workspace').innerText()).includes('Đang trong quá trình phát triển'), `${role}/${state}/${width}: no development banner`);
@@ -98,6 +95,14 @@ let browser;
         }));
         check(metrics.cards && metrics.fields && metrics.labels && metrics.footer, `${role}/${state}/${width}: cards, labels, spacing and footer render under CSP`);
         check(await operations.locator('form input[name="_token"]').count() === forms && await operations.locator('form input[name="id"][value="' + query.id + '"]').count() === forms, `${state}/${width}: CSRF and booking ID retained`);
+        if (state === 'pending') {
+          await operations.locator('[data-booking-action="confirm"]').click();
+          const confirmation = page.locator('#booking-dialog-1 [data-booking-form="confirm"]');
+          check(await page.locator('#booking-dialog-1').evaluate(e=>e.open)
+            && new URL(await confirmation.getAttribute('action'),page.url()).searchParams.get('route')==='/admin/bookings/confirm'
+            && await confirmation.locator('[name="_token"]').count()===1 && await confirmation.locator('[name="id"]').inputValue()==='1', `${role}/${width}: detail reuses original modal with POST/CSRF/ID guard`);
+          await page.keyboard.press('Escape');
+        }
         if (['expired', 'cancelled'].includes(state)) check(await operations.locator('form[action*="confirm"]').count() === 0, `${state}: no confirm action`);
         await layout(page, `${role}/${state}/${width}`);
         if (role === 'QUAN_TRI_TAP_DOAN') await operations.screenshot({ path: path.join(out, `after-booking-${state}-${width}.png`) });

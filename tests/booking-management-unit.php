@@ -121,6 +121,7 @@ final class BookingAdminMemoryPDO extends PDO
         $this->bookingServices[] = [
             'ma_dat_san' => 1,
             'ma_dich_vu' => 101,
+            'don_vi_tinh_snapshot' => 'Chai',
             'so_luong' => 2,
         ];
     }
@@ -194,6 +195,10 @@ final class BookingAdminMemoryStatement extends PDOStatement
         $this->affectedRows = 0;
 
         // 1. SELECT * FROM dat_san
+        if (str_contains($this->sql, 'FROM dich_vu WHERE ma_dich_vu = ?')) {
+            $this->result = isset($this->db->services[(int) $params[0]]) ? [$this->db->services[(int) $params[0]]] : [];
+            return true;
+        }
         if (str_contains($this->sql, 'FROM dat_san')) {
             $id = (int) ($params[':id'] ?? $params['id'] ?? $params[0] ?? 0);
             $this->result = isset($this->db->bookings[$id]) ? [$this->db->bookings[$id]] : [];
@@ -296,6 +301,8 @@ final class BookingAdminMemoryStatement extends PDOStatement
                 throw new PDOException('Simulated database error updating dat_san');
             }
             $id = (int) ($params[':id'] ?? $params['id'] ?? $params[0] ?? 0);
+            if (isset($params['pending']) && (($this->db->bookings[$id]['trang_thai_dat_san'] ?? '') !== $params['pending']
+                || ($this->db->bookings[$id]['het_han_giu_san_luc'] ?? '') <= $params['confirmed_at'])) return true;
             if (isset($this->db->bookings[$id])) {
                 $status = $params[':status'] ?? $params['status'] ?? null;
                 $staffId = $params[':staff_id'] ?? $params['staff_id'] ?? null;
@@ -319,6 +326,7 @@ final class BookingAdminMemoryStatement extends PDOStatement
                     $lines[] = [
                         'ma_dich_vu' => $bs['ma_dich_vu'],
                         'so_luong' => $bs['so_luong'],
+                        'don_vi_tinh_snapshot' => $bs['don_vi_tinh_snapshot'],
                         'ten_dich_vu' => $svc['ten_dich_vu'] ?? ('Dịch vụ #' . $bs['ma_dich_vu']),
                         'so_luong_ton' => $svc['so_luong_ton'] ?? null,
                     ];
@@ -330,9 +338,9 @@ final class BookingAdminMemoryStatement extends PDOStatement
 
         // 9. Stock deduction uses distinct quantity/minimum named bindings.
         if (str_starts_with($this->sql, 'UPDATE dich_vu')) {
-            $serviceId = (int) ($params[':service_id'] ?? $params['service_id'] ?? 0);
-            $qty = (int) ($params[':qty_deduct'] ?? $params['qty_deduct'] ?? 0);
-            $minimum = (int) ($params[':qty_min'] ?? $params['qty_min'] ?? 0);
+            $serviceId = (int) ($params[':service_id'] ?? $params['service_id'] ?? $params[1] ?? 0);
+            $qty = (int) ($params[':qty_deduct'] ?? $params['qty_deduct'] ?? $params[0] ?? 0);
+            $minimum = (int) ($params[':qty_min'] ?? $params['qty_min'] ?? $params[3] ?? 0);
             if ($qty <= 0 || $minimum !== $qty) throw new RuntimeException('Invalid stock quantity/minimum bindings');
             $this->affectedRows = 0;
             if (isset($this->db->services[$serviceId])) {

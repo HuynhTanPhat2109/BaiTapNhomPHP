@@ -66,19 +66,22 @@
             if (!file) return;
 
             // Kiểm tra định dạng ảnh
-            if (!file.type.match(/^image\/(png|jpe?g)$/i)) {
-                showToast('Chỉ chấp nhận file ảnh PNG hoặc JPG.');
+            if (!file.type.match(/^image\/(png|jpeg|webp)$/i)) {
+                fileInput.value = ''; if (preview) preview.hidden = true; if (placeholder) placeholder.hidden = false;
+                showToast('Chỉ chấp nhận file ảnh JPG, PNG hoặc WebP.');
                 return;
             }
 
             // Kiểm tra dung lượng (tối đa 5MB)
             if (file.size > 5 * 1024 * 1024) {
+                fileInput.value = ''; if (preview) preview.hidden = true; if (placeholder) placeholder.hidden = false;
                 showToast('Dung lượng ảnh không được vượt quá 5MB.');
                 return;
             }
 
             const reader = new FileReader();
             reader.onload = (e) => {
+                if (fileInput.files[0] !== file) return;
                 if (previewImg) previewImg.src = e.target.result;
                 if (previewName) previewName.textContent = file.name;
                 if (previewSize) {

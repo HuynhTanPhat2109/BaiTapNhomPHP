@@ -1,6 +1,16 @@
 # Booking → payment handoff
 
-**PR6 audit — 03/11/2026:** this document records the required handoff contract; it is
+**Update — 05/11/2026:** normal Admin confirmation now uses linked receipt evidence and an
+operator's explicit confirmation of actual funds. Bank ID/time are not fabricated; confirmer/time
+are separate schema fields. See [the current manual receipt flow](receipt-confirmation-review.md).
+
+**Update — 04/11/2026:** BookingManagementService now calls BookingInventoryService inside
+the shared confirmation transaction instead of its old inline deduction. Cancelled/expired
+guards and a conditional pending/unexpired transition protect finalization. The new
+PaymentVerificationService is disabled without a trusted BankTransactionSource adapter.
+There is still no bank transaction feed/webhook. See [current integration status](payment-synchronization-review.md).
+
+**Historical PR6 audit — 03/11/2026, before that integration:** this document records the required handoff contract; it is
 not evidence that every newer payment path complies. Manual confirmation now exists in
 `BookingManagementService`, uses inline inventory SQL, and does not call Vũ's inventory hook.
 Receipt upload and `CHO_XAC_NHAN` handling also exist now. The cancelled/expired reconciliation

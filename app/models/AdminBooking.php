@@ -8,6 +8,17 @@ final class AdminBooking
 {
     public function __construct(private PDO $pdo) {}
 
+    /** IDs come only from the already scoped page; no extra rows are exposed to the client. */
+    public function paymentsFor(array $ids): array
+    {
+        if (!$ids) return [];
+        $stmt = $this->pdo->prepare('SELECT * FROM thanh_toan WHERE ma_dat_san IN (' . implode(',', array_fill(0, count($ids), '?')) . ')');
+        $stmt->execute(array_map('intval', $ids));
+        $rows = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) $rows[(int) $row['ma_dat_san']] = $row;
+        return $rows;
+    }
+
     /**
      * Lấy danh sách booking có phân trang, lọc đa tiêu chí và phân quyền phạm vi.
      *
@@ -133,6 +144,7 @@ final class AdminBooking
                        tt.so_tien_thuc_nhan,
                        tt.ma_giao_dich,
                        tt.ngay_thanh_toan,
+                       tt.ngay_tao AS ngay_tao_thanh_toan,
                        tt.trang_thai AS trang_thai_thanh_toan,
                        nv.ho_ten AS ten_nhan_vien_xac_nhan,
                        MIN(ct.ngay_choi) AS ngay_choi_dau,
@@ -152,7 +164,7 @@ final class AdminBooking
                          b.ghi_chu, k.ma_khach_hang, k.ho_ten, k.so_dien_thoai, k.email,
                          cs.ma_co_so, cs.ten_co_so, cs.ma_cong_ty,
                          tt.ma_thanh_toan, tt.ma_tham_chieu, tt.so_tien, tt.so_tien_thuc_nhan,
-                         tt.ma_giao_dich, tt.ngay_thanh_toan, tt.trang_thai, nv.ho_ten
+                         tt.ma_giao_dich, tt.ngay_thanh_toan, tt.ngay_tao, tt.trang_thai, nv.ho_ten
                 ORDER BY b.ma_dat_san DESC
                 LIMIT :limit OFFSET :offset";
 

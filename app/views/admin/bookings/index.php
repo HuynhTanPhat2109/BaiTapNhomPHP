@@ -260,11 +260,17 @@ $roleRoot = match ($scope['role'] ?? '') {
                     <td style="padding: 12px 14px; text-align: center;">
                         <?php
                         $actions = App\Services\BookingManagementService::actions($row);
+                        $bookingIcons = [
+                            'view' => '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+                            'confirm' => '<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>',
+                            'cancel' => '<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/>',
+                            'reconcile' => '<path d="M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 12h8m-8 4h4"/>',
+                        ];
                         ob_start(); ?>
-                        <a href="<?= e(url('/admin/bookings/show?id=' . $row['ma_dat_san'])) ?>">Xem chi tiết</a>
-                        <?php if ($actions['view_reconciliation']): ?><a href="<?= e(url('/admin/bookings/show?id=' . $row['ma_dat_san']) . '#booking-operations') ?>">Xem đối soát</a><?php endif; ?>
+                        <a class="list-action list-action--view" role="menuitem" href="<?= e(url('/admin/bookings/show?id=' . $row['ma_dat_san'])) ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><?= $bookingIcons['view'] ?></svg><span>Xem chi tiết</span></a>
+                        <?php if ($actions['view_reconciliation']): ?><a class="list-action list-action--reconcile" role="menuitem" href="<?= e(url('/admin/bookings/show?id=' . $row['ma_dat_san']) . '#booking-operations') ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><?= $bookingIcons['reconcile'] ?></svg><span>Xem đối soát</span></a><?php endif; ?>
                         <?php foreach (['confirm' => 'Xác nhận thanh toán', 'cancel' => 'Từ chối / Hủy', 'reconcile' => $actions['late'] ? 'Ghi nhận tiền chuyển muộn' : 'Đối soát giao dịch'] as $action => $label): if (!$scope['can_confirm'] || !$actions[$action]) continue; ?>
-                        <button type="button" data-booking-action="<?= e($action) ?>" data-booking-target="booking-dialog-<?= (int) $row['ma_dat_san'] ?>"><?= e($label) ?></button>
+                        <button class="list-action list-action--<?= e($action) ?>" role="menuitem" type="button" data-booking-action="<?= e($action) ?>" data-booking-target="booking-dialog-<?= (int) $row['ma_dat_san'] ?>"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><?= $bookingIcons[$action] ?></svg><span><?= e($label) ?></span></button>
                         <?php endforeach; ?>
                         <?php $rowMenuContent = ob_get_clean(); $rowMenuId = 'booking-menu-' . $row['ma_dat_san']; $rowMenuLabel = 'booking #' . $row['ma_dat_san']; $rowMenuHasForms = false; $rowMenuUsePopover = true; require dirname(__DIR__) . '/partials/row-menu.php'; ?>
                     </td>
@@ -282,6 +288,7 @@ $roleRoot = match ($scope['role'] ?? '') {
         </table>
     </div>
 
+    <?php require __DIR__ . '/receipt-viewer.php'; ?>
     <?php foreach ($items as $row):
         $actions = App\Services\BookingManagementService::actions($row);
         $paymentSt = $row['trang_thai_thanh_toan'] ?? '';

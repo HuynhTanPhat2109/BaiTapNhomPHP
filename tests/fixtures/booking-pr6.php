@@ -18,7 +18,19 @@ final class Pr6ReadPDO extends PDO
         // Only the list's MySQL GROUP_CONCAT spelling differs. Not a MySQL locking test.
         $query = str_replace("GROUP_CONCAT(DISTINCT ct.ten_san_snapshot ORDER BY ct.ten_san_snapshot SEPARATOR ', ')", 'GROUP_CONCAT(DISTINCT ct.ten_san_snapshot)', $query);
         if (defined('STRYKE_PR6_CONTRACT')) $query = preg_replace('/\s+FOR UPDATE\b/i', '', $query);
+        if (defined('STRYKE_BOOKING_ACTIONS_FIXTURE')) {
+            $query = str_replace('DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 6 MINUTE)', "datetime(CURRENT_TIMESTAMP, '+6 minutes')", $query);
+            $query = str_replace("UPDATE dat_san b SET b.trang_thai_dat_san=", "UPDATE dat_san AS b SET trang_thai_dat_san=", $query);
+            if (str_starts_with($query, 'UPDATE thanh_toan t JOIN dat_san b')) $query = "UPDATE thanh_toan
+                SET trang_thai=(SELECT CASE WHEN b.trang_thai_dat_san='DA_HUY' THEN 'HUY' ELSE 'HET_HAN' END FROM dat_san b WHERE b.ma_dat_san=thanh_toan.ma_dat_san)
+                WHERE ma_dat_san=? AND trang_thai='CHO_THANH_TOAN' AND EXISTS (SELECT 1 FROM dat_san b WHERE b.ma_dat_san=thanh_toan.ma_dat_san AND b.trang_thai_dat_san IN ('DA_HUY','HET_HAN'))";
+        }
         return parent::prepare($query, $options);
+    }
+    public function exec(string $statement): int|false
+    {
+        if (defined('STRYKE_BOOKING_ACTIONS_FIXTURE') && str_starts_with($statement, 'SET TRANSACTION ISOLATION')) return 0;
+        return parent::exec($statement);
     }
 }
 $pdo = new Pr6ReadPDO();
@@ -28,7 +40,8 @@ preg_match_all('/CREATE TABLE (?:IF NOT EXISTS )?(\w+) \((.*?)\) ENGINE=InnoDB/s
 foreach ($definitions as $definition) {
     preg_match_all('/^    (\w+) (INT|VARCHAR|CHAR|DECIMAL|TEXT|DATETIME|TIME|DATE|ENUM|TINYINT)\b([^\r\n]*)/m', $definition[2], $columns, PREG_SET_ORDER);
     $fields = [];
-    foreach ($columns as $column) $fields[] = $column[1] . (str_contains($column[3], 'AUTO_INCREMENT PRIMARY KEY') ? ' INTEGER PRIMARY KEY' : ($column[2] === 'INT' ? ' INTEGER' : ' TEXT'));
+    foreach ($columns as $column) $fields[] = $column[1] . (str_contains($column[3], 'AUTO_INCREMENT PRIMARY KEY') ? ' INTEGER PRIMARY KEY' : ($column[2] === 'INT' ? ' INTEGER' :
+        (defined('STRYKE_RECEIPT_NUMERIC') && $column[2] === 'DECIMAL' && in_array($definition[1], ['dat_san','thanh_toan'], true) ? ' NUMERIC' : ' TEXT')));
     $pdo->exec('CREATE TABLE ' . $definition[1] . ' (' . implode(',', $fields) . ')');
 }
 $insert = static function (string $table, array $row) use ($pdo): void {
@@ -52,7 +65,7 @@ foreach ($states as $id => $state) {
         'trang_thai' => $id === 4 ? 'THANH_CONG' : ($id === 3 ? 'HET_HAN' : 'CHO_THANH_TOAN'), 'phuong_thuc' => 'CHUYEN_KHOAN', 'ngay_tao' => date('Y-m-d H:i:s'), 'so_tien_thuc_nhan' => $id === 4 ? '60000.00' : null]);
 }
 foreach ([1, 4] as $id) $insert('chi_tiet_dich_vu_dat', ['ma_chi_tiet_dv' => $id, 'ma_dat_san' => $id, 'ma_dich_vu' => 1, 'ten_dich_vu_snapshot' => 'Nước snapshot PR6', 'don_vi_tinh_snapshot' => 'chai', 'so_luong' => 2, 'don_gia' => '10000.00', 'thanh_tien' => '20000.00']);
-if ($pr6Unit) {
+if ($pr6Unit || defined('STRYKE_BOOKING_ACTIONS_FIXTURE')) {
     // Mirror 20261102_hoa_don_fields.sql in this RAM-only fixture; never apply its data backfill.
     $pdo->exec('ALTER TABLE hoa_don ADD COLUMN so_hoa_don TEXT');
     $pdo->exec('ALTER TABLE hoa_don ADD COLUMN ma_thanh_toan INTEGER');

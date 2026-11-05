@@ -34,7 +34,7 @@ const check = (ok, name) => { report.checks.push({ name, ok }); if (!ok) throw n
     check(response.status() === 200, 'booking list opens with compatible RAM schema');
     const menu = page.locator('[data-row-actions]').first();
     await menu.locator('summary').click();
-    const link = menu.getByRole('link', { name: 'Xem chi tiết', exact: true });
+    const link = menu.getByRole('menuitem', { name: 'Xem chi tiết', exact: true });
     check(await link.count() === 1 && (await link.getAttribute('href')).includes('bookings%2Fshow'), 'real detail route is accessible through the redesigned actions menu');
     await Promise.all([page.waitForNavigation(), link.click()]);
     check(page.url().includes('id='), 'list link uses actual booking ID and route');
@@ -76,7 +76,8 @@ const check = (ok, name) => { report.checks.push({ name, ok }); if (!ok) throw n
     check((await page.locator('body').innerText()) === 'Một chút gián đoạn', 'missing schema error stays generic, not hidden as success');
     response = await page.goto(address('/admin/bookings/show', { id: 2 }));
     check(response.status() === 200, 'cancelled/pending-payment works when existing bank migration schema is present');
-    check(log.includes('AdminBooking.php(282)') && log.includes('tai_khoan_ngan_hang_co_so'), 'local fixture log records exact missing-table failure');
+    check(/AdminBooking\.php(?:\(|:)\d+/.test(log) && log.includes('AdminBooking->bankAccount(')
+      && log.includes('tai_khoan_ngan_hang_co_so'), 'local fixture log records exact missing-table failure and bankAccount source');
   } catch (error) { report.failures.push(error.stack); }
   finally {
     if (browser) await browser.close(); server.kill();

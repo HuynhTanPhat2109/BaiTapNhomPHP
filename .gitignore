@@ -32,3 +32,8 @@ auth.json
 # Local sessions, throttling state, screenshots and test artifacts
 /storage/temp/*
 !/storage/temp/.gitkeep
+
+# Private payment evidence; never commit customer uploads.
+/storage/receipts/
+/public/uploads/receipts/*
+!/public/uploads/receipts/.htaccess
