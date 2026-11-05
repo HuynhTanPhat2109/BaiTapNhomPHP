@@ -403,11 +403,24 @@
             ? Math.max(0, Math.ceil((deadline - epoch - (performance.now() - start)) / 1000))
             : 0;
 
-        const isConfirmed = (state==='DA_XAC_NHAN' || state==='HOAN_THANH') && !isReconcile;
+        const isConfirmed = (state==='DA_XAC_NHAN' || state==='HOAN_THANH') && paymentStatus==='THANH_CONG' && !isReconcile;
         // Evidence does not extend the original hold or prove that money was received.
-        const isReceiptWaiting = (hasReceipt && !isConfirmed && !isReconcile && seconds>0 && !['DA_HUY','HET_HAN'].includes(state));
-        const isEnded = (!isConfirmed && !isReconcile && (state==='DA_HUY' || state==='HET_HAN' || seconds===0));
-        const isWaiting = (state==='CHO_THANH_TOAN' && seconds>0 && !hasReceipt && !isReconcile);
+        const isReceiptWaiting = hasReceipt && !isReconcile
+            && (state==='CHO_XAC_NHAN' || (state==='CHO_THANH_TOAN' && seconds>0))
+            && ['CHO_THANH_TOAN','CHO_XAC_NHAN'].includes(paymentStatus);
+        const isEnded = (!isConfirmed && !isReconcile && (state==='DA_HUY' || state==='HET_HAN'));
+        const isWaiting = (state==='CHO_THANH_TOAN' && paymentStatus==='CHO_THANH_TOAN' && seconds>0 && !hasReceipt && !isReconcile);
+
+        // Navigation follows persisted server status; the destination checks it again.
+        const showResult = isConfirmed || isReceiptWaiting;
+        if (waiting.dataset.resultPage === '1' && !showResult && waiting.dataset.waitUrl) {
+            window.location.replace(waiting.dataset.waitUrl);
+            return;
+        }
+        if (waiting.dataset.resultPage !== '1' && showResult && waiting.dataset.resultUrl) {
+            window.location.replace(waiting.dataset.resultUrl);
+            return;
+        }
 
         if (counter) {
             counter.textContent = isWaiting
@@ -475,13 +488,13 @@
             const resultDescription = result.querySelector('[data-result-description]');
 
             if (resultTitle) {
-                resultTitle.textContent = 'Thanh toán thành công!';
+                resultTitle.textContent = isConfirmed ? 'Thanh toán thành công!' : 'Gửi minh chứng thành công!';
             }
 
             if (resultDescription) {
                 resultDescription.textContent = isConfirmed
-                    ? 'Cảm ơn bạn đã đặt sân tại STRYKE!'
-                    : 'Yêu cầu của bạn đã được tiếp nhận. Theo dõi đơn đặt sân trong lịch sử đặt sân.';
+                    ? 'Giao dịch và lịch đặt sân đã được xác nhận. Cảm ơn bạn đã đặt sân tại STRYKE!'
+                    : 'Đã tiếp nhận ảnh biên lai của bạn và đang chờ nhân viên xác minh. Thanh toán chưa được xác nhận.';
             }
         }
         const reconcileEl=waiting.querySelector('[data-payment-reconcile]');
@@ -495,13 +508,13 @@
                 expiredEl.hidden = true;
                 expiredEl.style.display = 'none';
             } else {
-                expiredEl.hidden = (!isEnded && seconds>0);
+                expiredEl.hidden = !isEnded;
                 expiredEl.style.display = expiredEl.hidden ? 'none' : '';
             }
         }
 
         // Server conditionally expires pending bookings; receipt-review states never enter this branch.
-        if (seconds === 0 && paymentStatus!=='THANH_CONG' && state === 'CHO_THANH_TOAN' && !waiting.dataset.expiredAutoSent) {
+        if (seconds === 0 && !hasReceipt && paymentStatus!=='THANH_CONG' && state === 'CHO_THANH_TOAN' && !waiting.dataset.expiredAutoSent) {
             waiting.dataset.expiredAutoSent = '1';
             const expireFormData = new FormData();
             expireFormData.append('id', waiting.dataset.bookingId || '');
@@ -546,8 +559,8 @@
     tick();
     if (!isTerminal(state)) {
         const initPaymentStatus = waiting.dataset.paymentStatus;
-        // Keep the original hold countdown even after evidence is submitted.
-        if (initPaymentStatus !== 'CAN_DOI_SOAT') {
+        // Review has no countdown; polling still reflects subsequent staff decisions.
+        if (state==='CHO_THANH_TOAN' && waiting.dataset.receiptSubmitted!=='1' && initPaymentStatus !== 'CAN_DOI_SOAT') {
             tickTimer=setInterval(tick,1000);
         }
         pollTimer=setInterval(refresh,5000);

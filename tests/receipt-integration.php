@@ -128,6 +128,9 @@ try {
     echo "$checks receipt integration checks passed in disposable database.\n";
 } finally {
     if(isset($pdo)&&$pdo->inTransaction())$pdo->rollBack();
-    foreach($files as $file) App\Services\ReceiptImage::remove($file);
+    foreach($files as $file) {
+        $id=(int)explode('_',basename($file))[1];
+        if ($image=App\Services\ReceiptImage::file($file,$id)) unlink($image['absolute']);
+    }
     $admin->exec("DROP DATABASE `$db`");
 }

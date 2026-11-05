@@ -28,7 +28,7 @@ $effectivePaymentSt = ($bookingSt === 'CHO_XAC_NHAN' && $paymentSt === 'CHO_THAN
 $nowStr = $now->format('Y-m-d H:i:s');
 $isReconcile = ($effectivePaymentSt === 'CAN_DOI_SOAT' || $paymentSt === 'CAN_DOI_SOAT');
 $actions = App\Services\BookingManagementService::actions($booking, $now);
-$isExpired = $bookingSt === 'HET_HAN' || (!empty($booking['het_han_giu_san_luc']) && $booking['het_han_giu_san_luc'] <= $nowStr);
+$isExpired = $bookingSt === 'HET_HAN' || ($bookingSt === 'CHO_THANH_TOAN' && !empty($booking['het_han_giu_san_luc']) && $booking['het_han_giu_san_luc'] <= $nowStr);
 $isConfirmed = in_array($bookingSt, ['DA_XAC_NHAN', 'HOAN_THANH'], true);
 $roleRoot = match ($scope['role'] ?? '') {
     'QUAN_LY_CONG_TY' => ['/company', 'Công ty'],
@@ -54,7 +54,9 @@ $roleRoot = match ($scope['role'] ?? '') {
                 Tạo lúc: <?= e(date('d/m/Y H:i:s', strtotime($booking['ngay_tao']))) ?>
                 <?php if ($isReconcile): ?>
                     &bull; <strong style="color: #c5221f;">Giao dịch cần đối soát; kiểm tra thời hạn giữ chỗ</strong>
-                <?php elseif (!empty($booking['het_han_giu_san_luc'])): ?>
+                <?php elseif ($bookingSt === 'CHO_XAC_NHAN'): ?>
+                    &bull; Chờ nhân viên xác nhận; không còn áp dụng thời hạn giữ chỗ 6 phút.
+                <?php elseif ($bookingSt === 'CHO_THANH_TOAN' && !empty($booking['het_han_giu_san_luc'])): ?>
                     &bull; Hết hạn giữ chỗ: <strong style="<?= $isExpired ? 'color: #c5221f;' : 'color: #b06000;' ?>"><?= e(date('d/m/Y H:i:s', strtotime($booking['het_han_giu_san_luc']))) ?></strong>
                 <?php endif; ?>
             </p>

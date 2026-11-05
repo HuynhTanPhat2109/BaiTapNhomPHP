@@ -300,9 +300,11 @@ try {
     checkBooking($http('/booking/cancel',['id'=>$httpId])['status']===403,'cancellation requires CSRF');
     checkBooking($http('/booking/cancel',null,['id'=>$httpId])['status']===405,'GET cannot cancel');
     $r=$http('/booking/cancel',['_token'=>$csrf,'id'=>$httpId]);
-    checkBooking($r['status']===303 && str_contains($r['headers'],'date='.$date) && str_contains($r['headers'],'id='.$facility),'header POST cancels and redirects to correct schedule');
+    checkBooking($r['status']===303 && $booking->inspect($httpId,$customers[0])['trang_thai_dat_san']==='CHO_THANH_TOAN','header navigation preserves live booking');
+    $r=$http('/booking/cancel',['_token'=>$csrf,'id'=>$httpId,'action'=>'cancel']);
+    checkBooking($r['status']===303 && str_contains($r['headers'],'date='.$date) && str_contains($r['headers'],'id='.$facility),'explicit cancellation redirects to correct schedule');
     checkBooking($slotState($status(),$court,'17:00')==='free','other viewer sees cancellation without reloading HTML');
-    checkBooking($http('/booking/cancel',['_token'=>$csrf,'id'=>$httpId])['status']===303,'repeated HTTP cancellation succeeds');
+    checkBooking($http('/booking/cancel',['_token'=>$csrf,'id'=>$httpId,'action'=>'cancel'])['status']===303,'repeated explicit HTTP cancellation succeeds');
     checkBooking(json_decode($http('/booking/wait',null,['id'=>$httpId,'status'=>'1'])['body'],true)['state']==='DA_HUY','revisit cancelled URL does not restore hold');
     checkBooking($pdo->query("SELECT trang_thai FROM thanh_toan WHERE ma_dat_san=$httpId")->fetchColumn()==='HUY','HTTP cancel synchronizes payment');
     // Simulate a temporarily unavailable dependency in the test DB only.

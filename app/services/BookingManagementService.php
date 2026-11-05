@@ -16,8 +16,8 @@ final class BookingManagementService
         $status = $booking['trang_thai_dat_san'] ?? '';
         $payment = $booking['trang_thai_thanh_toan'] ?? '';
         $expires = $booking['het_han_giu_san_luc'] ?? '';
-        $pending = in_array($status, ['CHO_THANH_TOAN', 'CHO_XAC_NHAN'], true);
-        $live = $pending && $expires !== '' && $expires > ($now ?? self::now())->format('Y-m-d H:i:s');
+        $live = $status === 'CHO_XAC_NHAN'
+            || ($status === 'CHO_THANH_TOAN' && $expires !== '' && $expires > ($now ?? self::now())->format('Y-m-d H:i:s'));
         $payable = in_array($payment, ['CHO_THANH_TOAN', 'CHO_XAC_NHAN', 'CAN_DOI_SOAT'], true);
         $recordable = in_array($status, ['CHO_THANH_TOAN', 'CHO_XAC_NHAN', 'DA_HUY', 'HET_HAN'], true)
             && in_array($payment, ['CHO_THANH_TOAN', 'CHO_XAC_NHAN', 'HUY', 'HET_HAN'], true);
@@ -367,6 +367,7 @@ final class BookingManagementService
 
             // Keep the original deadline. Receipt review is an explicit state, not a new hold.
             $booking = $this->bookingService->lockPayable($bookingId, true);
+            $preRow = $booking; // The locked state, not an earlier unlocked read.
             $conflict=$this->pdo->prepare("SELECT other.ma_dat_san FROM chi_tiet_dat_san own
                 JOIN chi_tiet_dat_san other ON other.ma_san=own.ma_san AND other.ngay_choi=own.ngay_choi
                     AND other.gio_bat_dau<own.gio_ket_thuc AND other.gio_ket_thuc>own.gio_bat_dau
@@ -387,11 +388,6 @@ final class BookingManagementService
             if (!self::actions($preRow + ['trang_thai_thanh_toan' => $payment['trang_thai']])['confirm']) {
                 throw new ValidationException(['booking' => 'Booking đã hủy, hết hạn, đã xử lý hoặc thanh toán không còn đủ điều kiện xác nhận.']);
             }
-            // lockPayable accepts CHO_THANH_TOAN only; never extend the original expiry.
-            if ($preRow['trang_thai_dat_san'] === 'CHO_XAC_NHAN') {
-                $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san = 'CHO_THANH_TOAN' WHERE ma_dat_san = :id")->execute(['id' => $bookingId]);
-            }
-
             if (!in_array($payment['trang_thai'], ['CHO_THANH_TOAN','CAN_DOI_SOAT'], true)) {
                 throw new ValidationException(['payment'=>'Giao dịch không còn được phép xác nhận.']);
             }
@@ -497,8 +493,9 @@ final class BookingManagementService
                 'UPDATE dat_san
                  SET trang_thai_dat_san = :status,
                      ma_nhan_vien = :staff_id
-                 WHERE ma_dat_san = :id AND trang_thai_dat_san = :pending
-                   AND het_han_giu_san_luc > :confirmed_at'
+                 WHERE ma_dat_san = :id
+                   AND (trang_thai_dat_san = \'CHO_XAC_NHAN\'
+                        OR (trang_thai_dat_san = :pending AND het_han_giu_san_luc > :confirmed_at))'
             );
             $updateBookingStmt->execute([
                 'status' => 'DA_XAC_NHAN',

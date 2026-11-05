@@ -2,7 +2,7 @@
 const fs=require('node:fs'), vm=require('node:vm'), assert=require('node:assert/strict');
 function page(state,payment,receipt,expires='2026-11-02 10:06:00') {
     const nodes=Object.fromEntries(['data-countdown','data-wait-message','data-payment-expired','data-payment-reconcile','.stryke-bottom-bar','.stryke-countdown-banner']
-        .map(k=>[k,{hidden:true,textContent:''}]));
+        .map(k=>[k,{hidden:true,textContent:'',style:{}}]));
     const heading={textContent:''},description={textContent:''};
     const result={hidden:true,querySelector:s=>s==='[data-result-title]'?heading:description};
     nodes['data-payment-result']=result;
@@ -24,10 +24,10 @@ function page(state,payment,receipt,expires='2026-11-02 10:06:00') {
     p.set({payment_status:'THANH_CONG'});await p.poll();
     assert(p.result.hidden&&p.pending.hidden,'recorded payment alone never confirms or offers more payment');
     p.set({state:'CHO_XAC_NHAN',payment_status:'CHO_THANH_TOAN',receipt_submitted:true});await p.poll();
-    assert(!p.result.hidden&&p.heading.textContent.includes('biên lai'));
+    assert(!p.result.hidden&&p.heading.textContent==='Gửi minh chứng thành công!');
     assert(p.calls.every(c=>c.url!=='/expire'));
     p.set({state:'DA_XAC_NHAN',payment_status:'THANH_CONG'});await p.poll();
-    assert(p.heading.textContent==='Thanh toán đã thành công!'&&!p.result.hidden);
+    assert(p.heading.textContent==='Thanh toán thành công!'&&!p.result.hidden);
     assert.equal(p.timers.size,0);
     for(const state of ['HET_HAN','DA_HUY']){
         const ended=page(state,'CHO_THANH_TOAN',true);
@@ -37,8 +37,9 @@ function page(state,payment,receipt,expires='2026-11-02 10:06:00') {
     const review=page('CHO_XAC_NHAN','CHO_THANH_TOAN',true,'2026-10-01 10:06:00');
     assert(!review.result.hidden&&review.calls.length===0,'overdue receipt review never expires');
     const expiry=page('CHO_THANH_TOAN','CHO_THANH_TOAN',false,'2026-10-01 10:06:00');
+    assert(expiry.nodes['data-payment-expired'].hidden,'clock alone cannot declare server state expired');
     assert.equal(expiry.calls[0].url,'/expire');assert.equal(expiry.calls[0].options.body.get('_token'),'test-csrf');
     const missing=page('DA_XAC_NHAN','CHO_THANH_TOAN',false);
     assert(missing.result.hidden,'booking alone cannot assert verified payment');
-    console.log('PASS: 15 payment/receipt polling assertions.');
+    console.log('PASS: payment/receipt polling and expiry guards.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

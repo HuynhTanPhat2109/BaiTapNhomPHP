@@ -1,4 +1,16 @@
-<?php // Render only verified states. Receipt acceptance is not payment confirmation. ?>
+<?php // Rendered by the controller only after checking ownership and persisted state. ?>
+<link rel="stylesheet" href="<?= e(base_path() . '/assets/css/payment-result.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/payment-result.css')) ?>">
+<script src="<?= e(base_path() . '/assets/js/booking.js?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/js/booking.js')) ?>" defer></script>
+<section class="booking-page booking-wait"
+         data-booking-wait data-result-page="1"
+         data-booking-id="<?= e($booking['ma_dat_san']) ?>"
+         data-state="<?= e($booking['trang_thai_dat_san']) ?>"
+         data-payment-status="<?= e($payment['trang_thai'] ?? '') ?>"
+         data-receipt-submitted="<?= $receiptSubmitted ? '1' : '0' ?>"
+         data-now="<?= e($now->format(DATE_ATOM)) ?>"
+         data-expires="<?= e($booking['het_han_giu_san_luc'] ?? '') ?>"
+         data-wait-url="<?= e(url('/booking/wait') . '&id=' . (int)$booking['ma_dat_san']) ?>"
+         data-status-url="<?= e(url('/booking/wait') . '&id=' . (int)$booking['ma_dat_san'] . '&status=1') ?>">
 <section class="payment-result" data-payment-result <?= (!$isConfirmedBooking && !$isReceiptWait) ? 'hidden' : '' ?> aria-labelledby="payment-result-title">
     <div class="payment-result-content">
         <div class="payment-result-check" aria-hidden="true">
@@ -8,13 +20,13 @@
             <h1 id="payment-result-title" data-result-title>
                 <?= $isConfirmedBooking
                     ? 'Thanh toán thành công!'
-                    : 'Gửi xác nhận thanh toán thành công!' ?>
+                    : 'Gửi minh chứng thành công!' ?>
             </h1>
 
             <p data-result-description>
                 <?= $isConfirmedBooking
-                    ? 'Yêu cầu của bạn đã được tiếp nhận. Theo dõi đơn đặt sân trong lịch sử đặt sân.'
-                    : 'Cảm ơn bạn đã đặt sân tại STRYKE!' ?>
+                    ? 'Giao dịch và lịch đặt sân đã được xác nhận. Cảm ơn bạn đã đặt sân tại STRYKE!'
+                    : 'Đã tiếp nhận ảnh biên lai của bạn và đang chờ nhân viên xác minh. Thanh toán chưa được xác nhận.' ?>
             </p>
         </div>
         <svg class="payment-result-calendar" viewBox="0 0 300 195" fill="none" aria-hidden="true">
@@ -46,4 +58,5 @@
             </a>
         </nav>
     </div>
+</section>
 </section>

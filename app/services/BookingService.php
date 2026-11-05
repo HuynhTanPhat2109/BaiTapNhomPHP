@@ -207,16 +207,18 @@ final class BookingService
 
     /** Integration guard only. Duy must call inside his own transaction, BEFORE any writes.
      * Lock company/facility first, then this booking; guard does not confirm or deduct stock.
-     * Recheck immediately before transition; a late callback must go to reconciliation.
+     * Pending bookings require a live deadline. Explicit receipt review requires a
+     * linked valid receipt and has no six-minute cutoff; never alter the saved deadline.
      */
     public function lockPayable(int $id, bool $allowReceiptReview = false): array
     {
         if (!$this->pdo->inTransaction()) throw new \LogicException('Payment guard requires transaction');
         $row=$this->bookings->find($id,true);
         if ($allowReceiptReview && $row && $row['trang_thai_dat_san']==='CHO_XAC_NHAN') {
-            $stmt=$this->pdo->prepare('SELECT ghi_chu FROM thanh_toan WHERE ma_dat_san=? FOR UPDATE');
+            $stmt=$this->pdo->prepare('SELECT * FROM thanh_toan WHERE ma_dat_san=? FOR UPDATE');
             $stmt->execute([$id]);
-            if ($row['bat_dau_giu_san_luc'] && ReceiptImage::getReceiptFromNote($stmt->fetchColumn() ?: null)) return $row;
+            $payment=$stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row['bat_dau_giu_san_luc'] && $payment && (new BookingReceiptService($this->pdo))->info($payment)) return $row;
             throw new HttpException(409,'Đơn chờ xác nhận chưa có biên lai hợp lệ.');
         }
         if (!$row || $row['trang_thai_dat_san']!==self::PENDING || $row['het_han_giu_san_luc']<=CourtScheduleService::now()->format('Y-m-d H:i:s'))
@@ -227,7 +229,7 @@ final class BookingService
     /** The image was validated/stored by ReceiptImage. Caller removes it if this transaction fails. */
     public function acceptReceipt(int $id, int $customer, string $path): void
     {
-        if (!ReceiptImage::validPath($path) || !is_file(dirname(__DIR__,2).'/public/'.$path))
+        if (ReceiptImage::file($path, $id) === null)
             throw new HttpException(422,'Không tìm thấy ảnh biên lai hợp lệ.');
         $before=$this->bookings->find($id);
         if (!$before || (int)$before['ma_khach_hang']!==$customer) throw new HttpException(404,'Không tìm thấy booking.');
@@ -248,7 +250,7 @@ final class BookingService
             $stmt->execute([$id]); $payment=$stmt->fetch();
             if (!$payment || $payment['trang_thai']!=='CHO_THANH_TOAN' || ReceiptImage::getReceiptFromNote($payment['ghi_chu']))
                 throw new HttpException(409,'Biên lai đã được tiếp nhận hoặc giao dịch không còn chờ thanh toán.');
-            $note=ReceiptImage::appendReceiptToNote($payment['ghi_chu'], $path);
+            $note=ReceiptImage::appendReceiptToNote($payment['ghi_chu'], $path, CourtScheduleService::now()->format('Y-m-d H:i:s'));
             $stmt=$this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san='CHO_XAC_NHAN'
                 WHERE ma_dat_san=? AND trang_thai_dat_san='CHO_THANH_TOAN' AND het_han_giu_san_luc>CURRENT_TIMESTAMP");
             $stmt->execute([$id]);

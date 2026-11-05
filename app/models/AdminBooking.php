@@ -28,6 +28,7 @@ final class AdminBooking
      */
     public function page(array $filters, array $scope): array
     {
+        $effectiveStatus = str_replace('?', 'CURRENT_TIMESTAMP', Booking::effectiveStatusSql());
         $where = [];
         $params = [];
 
@@ -49,16 +50,16 @@ final class AdminBooking
 
         // 3. Lọc theo trạng thái booking
         if (!empty($filters['booking_status'])) {
-            $where[] = 'b.trang_thai_dat_san = :booking_status';
+            $where[] = "($effectiveStatus) = :booking_status";
             $params['booking_status'] = $filters['booking_status'];
         }
 
         // 4. Lọc theo trạng thái thanh toán
         if (!empty($filters['payment_status'])) {
             if ($filters['payment_status'] === 'CHO_XAC_NHAN') {
-                $where[] = "b.trang_thai_dat_san = 'CHO_XAC_NHAN' AND tt.trang_thai = 'CHO_THANH_TOAN'";
+                $where[] = "($effectiveStatus) = 'CHO_XAC_NHAN' AND tt.trang_thai = 'CHO_THANH_TOAN'";
             } elseif ($filters['payment_status'] === 'CHO_THANH_TOAN') {
-                $where[] = "b.trang_thai_dat_san = 'CHO_THANH_TOAN' AND tt.trang_thai = 'CHO_THANH_TOAN'";
+                $where[] = "($effectiveStatus) = 'CHO_THANH_TOAN' AND tt.trang_thai = 'CHO_THANH_TOAN'";
             } else {
                 $where[] = 'tt.trang_thai = :payment_status';
                 $params['payment_status'] = $filters['payment_status'];
@@ -129,7 +130,7 @@ final class AdminBooking
                        b.tong_tien_san,
                        b.tong_tien_dich_vu,
                        b.tong_tien_tam_tinh,
-                       b.trang_thai_dat_san,
+                       ($effectiveStatus) AS trang_thai_dat_san,
                        b.ghi_chu AS ghi_chu_booking,
                        k.ma_khach_hang,
                        k.ho_ten AS ten_khach_hang,
@@ -190,7 +191,9 @@ final class AdminBooking
      */
     public function find(int $bookingId, array $scope): ?array
     {
+        $effectiveStatus = str_replace('?', 'CURRENT_TIMESTAMP', Booking::effectiveStatusSql());
         $sql = "SELECT b.*,
+                       ($effectiveStatus) AS trang_thai_dat_san,
                        k.ho_ten AS ten_khach_hang,
                        k.so_dien_thoai AS sdt_khach_hang,
                        k.email AS email_khach_hang,

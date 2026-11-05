@@ -19,8 +19,11 @@ final class Booking
 
     private static function unprotectedSql(): string
     {
+        // Legacy pending rows with a receipt link require manual review, not automatic expiry.
+        // This is only a conservative guard; it never confirms payment or restores a slot.
         return "NOT EXISTS (SELECT 1 FROM thanh_toan p WHERE p.ma_dat_san=b.ma_dat_san
-            AND p.trang_thai='THANH_CONG')";
+            AND (p.trang_thai='THANH_CONG' OR p.ghi_chu LIKE '%[BIEN_LAI:%'
+                OR NULLIF(TRIM(p.anh_minh_chung),'') IS NOT NULL))";
     }
 
     public function findEffective(int $id): ?array
@@ -87,7 +90,8 @@ final class Booking
         $direction = $sort === 'oldest' ? 'ASC' : 'DESC';
         $items = $this->rows("SELECT h.ma_dat_san, h.ngay_tao, h.trang_thai_dat_san,
             h.tong_tien_san, h.tong_tien_dich_vu, h.tong_tien_tam_tinh, c.ten_co_so, c.anh_dai_dien,
-            h.ghi_chu, p.ghi_chu AS payment_note
+            h.ghi_chu, p.ghi_chu AS payment_note,
+            p.anh_minh_chung AS receipt_image, p.minh_chung_gui_luc AS receipt_sent_at
             FROM $source JOIN co_so c ON c.ma_co_so=h.ma_co_so
             LEFT JOIN thanh_toan p ON p.ma_dat_san=h.ma_dat_san
             WHERE $where ORDER BY h.ngay_tao $direction, h.ma_dat_san $direction LIMIT $perPage OFFSET $offset", $params);
@@ -128,7 +132,7 @@ final class Booking
 
     public function historyReceipt(int $id, int $customer): ?array
     {
-        return $this->rows('SELECT p.ghi_chu FROM dat_san b
+        return $this->rows('SELECT p.* FROM dat_san b
             JOIN thanh_toan p ON p.ma_dat_san=b.ma_dat_san
             WHERE b.ma_dat_san=? AND b.ma_khach_hang=?', [$id,$customer])[0] ?? null;
     }
@@ -152,7 +156,9 @@ final class Booking
         $this->pdo->prepare("UPDATE dat_san SET trang_thai_dat_san =
             CASE WHEN het_han_giu_san_luc <= CURRENT_TIMESTAMP THEN 'HET_HAN' ELSE 'DA_HUY' END
             WHERE ma_dat_san=? AND trang_thai_dat_san='CHO_THANH_TOAN'
-            AND NOT EXISTS (SELECT 1 FROM thanh_toan WHERE ma_dat_san=? AND trang_thai='THANH_CONG')")
+            AND NOT EXISTS (SELECT 1 FROM thanh_toan WHERE ma_dat_san=?
+                AND (trang_thai='THANH_CONG' OR ghi_chu LIKE '%[BIEN_LAI:%'
+                    OR NULLIF(TRIM(anh_minh_chung),'') IS NOT NULL))")
             ->execute([$id, $id]);
         $this->syncEndedPayment($id);
     }
@@ -182,7 +188,8 @@ final class Booking
     {
         $rows = $this->rows("SELECT c.so_luong FROM chi_tiet_dich_vu_dat c
             JOIN dat_san b ON b.ma_dat_san = c.ma_dat_san WHERE c.ma_dich_vu = ?
-            AND b.trang_thai_dat_san IN ('CHO_THANH_TOAN','CHO_XAC_NHAN') AND b.het_han_giu_san_luc > ? ORDER BY b.ma_dat_san" . ($lock ? ' FOR UPDATE' : ''), [$service, $now]);
+            AND (b.trang_thai_dat_san='CHO_XAC_NHAN'
+                OR (b.trang_thai_dat_san='CHO_THANH_TOAN' AND b.het_han_giu_san_luc > ?)) ORDER BY b.ma_dat_san" . ($lock ? ' FOR UPDATE' : ''), [$service, $now]);
         return (int) array_sum(array_column($rows, 'so_luong'));
     }
 

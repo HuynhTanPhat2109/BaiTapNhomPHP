@@ -11,7 +11,7 @@ $pdo->exec('CREATE TABLE co_so (ma_co_so INTEGER PRIMARY KEY, ten_co_so TEXT, an
     CREATE TABLE dat_san (ma_dat_san INTEGER PRIMARY KEY, ma_khach_hang INTEGER, ma_co_so INTEGER,
         ngay_tao TEXT, trang_thai_dat_san TEXT, tong_tien_tam_tinh TEXT, het_han_giu_san_luc TEXT DEFAULT NULL,
         tong_tien_san TEXT DEFAULT \'185000.00\', tong_tien_dich_vu TEXT DEFAULT \'0.00\');
-    CREATE TABLE thanh_toan (ma_dat_san INTEGER, trang_thai TEXT);
+    CREATE TABLE thanh_toan (ma_dat_san INTEGER, trang_thai TEXT, anh_minh_chung TEXT, minh_chung_gui_luc TEXT);
     CREATE TABLE chi_tiet_dat_san (ma_chi_tiet INTEGER PRIMARY KEY, ma_dat_san INTEGER, ma_san INTEGER,
         ten_san_snapshot TEXT, ngay_choi TEXT, gio_bat_dau TEXT, gio_ket_thuc TEXT);
     CREATE TABLE chi_tiet_dich_vu_dat (ma_chi_tiet_dv INTEGER PRIMARY KEY, ma_dat_san INTEGER,
@@ -34,13 +34,10 @@ $pdo->exec("INSERT INTO chi_tiet_dich_vu_dat VALUES (1,14,'Nước snapshot PR6'
 $pdo->exec("UPDATE dat_san SET ngay_tao='2026-10-02 00:00:00' WHERE ma_dat_san=2;
     UPDATE dat_san SET ngay_tao='2026-10-04 23:59:59' WHERE ma_dat_san=4");
 $pdo->exec("ALTER TABLE dat_san ADD COLUMN ghi_chu TEXT;
-    ALTER TABLE dat_san ADD COLUMN tong_tien_san TEXT DEFAULT '185000.00';
-    ALTER TABLE dat_san ADD COLUMN tong_tien_dich_vu TEXT DEFAULT '0.00';
     ALTER TABLE thanh_toan ADD COLUMN ghi_chu TEXT;
-    CREATE TABLE chi_tiet_dich_vu_dat (ma_chi_tiet_dv INTEGER PRIMARY KEY,ma_dat_san INTEGER,ten_dich_vu_snapshot TEXT,don_vi_tinh_snapshot TEXT,so_luong INTEGER,don_gia TEXT,thanh_tien TEXT);
     UPDATE dat_san SET ghi_chu='Note from customer' WHERE ma_dat_san=14;
-    INSERT INTO thanh_toan VALUES (14,'CHO_THANH_TOAN','[BIEN_LAI:uploads/receipts/receipt_14_aaaaaaaaaaaaaaaa.png]');
-    INSERT INTO thanh_toan VALUES (99,'CHO_THANH_TOAN','private note');");
+    INSERT INTO thanh_toan (ma_dat_san,trang_thai,ghi_chu) VALUES (14,'CHO_THANH_TOAN','[BIEN_LAI:uploads/receipts/receipt_14_aaaaaaaaaaaaaaaa.png]');
+    INSERT INTO thanh_toan (ma_dat_san,trang_thai,ghi_chu) VALUES (99,'CHO_THANH_TOAN','private note');");
 $pdo->exec('PRAGMA query_only=ON'); // Any accidental UPDATE/INSERT/DELETE now fails.
 $model = new Booking($pdo);
 $checks = 0;
