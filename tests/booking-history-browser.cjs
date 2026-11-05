@@ -10,6 +10,10 @@ const html = execFileSync('C:/xampp/php/php.exe', ['tests/booking-history.php', 
 const server = http.createServer((req,res) => {
     const resource = new URL(req.url, 'http://localhost').pathname;
     if (resource === '/history') {res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html);return;}
+    if (/^\/test-proof\/[12]\.png$/.test(resource)) {
+        res.setHeader('Content-Type','image/svg+xml');
+        res.end('<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1600"><rect width="1000" height="1600" fill="#eaf2e8"/><text x="80" y="150" font-size="60">TEST RECEIPT '+resource+'</text></svg>');return;
+    }
     if (/^\/BaiTapNhomPHP\/public\/assets\/(css|js)\/[a-z-]+\.(css|js)$/.test(resource)) {
         const file=path.resolve('public/assets', resource.split('/assets/')[1]);
         res.setHeader('Content-Type',file.endsWith('.css')?'text/css':'application/javascript');res.end(fs.readFileSync(file));return;
@@ -45,6 +49,25 @@ function send(method,params={},sessionId) {return new Promise((resolve,reject)=>
         assert.equal(await evaluate(`getComputedStyle(document.querySelector('.booking-history-card')).display`),'grid');
         await evaluate(`document.querySelector('.booking-history-filters a').focus()`);
         assert.equal(await evaluate(`document.activeElement.matches('.booking-history-filters a')`),true);
+        await evaluate(`document.querySelectorAll('.booking-history-costs')[0].open=true;document.querySelectorAll('.booking-history-costs')[1].open=true;window.costsBefore=[...document.querySelectorAll('.booking-history-costs-row,.booking-history-costs-services,.booking-history-costs-total')].map(e=>e.outerHTML).join('');`);
+        assert.equal(await evaluate(`document.querySelectorAll('.booking-history-note')[1].textContent.trim()`),'Không có');
+        assert.equal(await evaluate(`document.querySelectorAll('[data-view-proof]').length`),2);
+        await evaluate(`document.querySelector('[data-view-proof]').click()`);
+        await until(()=>evaluate(`document.querySelector('[data-proof-image]').complete && document.querySelector('[data-proof-image]').naturalWidth>0`));
+        assert.equal(await evaluate(`document.querySelector('[data-proof-modal]').open && document.querySelector('[data-proof-image]').src.endsWith('/test-proof/1.png')`),true);
+        assert.equal(await evaluate(`document.querySelector('[data-proof-image]').getBoundingClientRect().width <= innerWidth && document.querySelector('[data-proof-image]').getBoundingClientRect().height <= innerHeight`),true);
+        await evaluate(`document.querySelector('[data-close-proof]').click()`);
+        await until(()=>evaluate(`!document.querySelector('[data-proof-modal]').open && document.activeElement===document.querySelector('[data-view-proof]')`));
+        await evaluate(`document.querySelectorAll('[data-view-proof]')[1].click()`);
+        assert.equal(await evaluate(`document.querySelector('[data-proof-image]').src.endsWith('/test-proof/2.png')`),true);
+        await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27},sessionId);
+        await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27},sessionId);
+        await until(()=>evaluate(`!document.querySelector('[data-proof-modal]').open`));
+        await evaluate(`document.querySelector('[data-view-proof]').click();document.querySelector('[data-proof-modal]').click()`);
+        await until(()=>evaluate(`!document.querySelector('[data-proof-modal]').open`));
+        assert.equal(await evaluate(`window.costsBefore===[...document.querySelectorAll('.booking-history-costs-row,.booking-history-costs-services,.booking-history-costs-total')].map(e=>e.outerHTML).join('')`),true);
+        assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true);
+        checks+=9;
         const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true},sessionId);
         fs.writeFileSync(path.join(output,width+'.png'),Buffer.from(shot.data,'base64'));checks+=5;
     }

@@ -106,21 +106,20 @@ final class PaymentController extends Controller
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
 
-        $now = new DateTimeImmutable('now', new DateTimeZone('Asia/Ho_Chi_Minh'));
-        $isExpired = false;
-        if (!empty($payment['het_han_giu_san_luc'])) {
-            $expDate = new DateTimeImmutable($payment['het_han_giu_san_luc'], $now->getTimezone());
-            $isExpired = ($now >= $expDate);
-        }
-
-        $isSuccess = in_array($payment['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH'], true);
+        // Same read-only effective state as history/wait. Receipt review has no six-minute expiry.
+        $booking = (new \App\Services\BookingService($this->app->pdo()))->inspect(
+            (int)$payment['ma_dat_san'], (int)$user['ma_khach_hang']
+        );
+        $isExpired = $booking['trang_thai_dat_san'] === 'HET_HAN';
+        $isSuccess = in_array($booking['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH'], true)
+            && $payment['trang_thai'] === 'THANH_CONG';
 
         echo json_encode([
             'payment_id' => (int) $payment['ma_thanh_toan'],
             'booking_id' => (int) $payment['ma_dat_san'],
             'reference_code' => $payment['ma_tham_chieu'],
             'payment_status' => $payment['trang_thai'],
-            'booking_status' => $payment['trang_thai_dat_san'],
+            'booking_status' => $booking['trang_thai_dat_san'],
             'is_confirmed' => $isSuccess,
             'is_expired' => $isExpired && !$isSuccess,
         ]);
@@ -157,6 +156,42 @@ final class PaymentController extends Controller
             $payment['ma_tham_chieu'],
             $bankAccount['ten_chu_tai_khoan']
         );
+
+        // Downloads stay same-origin and never fall back to an HTML/external redirect.
+        if (($_GET['download'] ?? '') === '1') {
+            $info = $imageData ? @getimagesizefromstring($imageData) : false;
+            $extensions = ['image/png'=>'png','image/jpeg'=>'jpg','image/webp'=>'webp','image/svg+xml'=>'svg'];
+            $mime = $info['mime'] ?? '';
+            // VietQR QuickLink can return SVG even when its URL ends in .png.
+            if (!$info && $imageData && !preg_match('/<!DOCTYPE|<!ENTITY/i', $imageData)) {
+                $previous = libxml_use_internal_errors(true);
+                try {
+                    $svg = new \DOMDocument();
+                    if ($svg->loadXML($imageData, LIBXML_NONET)
+                        && $svg->documentElement?->localName === 'svg'
+                        && $svg->documentElement->namespaceURI === 'http://www.w3.org/2000/svg') {
+                        $mime = 'image/svg+xml';
+                    }
+                } finally {
+                    libxml_clear_errors();
+                    libxml_use_internal_errors($previous);
+                }
+            }
+            if (!isset($extensions[$mime])) {
+                http_response_code(503);
+                header('Content-Type: application/json; charset=utf-8');
+                header('Cache-Control: no-store');
+                echo json_encode(['error'=>'Chưa tải được ảnh VietQR hợp lệ. Vui lòng thử lại.'], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            header('Content-Type: '.$mime);
+            header('Content-Disposition: attachment; filename="VietQR_DonHang_'.(int)$payment['ma_dat_san'].'.'.$extensions[$mime].'"');
+            header('Cache-Control: private, no-store');
+            header('X-Content-Type-Options: nosniff');
+            header('Content-Length: '.strlen($imageData));
+            echo $imageData;
+            return;
+        }
 
         if ($imageData) {
             $trimmed = ltrim($imageData);

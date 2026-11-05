@@ -221,7 +221,7 @@
             clearTimeout(timer);busy=true;synchronized=false;
             const controls=[...form.querySelectorAll('button,input[type=number],textarea')].map(node=>[node,node.disabled]);
             controls.forEach(([node])=>node.disabled=true);
-            form.setAttribute('aria-busy','true');feedback('Đang cập nhật báo giá…');
+            form.setAttribute('aria-busy','true');feedback('');
             const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
             const sentNote=note?.value||'';
             try {
@@ -230,6 +230,14 @@
                 const page=new DOMParser().parseFromString(await response.text(),'text/html');
                 const summary=page.querySelector('.booking-summary'),quote=page.querySelector('[name=quote]'),lines=page.querySelector('.booking-schedule-list'),services=page.querySelector('.booking-dialog-list');
                 if(!response.ok||!summary||!quote||!lines||!!dialog!==!!services)throw new Error(page.querySelector('.booking-error')?.textContent||'Không thể cập nhật báo giá (HTTP '+response.status+'). Vui lòng thử lại hoặc tải lại trang.');
+                // Quantity changes are intentional; compare unit rates and court lines instead of the total/fingerprint.
+                const courtChanged = lines.dataset.courtQuote !== form.querySelector('.booking-schedule-list').dataset.courtQuote;
+                const serviceChanged = services && rows().some(row => {
+                    const id=row.dataset.serviceRow;
+                    if(!(candidate[id]>0))return false;
+                    const updated=[...services.querySelectorAll('[data-service-row]')].find(item=>item.dataset.serviceRow===id);
+                    return updated && updated.dataset.unitPriceCents!==row.dataset.unitPriceCents;
+                });
                 form.querySelector('.booking-summary').replaceWith(summary);
                 form.querySelector('.booking-schedule-list').replaceWith(lines);
                 if(services)dialog.querySelector('.booking-dialog-list').replaceChildren(...services.childNodes);
@@ -237,7 +245,8 @@
                 applied=quantities();acceptedNote=sentNote;synchronized=true;
                 renderSelected();filter();
                 if(closeAfter)dialog.close();
-                feedback('Đã cập nhật giá và dịch vụ · Chưa giữ sân');
+                feedback(courtChanged || serviceChanged
+                    ? 'Giá hoặc thông tin sân/dịch vụ đã thay đổi. Vui lòng kiểm tra lại báo giá trước khi xác nhận.' : '');
             } catch(error) {
                 // A failed/lost response may already have changed the server draft.
                 // Keep the last accepted display but require a successful review before confirm.
@@ -319,7 +328,7 @@
     let epoch=Date.parse(waiting.dataset.now), start=performance.now(), state=waiting.dataset.state;
     const deadline=Date.parse(waiting.dataset.expires.replace(' ','T')+'+07:00');
     const counter=waiting.querySelector('[data-countdown]'), message=waiting.querySelector('[data-wait-message]');
-    const labels = {CHO_THANH_TOAN:'Sân đang được tạm giữ', DA_HUY:'Đã hủy giữ sân', HET_HAN:'Đã hết thời gian giữ sân', DA_XAC_NHAN:'Booking đã được xác nhận', HOAN_THANH:'Booking đã hoàn thành', CHO_XAC_NHAN:'Booking chưa được giữ sân'};
+    const labels = {CHO_THANH_TOAN:'Sân đang được tạm giữ', DA_HUY:'Đã hủy giữ sân', HET_HAN:'Đã hết thời gian giữ sân', DA_XAC_NHAN:'Booking đã được xác nhận', HOAN_THANH:'Booking đã hoàn thành', CHO_XAC_NHAN:'Đang chờ nhân viên xác nhận'};
     let checking=false;
     let pollTimer=null, tickTimer=null;
 
@@ -356,7 +365,7 @@
             if (data.now) epoch=Date.parse(data.now);
             start=performance.now();
             if (data.state) state=data.state;
-            if (data.receipt_submitted) waiting.dataset.receiptSubmitted = '1';
+            if (typeof data.receipt_submitted === 'boolean') waiting.dataset.receiptSubmitted = data.receipt_submitted ? '1' : '0';
             if (data.payment_status) waiting.dataset.paymentStatus = data.payment_status;
             if (data.payment_note !== undefined && data.payment_note !== null) {
                 const reasonEl = waiting.querySelector('[data-reconcile-reason]');
@@ -431,12 +440,16 @@
             if (eyebrowEl) eyebrowEl.textContent = 'CẦN ĐỐI SOÁT';
             if (titleEl) titleEl.textContent = 'Giao dịch cần đối soát thanh toán';
             document.title = 'Cần đối soát thanh toán — STRYKE';
-            if (toastError) toastError.style.display = 'none';
+            if (toastError) {
+                toastError.hidden = true;
+            }
         } else if (isConfirmed) {
             if (eyebrowEl) eyebrowEl.textContent = 'THÀNH CÔNG';
             if (titleEl) titleEl.textContent = 'Đặt sân & Thanh toán thành công';
             document.title = 'Đặt sân & Thanh toán thành công — STRYKE';
-            if (toastError) toastError.style.display = 'none';
+            if (toastError) {
+                toastError.hidden = true;
+            }
         } else if (isReceiptWaiting) {
             if (eyebrowEl) eyebrowEl.textContent = 'THANH TOÁN';
             if (titleEl) titleEl.textContent = 'Chờ xác nhận thanh toán';
@@ -453,22 +466,30 @@
         const bottomBar=waiting.querySelector('.stryke-bottom-bar') || document.querySelector('.stryke-bottom-bar');
         if (bottomBar) bottomBar.hidden = !isWaiting;
 
-        const successEl=waiting.querySelector('[data-payment-success]');
-        if (successEl) successEl.hidden = !isConfirmed;
+        const result = waiting.querySelector('[data-payment-result]');
 
-        const receiptEl=waiting.querySelector('[data-receipt-waiting]');
-        if (receiptEl) receiptEl.hidden = !isReceiptWaiting;
+        if (result) {
+            result.hidden = !(isConfirmed || isReceiptWaiting);
 
+            const resultTitle = result.querySelector('[data-result-title]');
+            const resultDescription = result.querySelector('[data-result-description]');
+
+            if (resultTitle) {
+                resultTitle.textContent = 'Thanh toán thành công!';
+            }
+
+            if (resultDescription) {
+                resultDescription.textContent = isConfirmed
+                    ? 'Cảm ơn bạn đã đặt sân tại STRYKE!'
+                    : 'Yêu cầu của bạn đã được tiếp nhận. Theo dõi đơn đặt sân trong lịch sử đặt sân.';
+            }
+        }
         const reconcileEl=waiting.querySelector('[data-payment-reconcile]');
         if (reconcileEl) reconcileEl.hidden = !isReconcile;
-
         const countdownBanner=waiting.querySelector('.stryke-countdown-banner');
-        if (countdownBanner) {
-            countdownBanner.hidden = (isConfirmed || hasReceipt || isReceiptWaiting || isReconcile);
-            if (isReconcile) countdownBanner.style.display = 'none';
-        }
+        if (countdownBanner) countdownBanner.hidden = state!=='CHO_THANH_TOAN' || isReconcile || paymentStatus==='THANH_CONG';
+        const expiredEl = waiting.querySelector('[data-payment-expired]');
 
-        const expiredEl=waiting.querySelector('[data-payment-expired]');
         if (expiredEl) {
             if (isReconcile || isConfirmed || isReceiptWaiting) {
                 expiredEl.hidden = true;
@@ -479,16 +500,17 @@
             }
         }
 
-        // TH2: Tự động gửi request hủy đơn khi hết giờ - TUYỆT ĐỐI KHÔNG HỦY KHI ĐANG ĐỐI SOÁT HOẶC ĐÃ GỬI BIÊN LAI
-        if (seconds === 0 && !isReconcile && !hasReceipt && state === 'CHO_THANH_TOAN' && !waiting.dataset.expiredAutoSent) {
+        // Server conditionally expires pending bookings; receipt-review states never enter this branch.
+        if (seconds === 0 && paymentStatus!=='THANH_CONG' && state === 'CHO_THANH_TOAN' && !waiting.dataset.expiredAutoSent) {
             waiting.dataset.expiredAutoSent = '1';
             const expireFormData = new FormData();
             expireFormData.append('id', waiting.dataset.bookingId || '');
+            expireFormData.append('_token', document.querySelector('input[name="_token"]')?.value || '');
             fetch(waiting.dataset.expireUrl || '/booking/expire', {
                 method: 'POST',
                 body: expireFormData,
                 headers: { 'Accept': 'application/json' }
-            }).then(r => r.json()).then(d => {
+            }).then(r => { if (!r.ok) throw new Error('Expiry request failed'); return r.json(); }).then(d => {
                 if (d.state) {
                     state = d.state;
                     tick();
@@ -505,7 +527,7 @@
 
         if (isTerminal(state)) {
             stopAllTimers();
-        } else if (isReconcile) {
+        } else if (state!=='CHO_THANH_TOAN' || isReconcile || paymentStatus==='THANH_CONG') {
             if (tickTimer !== null) {
                 clearInterval(tickTimer);
                 tickTimer = null;

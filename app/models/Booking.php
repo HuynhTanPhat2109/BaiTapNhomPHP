@@ -20,7 +20,7 @@ final class Booking
     private static function unprotectedSql(): string
     {
         return "NOT EXISTS (SELECT 1 FROM thanh_toan p WHERE p.ma_dat_san=b.ma_dat_san
-            AND p.trang_thai IN ('THANH_CONG','CAN_DOI_SOAT'))";
+            AND p.trang_thai='THANH_CONG')";
     }
 
     public function findEffective(int $id): ?array
@@ -54,7 +54,7 @@ final class Booking
         if ($customer < 1) throw new \InvalidArgumentException('Customer required.');
         $now = $this->serverTime();
         // One cutoff for cards, counts, filters and pages; no expiry writes on GET.
-        $source = '(SELECT b.ma_dat_san,b.ma_khach_hang,b.ma_co_so,b.ngay_tao,
+        $source = '(SELECT b.ma_dat_san,b.ma_khach_hang,b.ma_co_so,b.ngay_tao,b.ghi_chu,
             b.tong_tien_san,b.tong_tien_dich_vu,b.tong_tien_tam_tinh,' . self::effectiveStatusSql() . ' AS trang_thai_dat_san FROM dat_san b) h';
         $dateWhere = '';
         $dateParams = [];
@@ -86,8 +86,10 @@ final class Booking
         // LIMIT/OFFSET are internal integers; all request values are bound parameters.
         $direction = $sort === 'oldest' ? 'ASC' : 'DESC';
         $items = $this->rows("SELECT h.ma_dat_san, h.ngay_tao, h.trang_thai_dat_san,
-            h.tong_tien_san, h.tong_tien_dich_vu, h.tong_tien_tam_tinh, c.ten_co_so, c.anh_dai_dien
+            h.tong_tien_san, h.tong_tien_dich_vu, h.tong_tien_tam_tinh, c.ten_co_so, c.anh_dai_dien,
+            h.ghi_chu, p.ghi_chu AS payment_note
             FROM $source JOIN co_so c ON c.ma_co_so=h.ma_co_so
+            LEFT JOIN thanh_toan p ON p.ma_dat_san=h.ma_dat_san
             WHERE $where ORDER BY h.ngay_tao $direction, h.ma_dat_san $direction LIMIT $perPage OFFSET $offset", $params);
         $lines = [];
         $serviceLines = [];
@@ -122,6 +124,13 @@ final class Booking
     public function find(int $id, bool $lock = false): ?array
     {
         return $this->rows('SELECT * FROM dat_san WHERE ma_dat_san = ?' . ($lock ? ' FOR UPDATE' : ''), [$id])[0] ?? null;
+    }
+
+    public function historyReceipt(int $id, int $customer): ?array
+    {
+        return $this->rows('SELECT p.ghi_chu FROM dat_san b
+            JOIN thanh_toan p ON p.ma_dat_san=b.ma_dat_san
+            WHERE b.ma_dat_san=? AND b.ma_khach_hang=?', [$id,$customer])[0] ?? null;
     }
 
     public function visit(int $id): array
@@ -262,7 +271,7 @@ final class Booking
             $booking = $this->find($bookingId, true);
             $payment = $this->rows('SELECT trang_thai FROM thanh_toan WHERE ma_dat_san=? FOR UPDATE', [$bookingId])[0] ?? null;
             if ($booking && $booking['trang_thai_dat_san']==='CHO_THANH_TOAN'
-                && in_array($payment['trang_thai'] ?? '', ['THANH_CONG','CAN_DOI_SOAT'], true)) {
+                && ($payment['trang_thai'] ?? '')==='THANH_CONG') {
                 error_log('Booking expiry skipped for reconciliation; booking_id=' . $bookingId);
                 if ($ownsTransaction) $this->pdo->commit();
                 return 0;

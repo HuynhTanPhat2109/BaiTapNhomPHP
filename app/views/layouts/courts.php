@@ -4,6 +4,22 @@ $backLabel = $template === 'courts/index' ? 'Trang chủ' : '';
 $backUrl = $bookingBackUrl ?? url($backRoute);
 if ($template === 'courts/prices') $backUrl = $priceBackUrl;
 $cancelHold = $template === 'courts/booking-wait' && ($booking['trang_thai_dat_san'] ?? '') === 'CHO_THANH_TOAN';
+$isPaymentResultPage = false;
+
+if ($template === 'courts/booking-wait') {
+    $bookingState = $booking['trang_thai_dat_san'] ?? '';
+    $paymentState = $payment['trang_thai'] ?? '';
+    $isReconcilePage = !empty($isReconcile) || $paymentState === 'CAN_DOI_SOAT';
+
+    $isPaymentResultPage = !$isReconcilePage && (
+        ($bookingState === 'CHO_XAC_NHAN'
+            && !empty($receiptSubmitted)
+            && $paymentState !== 'THANH_CONG')
+        ||
+        (in_array($bookingState, ['DA_XAC_NHAN', 'HOAN_THANH'], true)
+            && $paymentState === 'THANH_CONG')
+    );
+}
 $backAccessibleLabel = isset($bookingBackUrl) ? 'Về lịch sân' : ($template === 'courts/index' ? 'Về trang chủ' : 'Về danh sách cơ sở');
 if ($template === 'courts/prices') $backAccessibleLabel = 'Về lịch sân';
 ?>
@@ -17,10 +33,14 @@ if ($template === 'courts/prices') $backAccessibleLabel = 'Về lịch sân';
     <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/app.css') ?>">
     <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/courts.css') ?>">
     <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/court-flow.css') ?>">
+    <?php if (in_array($template, ['courts/index', 'courts/history'], true)): ?>
+        <link rel="stylesheet" href="<?= e(base_path() . '/assets/css/public-page-transition.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/public-page-transition.css')) ?>">
+    <?php endif; ?>
     <script src="<?= e(base_path() . '/assets/js/courts.js') ?>" defer></script>
 </head>
-<body class="court-flow">
+<body class="court-flow<?= $isPaymentResultPage ? ' court-flow--payment-result' : '' ?>">
 <a class="skip-link" href="#main-content">Bỏ qua điều hướng</a>
+<?php if (!$isPaymentResultPage): ?>
 <header class="court-flow-bar">
     <?php if ($cancelHold): ?>
     <form action="<?= e(url('/booking/cancel')) ?>" method="post" class="court-flow-cancel" data-booking-cancel>
@@ -52,6 +72,7 @@ if ($template === 'courts/prices') $backAccessibleLabel = 'Về lịch sân';
         </a>
     <?php endif; ?>
 </header>
+<?php endif; ?>
 <main id="main-content" tabindex="-1"><?= $content ?></main>
 </body>
 </html>

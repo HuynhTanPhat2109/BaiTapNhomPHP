@@ -138,7 +138,7 @@ use App\Services\BookingPricingService as Money;
                             }
                         ?>
 
-                        <div class="booking-schedule-list">
+                        <div class="booking-schedule-list" data-court-quote="<?= e(hash('sha256', json_encode($quote['lines'], JSON_THROW_ON_ERROR))) ?>">
                             <?php foreach ($scheduleGroups as $line): ?>
                                 <article class="booking-schedule-item">
 

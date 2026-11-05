@@ -45,11 +45,44 @@ final class BookingHistoryController extends Controller
             throw new HttpException(422, 'Bộ lọc hoặc số trang không hợp lệ.');
         }
         $history = (new Booking($this->app->pdo()))->history((int) $user['ma_khach_hang'], $status, (int) $page, $from, $to, $sort);
+        foreach ($history['items'] as &$item) {
+            $item['receipt_url'] = $this->receiptPath((int)$item['ma_dat_san'], $item['payment_note'] ?? null)
+                ? url('/booking/history/receipt') . '&id=' . (int)$item['ma_dat_san'] : null;
+            unset($item['payment_note']);
+        }
+        unset($item);
         header('Cache-Control: private, no-store');
         $this->render('courts/history', [
             'title' => 'Lịch sử đặt sân', 'history' => $history,
             'status' => $status, 'statuses' => self::STATUSES,
             'from' => $from, 'to' => $to, 'sort' => $sort,
         ]);
+    }
+
+    private function receiptPath(int $id, ?string $note): ?string
+    {
+        $path = \App\Services\ReceiptImage::getReceiptFromNote($note);
+        // Never infer submission from orphan files, or accept another booking's filename.
+        return $path && str_starts_with($path, 'uploads/receipts/receipt_'.$id.'_')
+            && is_file(dirname(__DIR__,2).'/public/'.$path) ? $path : null;
+    }
+
+    public function receipt(): void
+    {
+        $user = $this->app->auth()->user();
+        if (!$user || $user['ten_vai_tro'] !== 'KHACH_HANG' || empty($user['ma_khach_hang']))
+            throw new HttpException(403, 'Vui lòng đăng nhập tài khoản khách hàng.');
+        $id = $_GET['id'] ?? '';
+        if (!is_string($id) || !\App\Services\CoSoService::validId($id)) throw new HttpException(404,'Không tìm thấy ảnh minh chứng.');
+        $row = (new Booking($this->app->pdo()))->historyReceipt((int)$id, (int)$user['ma_khach_hang']);
+        $path = $this->receiptPath((int)$id, $row['ghi_chu'] ?? null);
+        if (!$path) throw new HttpException(404,'Không tìm thấy ảnh minh chứng.');
+        $file = dirname(__DIR__,2).'/public/'.$path;
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($file);
+        if (!in_array($mime, ['image/png','image/jpeg','image/webp'], true)) throw new HttpException(404,'Ảnh minh chứng không hợp lệ.');
+        header('Content-Type: '.$mime);
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, no-store');
+        readfile($file);
     }
 }
