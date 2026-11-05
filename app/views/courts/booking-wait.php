@@ -41,10 +41,43 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
 
     <?php
     $isReconcileState = !empty($isReconcile) || ($payment && ($payment['trang_thai'] ?? '') === 'CAN_DOI_SOAT');
-    $isConfirmedBooking = (in_array($booking['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH'], true) && ($payment && ($payment['trang_thai'] ?? '') === 'THANH_CONG')) && !$isReconcileState;
-    $isReceiptWait = (!empty($receiptSubmitted) && $booking['trang_thai_dat_san'] === 'CHO_XAC_NHAN') && !$isConfirmedBooking && !$isReconcileState && ($payment['trang_thai'] ?? '') !== 'THANH_CONG';
+    $isConfirmedBooking = in_array($booking['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH'], true) && !$isReconcileState;
+    $isReceiptWait = (!empty($receiptSubmitted) || $booking['trang_thai_dat_san'] === 'CHO_XAC_NHAN') && !$isConfirmedBooking && !$isReconcileState && !in_array($booking['trang_thai_dat_san'], ['HET_HAN','DA_HUY'], true) && $booking['het_han_giu_san_luc'] > $now->format('Y-m-d H:i:s');
     $isExpiredOrCanceled = in_array($booking['trang_thai_dat_san'], ['HET_HAN', 'DA_HUY'], true) && !$isConfirmedBooking && !$isReceiptWait && !$isReconcileState;
     ?>
+
+    <header class="booking-heading">
+        <div>
+            <p class="booking-eyebrow" data-booking-eyebrow><?= $isReconcileState ? 'CẦN ĐỐI SOÁT' : ($isConfirmedBooking ? 'THÀNH CÔNG' : ($isExpiredOrCanceled ? 'ĐẶT SÂN' : 'THANH TOÁN')) ?></p>
+            <h1 data-booking-title>
+                <?php
+                if ($isReconcileState) {
+                    echo 'Giao dịch cần đối soát thanh toán';
+                } elseif ($isConfirmedBooking) {
+                    echo 'Đặt sân &amp; Thanh toán thành công';
+                } elseif ($isReceiptWait) {
+                    echo 'Chờ xác nhận thanh toán';
+                } elseif ($isExpiredOrCanceled) {
+                    echo 'Đã hết thời gian giữ sân';
+                } else {
+                    echo 'Chờ thanh toán';
+                }
+                ?>
+            </h1>
+            <p class="booking-subtle">
+                Mã đặt sân #<?= e($booking['ma_dat_san']) ?>
+            </p>
+        </div>
+    </header>
+
+    <?php if (!empty($receiptNotice)): ?>
+        <div class="stryke-toast-notice" style="background: rgba(200, 243, 107, 0.12); border: 1px solid rgba(200, 243, 107, 0.35); color: #c8f36b; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.15rem;">✓</span>
+            <span><?= e($receiptNotice) ?></span>
+        </div>
+    <?php endif; ?>
+
+    <?php if (!empty($receiptImage)): ?><p class="booking-receipt-link"><a class="booking-text-button" href="<?= e($receiptImage) ?>" target="_blank" rel="noopener">Xem lại minh chứng đã gửi ↗</a></p><?php endif; ?>
 
     <?php if (!empty($paymentError) && !$isConfirmedBooking && !$isReconcileState): ?>
         <div class="stryke-toast-error">
@@ -143,14 +176,14 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
                             </svg>
                             Ảnh biên lai bạn đã gửi
                         </span>
-                        <a href="<?= e(base_path() . '/' . $receiptImage) ?>" target="_blank" rel="noopener" class="stryke-thumb-link">
+                        <a href="<?= e($receiptImage) ?>" target="_blank" rel="noopener" class="stryke-thumb-link">
                             Phóng to ảnh ↗
                         </a>
                     </div>
                     
                     <div class="stryke-receipt-thumb-container">
-                        <a href="<?= e(base_path() . '/' . $receiptImage) ?>" target="_blank" rel="noopener" title="Bấm vào để xem ảnh kích thước gốc" class="stryke-thumb-link-wrapper">
-                            <img src="<?= e(base_path() . '/' . $receiptImage) ?>" alt="Biên lai chuyển khoản" class="stryke-receipt-thumb-img">
+                        <a href="<?= e($receiptImage) ?>" target="_blank" rel="noopener" title="Bấm vào để xem ảnh kích thước gốc" class="stryke-thumb-link-wrapper">
+                            <img src="<?= e($receiptImage) ?>" alt="Biên lai chuyển khoản" class="stryke-receipt-thumb-img">
                             <span class="stryke-thumb-zoom-tag">🔍 Bấm để xem ảnh lớn</span>
                         </a>
                     </div>
@@ -216,7 +249,7 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
         </div>
 
         <p class="stryke-receipt-reassure">
-            💡 Khung giờ của bạn đang được tạm giữ trong quá trình đối soát. Chủ sân sẽ kích hoạt đơn ngay sau khi hoàn tất xác minh.
+            💡 Gửi ảnh hoặc đối soát không gia hạn giữ sân. Khoản tiền chuyển muộn cần được cơ sở xử lý riêng, không tự động giữ lại khung giờ đã hết hạn.
         </p>
 
         <!-- Nhóm nút điều hướng -->
@@ -230,7 +263,95 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
         </div>
     </div>
 
-    <?php require __DIR__ . '/payment-result.php'; ?>
+    <!-- TH1: KHỐI THANH TOÁN THÀNH CÔNG (ĐANG CHỜ XÁC NHẬN) - THIẾT KẾ ĐỒNG BỘ STRYKE DARK THEME -->
+    <div class="stryke-receipt-submitted-box"
+         data-receipt-waiting
+         <?= !$isReceiptWait ? 'hidden' : '' ?>>
+        
+        <!-- Icon thành công phát sáng phong cách STRYKE -->
+        <div class="stryke-success-icon-badge">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </div>
+
+        <h2 class="stryke-success-heading">
+            ĐÃ GỬI MINH CHỨNG
+        </h2>
+        <p class="stryke-success-subheading">
+            Chờ xác nhận thanh toán
+        </p>
+
+        <!-- Thanh thông báo trạng thái nổi bật -->
+        <div class="stryke-receipt-status-banner">
+            <span class="stryke-receipt-status-dot"></span>
+            <span>Hệ thống đã tiếp nhận ảnh biên lai chuyển khoản. Nhân viên lễ tân đang kiểm tra biến động số dư tài khoản ngân hàng và sẽ kích hoạt lịch đặt ngay khi khớp lệnh.</span>
+        </div>
+
+        <!-- Khung tóm tắt thông tin đơn đặt & thanh toán -->
+        <div class="stryke-receipt-summary-card">
+            <div class="stryke-summary-grid">
+                <div class="stryke-summary-item">
+                    <span class="stryke-item-label">Mã đặt sân</span>
+                    <strong class="stryke-item-value">#<?= e($booking['ma_dat_san']) ?></strong>
+                </div>
+                <div class="stryke-summary-item">
+                    <span class="stryke-item-label">Số tiền cần thanh toán</span>
+                    <strong class="stryke-item-value accent-lime">
+                        <?= e(number_format((float) ($payment['so_tien'] ?? $booking['tong_tien_tam_tinh']), 0, ',', '.')) ?> đ
+                    </strong>
+                </div>
+                <div class="stryke-summary-item">
+                    <span class="stryke-item-label">Mã tham chiếu CK</span>
+                    <code class="stryke-item-code"><?= e($payment['ma_tham_chieu'] ?? '') ?></code>
+                </div>
+                <div class="stryke-summary-item">
+                    <span class="stryke-item-label">Phương thức</span>
+                    <span class="stryke-item-value">Chuyển khoản VietQR</span>
+                </div>
+            </div>
+
+            <!-- Khung ảnh biên lai thu nhỏ - KHẮC PHỤC TRIỆT ĐỂ LỖI PHÌNH TO MÀN HÌNH -->
+            <?php if (!empty($receiptImage)): ?>
+                <div class="stryke-receipt-thumbnail-section">
+                    <div class="stryke-receipt-thumb-header">
+                        <span class="stryke-thumb-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            Ảnh biên lai đã gửi
+                        </span>
+                        <a href="<?= e($receiptImage) ?>" target="_blank" rel="noopener" class="stryke-thumb-link">
+                            Phóng to ảnh ↗
+                        </a>
+                    </div>
+                    
+                    <div class="stryke-receipt-thumb-container">
+                        <a href="<?= e($receiptImage) ?>" target="_blank" rel="noopener" title="Bấm vào để xem ảnh kích thước gốc" class="stryke-thumb-link-wrapper">
+                            <img src="<?= e($receiptImage) ?>" alt="Biên lai chuyển khoản" class="stryke-receipt-thumb-img">
+                            <span class="stryke-thumb-zoom-tag">🔍 Bấm để xem ảnh lớn</span>
+                        </a>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <p class="stryke-receipt-reassure">
+            💡 Bạn có thể theo dõi tiến trình xử lý tại trang tài khoản cá nhân. Đơn đặt sân sẽ chuyển sang <strong>ĐÃ XÁC NHẬN</strong> ngay khi nhân viên hoàn tất đối soát.
+        </p>
+
+        <!-- Nhóm nút điều hướng -->
+        <div class="stryke-receipt-actions">
+            <a href="<?= e(url('/account')) ?>" class="stryke-btn-primary-action">
+                Xem chi tiết lịch đặt sân của tôi ↗
+            </a>
+            <a href="<?= e(url('/')) ?>" class="stryke-btn-secondary-action">
+                Về trang chủ
+            </a>
+        </div>
+    </div>
 
     <!-- KHUNG LƯỚI NỘI DUNG 2 CỘT (DESKTOP & MOBILE RESPONSIVE) -->
     <div class="stryke-checkout-container"
@@ -273,7 +394,7 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
                     <div class="stryke-alert-notice">
                         <span class="stryke-alert-icon">⚠️</span>
                         <div class="stryke-alert-text">
-                            Vui lòng chuyển khoản <strong><?= e(number_format((float) ($payment['so_tien'] ?? $booking['tong_tien_tam_tinh']), 0, ',', '.')) ?> đ</strong> đúng nội dung. Chức năng xác minh giao dịch đang được tích hợp.
+                            Vui lòng chuyển khoản <strong><?= e(number_format((float) ($payment['so_tien'] ?? $booking['tong_tien_tam_tinh']), 0, ',', '.')) ?> đ</strong> đúng nội dung. Sau khi chuyển khoản, gửi ảnh minh chứng để nhân viên kiểm tra tiền thực nhận.
                             <div class="stryke-alert-memo">
                                 <span>Nội dung chuyển khoản: <strong class="stryke-memo-code"><?= e($payment['ma_tham_chieu'] ?? '') ?></strong></span>
                                 <button type="button" class="stryke-btn-copy-memo" data-copy-text="<?= e($payment['ma_tham_chieu'] ?? '') ?>">Sao chép mã</button>
@@ -409,7 +530,7 @@ $jsVietqrPath = dirname(__DIR__, 3) . '/public/assets/js/vietqr.js';
         <div class="stryke-expired-center-box"
              data-payment-expired
              <?= !$isExpiredOrCanceled ? 'hidden' : '' ?>>
-            <div class="stryke-expired-icon-wrap" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="18"/><path d="M24 13v12l8 5M24 6v3M6 24h3m30 0h3M24 39v3"/></svg></div>
+            <div class="stryke-expired-icon-wrap">⏰</div>
             <h3 class="stryke-expired-title">Đã hết thời gian giữ sân</h3>
             <p class="stryke-expired-desc">
                 Thời gian giữ chỗ cho đơn <strong>#<?= e($booking['ma_dat_san']) ?></strong> đã kết thúc.<br>

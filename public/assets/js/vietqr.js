@@ -114,19 +114,15 @@
         function handleFile(file) {
             if (!file) return false;
 
-            const allowedTypes = [
-                'image/png',
-                'image/jpeg',
-                'image/webp'
-            ];
-
-            if (!allowedTypes.includes(file.type)) {
-                showToast('Chỉ chấp nhận ảnh PNG, JPG hoặc WebP.');
-                fileInput.value = '';
-                return false;
+            // Kiểm tra định dạng ảnh
+            if (!file.type.match(/^image\/(png|jpeg|webp)$/i)) {
+                fileInput.value = ''; if (preview) preview.hidden = true; if (placeholder) placeholder.hidden = false;
+                showToast('Chỉ chấp nhận file ảnh JPG, PNG hoặc WebP.');
+                return;
             }
 
             if (file.size > 5 * 1024 * 1024) {
+                fileInput.value = ''; if (preview) preview.hidden = true; if (placeholder) placeholder.hidden = false;
                 showToast('Dung lượng ảnh không được vượt quá 5MB.');
                 fileInput.value = '';
                 return false;
@@ -134,6 +130,7 @@
 
             const reader = new FileReader();
             reader.onload = (e) => {
+                if (fileInput.files[0] !== file) return;
                 if (previewImg) previewImg.src = e.target.result;
                 if (previewName) previewName.textContent = file.name;
                 if (previewSize) {

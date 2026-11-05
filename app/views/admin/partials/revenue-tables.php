@@ -13,8 +13,8 @@
 </section>
 <section class="dashboard-card dashboard-report">
     <header><h2>Giao dịch thanh toán hợp lệ</h2><p>Tối đa 50 giao dịch gần nhất trong kỳ. Tổng doanh thu phía trên bao gồm toàn bộ giao dịch hợp lệ.</p></header>
-    <div class="dashboard-table-scroll" tabindex="0" role="region" aria-label="Giao dịch trong phạm vi"><table class="dashboard-table"><thead><tr><th>Booking / Cơ sở</th><th>Ngày thanh toán</th><th>Mã giao dịch</th><th>Hóa đơn</th><th>Đã thu</th></tr></thead><tbody>
-    <?php foreach ($dashboard['transactions'] as $row): ?><tr><th scope="row"><a href="<?= e(url('/admin/bookings/show?id=' . $row['ma_dat_san'])) ?>">#<?= (int) $row['ma_dat_san'] ?></a><small><?= e($row['ten_co_so']) ?></small></th><td><?= e(date('d/m/Y H:i', strtotime($row['ngay_thanh_toan']))) ?></td><td><?= e($row['ma_giao_dich']) ?></td><td><?= e($row['so_hoa_don'] ?? 'Chưa lập') ?></td><td><?= e($money($row['so_tien_thuc_nhan'])) ?></td></tr><?php endforeach; ?>
+    <div class="dashboard-table-scroll" tabindex="0" role="region" aria-label="Giao dịch trong phạm vi"><table class="dashboard-table"><thead><tr><th>Booking / Cơ sở</th><th>Ngày ghi nhận thu</th><th>Mã giao dịch / Cách xác nhận</th><th>Hóa đơn</th><th>Đã thu</th></tr></thead><tbody>
+    <?php foreach ($dashboard['transactions'] as $row): ?><tr><th scope="row"><a href="<?= e(url('/admin/bookings/show?id=' . $row['ma_dat_san'])) ?>">#<?= (int) $row['ma_dat_san'] ?></a><small><?= e($row['ten_co_so']) ?></small></th><td><?= e(date('d/m/Y H:i', strtotime($row['ngay_ghi_nhan'] ?? $row['ngay_thanh_toan']))) ?></td><td><?= e($row['ma_giao_dich'] ?: 'Xác nhận thủ công') ?></td><td><?= e($row['so_hoa_don'] ?? 'Chưa lập') ?></td><td><?= e($money($row['so_tien_thuc_nhan'])) ?></td></tr><?php endforeach; ?>
     <?php if (!$dashboard['transactions']): ?><tr><td colspan="5">Chưa có giao dịch thanh toán hợp lệ trong kỳ.</td></tr><?php endif; ?>
     </tbody></table></div>
 </section>

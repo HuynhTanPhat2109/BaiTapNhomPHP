@@ -182,9 +182,7 @@ final class Booking
     {
         $rows = $this->rows("SELECT c.so_luong FROM chi_tiet_dich_vu_dat c
             JOIN dat_san b ON b.ma_dat_san = c.ma_dat_san WHERE c.ma_dich_vu = ?
-            AND (b.trang_thai_dat_san = 'CHO_XAC_NHAN'
-                OR (b.trang_thai_dat_san = 'CHO_THANH_TOAN' AND b.het_han_giu_san_luc > ?))
-            ORDER BY b.ma_dat_san" . ($lock ? ' FOR UPDATE' : ''), [$service, $now]);
+            AND b.trang_thai_dat_san IN ('CHO_THANH_TOAN','CHO_XAC_NHAN') AND b.het_han_giu_san_luc > ? ORDER BY b.ma_dat_san" . ($lock ? ' FOR UPDATE' : ''), [$service, $now]);
         return (int) array_sum(array_column($rows, 'so_luong'));
     }
 

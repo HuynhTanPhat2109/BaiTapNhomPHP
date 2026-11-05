@@ -264,10 +264,11 @@ final class HoaDon
         $services = $svcStmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Lấy ảnh biên lai / chứng từ khách hàng đã tải lên (nếu có)
-        $pStmt = $this->pdo->prepare('SELECT ghi_chu FROM thanh_toan WHERE ma_dat_san = :id');
+        $pStmt = $this->pdo->prepare('SELECT * FROM thanh_toan WHERE ma_dat_san = :id');
         $pStmt->execute(['id' => $bookingId]);
-        $pNote = $pStmt->fetchColumn();
-        $receiptImage = \App\Services\ReceiptImage::findForBooking($bookingId, is_string($pNote) ? $pNote : null);
+        $receiptPayment = $pStmt->fetch(PDO::FETCH_ASSOC);
+        $receiptImage = $receiptPayment && (new \App\Services\BookingReceiptService($this->pdo))->info($receiptPayment)
+            ? url('/booking/receipt?id=' . $bookingId) : null;
 
         return [
             'invoice' => $invoice,

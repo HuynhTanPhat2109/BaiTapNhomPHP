@@ -34,8 +34,7 @@ final class CourtScheduleService
                 foreach ($intervals as $interval) {
                     if ((int) $interval['ma_san'] !== (int) $court['ma_san'] || $slot['start'] >= $interval['gio_ket_thuc'] || $slot['end'] <= $interval['gio_bat_dau']) continue;
                     if (in_array($interval['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH'], true)) { $state = 'booked'; break; }
-                    if ($interval['trang_thai_dat_san'] === 'CHO_XAC_NHAN') $state = 'held';
-                    if ($interval['trang_thai_dat_san'] === 'CHO_THANH_TOAN' && $interval['het_han_giu_san_luc'] > $now->format('Y-m-d H:i:s')) $state = 'held';
+                    if (in_array($interval['trang_thai_dat_san'], ['CHO_THANH_TOAN','CHO_XAC_NHAN'], true) && $interval['het_han_giu_san_luc'] > $now->format('Y-m-d H:i:s')) $state = 'held';
                 }
                 if ($court['trang_thai'] !== 'HOAT_DONG' || $court['trang_thai_loai_san'] !== 'HOAT_DONG' || $court['trang_thai_bo_mon'] !== 'HOAT_DONG'
                     || new DateTimeImmutable($date . ' ' . $slot['start'], $now->getTimezone()) <= $now) $state = 'unavailable';

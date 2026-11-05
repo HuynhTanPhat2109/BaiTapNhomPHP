@@ -615,6 +615,12 @@ CREATE TABLE thanh_toan (
     ma_giao_dich VARCHAR(150) NULL UNIQUE,
     so_tien_thuc_nhan DECIMAL(12,2) NULL,
     ghi_chu VARCHAR(500),
+    anh_minh_chung VARCHAR(255) NULL,
+    minh_chung_gui_luc DATETIME NULL,
+    ma_tai_khoan_xac_nhan INT NULL,
+    xac_nhan_thu_cong_luc DATETIME NULL,
+
+    CONSTRAINT fk_thanhtoan_nguoi_xac_nhan FOREIGN KEY (ma_tai_khoan_xac_nhan) REFERENCES tai_khoan(ma_tai_khoan),
 
     CONSTRAINT fk_thanhtoan_datsan
         FOREIGN KEY (ma_dat_san)
@@ -629,10 +635,10 @@ CREATE TABLE thanh_toan (
     CONSTRAINT chk_thanhtoan_thanhcong
         CHECK (
             trang_thai <> 'THANH_CONG'
-            OR (ngay_thanh_toan IS NOT NULL
-                AND ma_giao_dich IS NOT NULL
-                AND so_tien_thuc_nhan IS NOT NULL
-                AND so_tien_thuc_nhan = so_tien)
+            OR (so_tien_thuc_nhan IS NOT NULL AND so_tien_thuc_nhan = so_tien
+                AND ((ngay_thanh_toan IS NOT NULL AND ma_giao_dich IS NOT NULL)
+                    OR (anh_minh_chung IS NOT NULL AND ma_tai_khoan_xac_nhan IS NOT NULL
+                        AND xac_nhan_thu_cong_luc IS NOT NULL)))
         )
 
 ) ENGINE=InnoDB;

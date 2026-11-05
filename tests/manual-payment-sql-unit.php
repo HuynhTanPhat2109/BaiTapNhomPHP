@@ -22,7 +22,7 @@ final class NativePaymentStatement extends PDOStatement
             $error->errorInfo = ['HY093']; throw $error;
         }
         $ok = parent::execute($params);
-        if (preg_match('/\A\s*UPDATE dich_vu\b/', $this->queryString)) self::$stockUpdates[] = (int) $params['service_id'];
+        if (preg_match('/\A\s*UPDATE dich_vu\b/', $this->queryString)) self::$stockUpdates[] = (int) ($params['service_id'] ?? $params[1]);
         return $ok;
     }
 }

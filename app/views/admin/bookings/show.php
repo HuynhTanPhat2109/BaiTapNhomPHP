@@ -151,13 +151,13 @@ $roleRoot = match ($scope['role'] ?? '') {
                     <dd style="margin: 0; min-width: 0; max-width: 100%; overflow: hidden;">
                         <!-- Thẻ biên lai thu nhỏ, chống tràn khung hình tuyệt đối (Pixel cứng cho Safari/WebKit) -->
                         <div class="admin-receipt-preview" style="width: 240px; max-width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: 4px 0;">
-                            <a href="<?= e(base_path() . '/' . $receiptImage) ?>" target="_blank" rel="noopener" title="Bấm vào để xem ảnh đầy đủ" style="display: block; width: 240px; height: 140px; max-width: 100%; overflow: hidden; position: relative; background: #0f172a; text-decoration: none;">
-                                <img src="<?= e(base_path() . '/' . $receiptImage) ?>" alt="Biên lai chuyển khoản" width="240" height="140" style="width: 240px !important; height: 140px !important; max-width: 240px !important; max-height: 140px !important; object-fit: contain !important; display: block; margin: 0 auto; border: 0;">
+                            <a href="<?= e($receiptImage) ?>" target="_blank" rel="noopener" title="Bấm vào để xem ảnh đầy đủ" style="display: block; width: 240px; height: 140px; max-width: 100%; overflow: hidden; position: relative; background: #0f172a; text-decoration: none;">
+                                <img src="<?= e($receiptImage) ?>" alt="Biên lai chuyển khoản" width="240" height="140" style="width: 240px !important; height: 140px !important; max-width: 240px !important; max-height: 140px !important; object-fit: contain !important; display: block; margin: 0 auto; border: 0;">
                                 <span class="admin-receipt-zoom-tag" style="position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.85); color: #c8f36b !important; font-size: 11px; padding: 2px 7px; border-radius: 4px; pointer-events: none; font-weight: 600; text-decoration: none !important;">🔍 Phóng to</span>
                             </a>
                             <div class="admin-receipt-footer" style="padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; background: #f8fafc; border-top: 1px solid #e2e8f0; width: 240px; max-width: 100%; box-sizing: border-box;">
                                 <span style="color: #64748b; font-weight: 600;">Biên lai đính kèm</span>
-                                <a href="<?= e(base_path() . '/' . $receiptImage) ?>" target="_blank" rel="noopener" style="color: #1a73e8 !important; font-weight: 600; text-decoration: none; font-size: 0.78rem;">Mở tab mới ↗</a>
+                                <a href="<?= e($receiptImage) ?>" target="_blank" rel="noopener" style="color: #1a73e8 !important; font-weight: 600; text-decoration: none; font-size: 0.78rem;">Mở tab mới ↗</a>
                             </div>
                         </div>
                     </dd>
@@ -275,13 +275,14 @@ $roleRoot = match ($scope['role'] ?? '') {
         <?php if ($isConfirmed): ?>
             <section class="booking-operation-card booking-operation-card--success">
                 <header><h2>Thanh toán đã xác nhận</h2><p>Đơn đặt sân đã được xác nhận thanh toán thành công.</p></header>
+                <?php if ($confirmation): ?><p>Xác nhận thủ công bởi <strong><?= e($confirmation['by']) ?></strong> lúc <?= e(date('d/m/Y H:i:s', strtotime($confirmation['at']))) ?>. Đây là thời gian xử lý, không phải giờ chuyển khoản ngân hàng.</p><?php endif; ?>
                 <dl class="booking-operation-facts">
                     <div><dt>Mã giao dịch ngân hàng</dt><dd><?= e($booking['ma_giao_dich'] ?: '—') ?></dd></div>
                     <div><dt>Số tiền thực nhận</dt><dd><?= number_format((float) $booking['so_tien_thuc_nhan'], 0, ',', '.') ?> đ</dd></div>
                     <?php if (!empty($booking['ten_nhan_vien_xac_nhan'])): ?><div><dt>Nhân viên xác nhận</dt><dd><?= e($booking['ten_nhan_vien_xac_nhan']) ?> (<?= e($booking['chuc_vu_nhan_vien'] ?? 'Nhân viên') ?>)</dd></div><?php endif; ?>
                 </dl>
                 <footer class="booking-operation-footer">
-                    <?php if (!empty($receiptImage)): ?><a class="btn btn--outline" href="<?= e(base_path() . '/' . $receiptImage) ?>" target="_blank" rel="noopener">Xem ảnh biên lai khách gửi ↗</a><?php endif; ?>
+                    <?php if (!empty($receiptImage)): ?><a class="btn btn--outline" href="<?= e($receiptImage) ?>" target="_blank" rel="noopener">Xem ảnh biên lai khách gửi ↗</a><?php endif; ?>
                     <a class="btn btn--primary" href="<?= e(url('/admin/invoices/show') . '&booking_id=' . (int) $booking['ma_dat_san']) ?>">Phiếu hóa đơn thanh toán (PR4) ↗</a>
                 </footer>
             </section>
@@ -294,24 +295,34 @@ $roleRoot = match ($scope['role'] ?? '') {
                 <?php if (!empty($booking['ma_giao_dich'])): ?><p>Mã giao dịch trước đó: <?= e($booking['ma_giao_dich']) ?></p><?php endif; ?>
             </aside><?php endif; ?>
             <div class="booking-operation-grid">
-                <form class="booking-operation-card" method="post" action="<?= e(url('/admin/bookings/confirm')) ?>" data-confirm="<?= $isReconcile ? 'Xác nhận giao dịch THÀNH CÔNG và kích hoạt lịch đặt sân chính thức cho khách?' : 'Bạn xác nhận ĐÃ KIỂM TRA TÀI KHOẢN NGÂN HÀNG và số tiền nhận được hoàn toàn chính xác?' ?>">
-                    <?= csrf_field() ?><input type="hidden" name="id" value="<?= e($booking['ma_dat_san']) ?>">
-                    <header><h2><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="10"/></svg>Xác nhận thanh toán</h2>
+                <?php if ($isReconcile): ?>
+                <form class="booking-operation-card" method="post" action="<?= e(url('/admin/bookings/confirm')) ?>" data-manual-payment data-expected-amount="<?= e($booking['so_tien_can_thanh_toan'] ?? $booking['tong_tien_tam_tinh']) ?>" data-confirm="<?= $isReconcile ? 'Xác nhận giao dịch THÀNH CÔNG và kích hoạt lịch đặt sân chính thức cho khách?' : 'Bạn xác nhận ĐÃ KIỂM TRA TÀI KHOẢN NGÂN HÀNG và số tiền nhận được hoàn toàn chính xác?' ?>">
+                    <?= csrf_field() ?><input type="hidden" name="id" value="<?= e($booking['ma_dat_san']) ?>"><input type="hidden" name="confirmation_mode" value="reconciliation"><input type="hidden" name="receipt_version" value="<?= e($receiptInfo['version'] ?? '') ?>">
+                    <header><h2><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="10"/></svg>Đối soát và xác nhận thủ công</h2>
                         <p><?= $isReconcile ? 'Khách hàng đã bổ sung đủ tiền hoặc giao dịch đã đối soát khớp. Xác nhận để giữ sân chính thức và lập hóa đơn.' : 'Đối chiếu giao dịch trên ứng dụng ngân hàng của cơ sở. Chỉ xác nhận khi đã nhận đủ tiền và khớp thông tin chuyển khoản.' ?></p>
                     </header>
                     <div class="booking-operation-fields">
                         <div class="form-group"><label for="so_tien_thuc_nhan">Số tiền thực nhận (đ) <span aria-hidden="true">*</span></label>
-                            <input class="form-control" id="so_tien_thuc_nhan" name="so_tien_thuc_nhan" type="number" step="1000" required value="<?= e($oldInput['so_tien_thuc_nhan'] ?? (string) (int) ($booking['so_tien_can_thanh_toan'] ?? $booking['tong_tien_tam_tinh'])) ?>">
+                            <input class="form-control" id="so_tien_thuc_nhan" name="so_tien_thuc_nhan" type="number" min="0.01" step="0.01" required value="<?= e($oldInput['so_tien_thuc_nhan'] ?? $booking['so_tien_thuc_nhan'] ?? '') ?>">
                             <small>Phải khớp chính xác số tiền cần thanh toán.</small></div>
                         <div class="form-group"><label for="ma_giao_dich">Mã giao dịch ngân hàng <span aria-hidden="true">*</span></label>
                             <input class="form-control" id="ma_giao_dich" name="ma_giao_dich" maxlength="150" required placeholder="VD: FT26110298765432" value="<?= e($oldInput['ma_giao_dich'] ?? ($isReconcile ? ($booking['ma_giao_dich'] ?? '') : '')) ?>"></div>
-                        <div class="form-group"><label for="ngay_thanh_toan">Thời điểm tiền về ngân hàng</label>
-                            <input class="form-control" id="ngay_thanh_toan" name="ngay_thanh_toan" type="datetime-local" value="<?= e($oldInput['ngay_thanh_toan'] ?? $now->format('Y-m-d\TH:i')) ?>"></div>
+                        <div class="form-group"><label for="ngay_thanh_toan">Thời gian giao dịch ngân hàng thực tế *</label>
+                            <input class="form-control" id="ngay_thanh_toan" name="ngay_thanh_toan" type="datetime-local" step="1" required value="<?= e($oldInput['ngay_thanh_toan'] ?? '') ?>"><small>Nhập thời gian trên giao dịch ngân hàng; không lấy thời gian tạo booking thay thế.</small></div>
                         <div class="form-group"><label for="ghi_chu">Ghi chú <?= $isReconcile ? 'đối soát hoàn tất' : '(tùy chọn)' ?></label>
                             <input class="form-control" id="ghi_chu" name="ghi_chu" maxlength="500" value="<?= e($oldInput['ghi_chu'] ?? '') ?>" placeholder="Ghi chú đối soát nội bộ..."></div>
                     </div>
+                    <p class="booking-action-note" data-payment-guidance>Chỉ dùng cho xử lý ngoại lệ đối soát với dữ liệu ngân hàng thực tế. Người xác nhận chịu trách nhiệm kiểm tra tài khoản nhận tiền.</p>
                     <footer class="booking-operation-footer"><button class="btn btn--primary" type="submit">Xác nhận thành công &amp; Giữ sân chính thức</button></footer>
                 </form>
+                <?php else: ?>
+                <section class="booking-operation-card">
+                    <header><h2>Xác nhận bằng ảnh minh chứng</h2><p>Kiểm tra ảnh khách gửi và đối chiếu tiền thực nhận trên tài khoản ngân hàng trước khi xác nhận.</p></header>
+                    <?php if ($receiptImage): ?><a class="btn btn--outline" href="<?= e($receiptImage) ?>" data-receipt-open target="_blank" rel="noopener">Xem ảnh lớn</a><?php endif; ?>
+                    <p><?= $receiptCanConfirm ? 'Đang chờ nhân viên kiểm tra.' : e($receiptReason) ?></p>
+                    <button type="button" class="btn btn--primary" data-booking-action="confirm" data-booking-target="booking-dialog-<?= (int) $booking['ma_dat_san'] ?>">Xác nhận thanh toán</button>
+                </section>
+                <?php endif; ?>
                 <?php if ($isReconcile): ?>
                     <form class="booking-operation-card booking-operation-card--warning" method="post" action="<?= e(url('/admin/bookings/cancel')) ?>" data-confirm="CẢNH BÁO: Bạn chắc chắn muốn HỦY đơn đặt sân này? Khung giờ sân sẽ được giải phóng về trạng thái TRỐNG ngay lập tức!">
                         <?= csrf_field() ?><input type="hidden" name="id" value="<?= e($booking['ma_dat_san']) ?>">
@@ -353,3 +364,18 @@ $roleRoot = match ($scope['role'] ?? '') {
         <?php endif; ?>
     </section>
 </section>
+<?php
+require __DIR__ . '/receipt-viewer.php';
+if ($actions['confirm']) {
+    $row = $booking + ['so_tien_thanh_toan' => $booking['so_tien_can_thanh_toan'],
+        'cac_san' => implode(', ', array_unique(array_column($courts, 'ten_san'))),
+        'ngay_choi_dau' => $courts ? min(array_column($courts, 'ngay_choi')) : null,
+        'ngay_choi_cuoi' => $courts ? max(array_column($courts, 'ngay_choi')) : null,
+        'gio_bat_dau_som' => $courts ? min(array_column($courts, 'gio_bat_dau')) : '',
+        'gio_ket_thuc_muon' => $courts ? max(array_column($courts, 'gio_ket_thuc')) : ''];
+    $receiptDetails = [(int) $booking['ma_dat_san'] => ['image' => $receiptInfo, 'can_confirm' => $receiptCanConfirm, 'reason' => $receiptReason]];
+    $filters = []; $fromList = false;
+    require __DIR__ . '/action-dialog.php';
+}
+?>
+<script src="<?= e(base_path() . '/assets/js/booking-actions.js?v=' . filemtime(dirname(__DIR__, 4) . '/public/assets/js/booking-actions.js')) ?>" defer></script>

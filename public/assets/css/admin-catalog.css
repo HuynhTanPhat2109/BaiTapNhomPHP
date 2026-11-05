@@ -547,3 +547,45 @@
 @container (max-width: 850px) { .bank-monitor-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @container (max-width: 480px) { .bank-monitor-filters { grid-template-columns: minmax(0, 1fr); padding: 16px; } .bank-monitor-actions { justify-content: stretch; } .bank-monitor-actions .btn { flex: 1; } }
 @media (max-width: 600px) { .page-admin .booking-action-dialog { padding: 18px; } .booking-action-dialog .booking-action-summary, .booking-action-dialog .booking-action-fields { grid-template-columns: minmax(0, 1fr); } .booking-action-dialog footer .btn { flex: 1; } }
+/* Booking reuses the price-list action component; colors apply only to this module. */
+.page-admin .booking-admin-list .list-action-menu__panel[popover] { width: 252px; }
+.page-admin .booking-admin-list .list-action-menu__panel > .list-action { gap: 10px; min-height: 42px; padding: 10px 12px; border: 1px solid transparent; border-radius: 8px; font-weight: 550; line-height: 1.45; transition: filter .12s, border-color .12s; }
+.page-admin .booking-admin-list .list-action-menu__panel > .list-action + .list-action { margin-top: 6px; }
+.page-admin .booking-admin-list .list-action-menu__panel > .list-action svg { width: 20px; height: 20px; flex: 0 0 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.page-admin .booking-admin-list .list-action-menu__panel > .list-action--view { background: #f0f4f2; color: #385a47; }
+.page-admin .booking-admin-list .list-action-menu__panel > .list-action--confirm { background: #eaf6e2; color: #32663b; }
+.page-admin .booking-admin-list .list-action-menu__panel > .list-action--cancel { background: #fff1e6; color: #97552a; }
+.page-admin .booking-admin-list .list-action-menu__panel > .list-action--reconcile { background: #edf3fb; color: #3f628a; }
+.page-admin .booking-admin-list .list-action-menu__panel > .list-action:hover { filter: brightness(.97); border-color: #c5d7c8; }
+.page-admin .booking-admin-list .list-action-menu__panel > .list-action:active { filter: brightness(.94); }
+.page-admin .booking-action-dialog { width: min(840px, calc(100vw - 32px)); }
+.booking-action-dialog > header { position: sticky; top: -24px; z-index: 1; padding-block: 8px; background: #fff; }
+.booking-action-dialog .booking-action-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
+.booking-action-dialog .booking-action-section { min-width: 0; padding: 16px; border: 1px solid #dfe8e1; border-radius: 12px; background: #f6f9f5; }
+.booking-action-dialog .booking-action-section h3 { margin: 0 0 14px; font-size: 16px; }
+.booking-action-dialog .booking-action-summary { margin: 0; padding: 0; gap: 12px; background: transparent; }
+.booking-action-dialog .booking-action-summary dd { margin-top: 3px; font-size: 14px; }
+.booking-action-dialog .booking-action-summary .booking-action-amount { color: #32663b; font-size: 18px; font-weight: 650; }
+.page-admin .booking-action-note { margin: 10px 0 14px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.page-admin .booking-verification { display: flex; align-items: start; gap: 10px; margin: 16px 0 10px; padding: 12px; border: 1px solid #dce7d6; border-radius: 10px; background: #f5faef; font-size: 14px; line-height: 1.5; }
+.page-admin .booking-verification input { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 2px; accent-color: #326e45; }
+.booking-action-dialog footer { position: sticky; bottom: -24px; padding-block: 14px; background: #fff; }
+.page-admin .account-page .employee-password .form-control { padding-right: 52px; }
+.page-admin .account-page .employee-password .pw-toggle { width: 46px; border-radius: 8px; }
+.page-admin .account-page .employee-password .pw-toggle svg { width: 21px; height: 21px; }
+@media (max-width: 680px) { .booking-action-dialog .booking-action-overview { grid-template-columns: minmax(0, 1fr); gap: 12px; } .booking-action-dialog > header { top: -18px; } .booking-action-dialog footer { bottom: -18px; } .booking-action-dialog .booking-action-section { padding: 12px; } .booking-action-dialog .booking-action-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .booking-action-dialog footer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .booking-action-dialog footer [type="submit"] { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { .page-admin .booking-admin-list .list-action-menu__panel > .list-action { transition: none; } }
+
+/* Customer evidence stays separate from an operator's confirmation of actual funds. */
+.booking-receipt-card > a:first-of-type { display: block; margin-bottom: 12px; }
+.booking-receipt-card img { display: block; width: 100%; max-height: 440px; object-fit: contain; border: 1px solid #dfe8e1; border-radius: 10px; background: #fff; }
+.booking-receipt-card > p { font-size: 14px; }
+.booking-receipt-empty { display: grid; place-items: center; min-height: 220px; padding: 20px; border: 1px dashed #bdcdbf; border-radius: 10px; text-align: center; }
+.page-admin .receipt-viewer { width: min(1000px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 18px; margin: auto; border: 1px solid var(--border); border-radius: 16px; color: var(--text); background: #fff; }
+.receipt-viewer::backdrop { background: #102c2699; }
+.receipt-viewer header, .receipt-viewer header > div { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.receipt-viewer h2 { margin: 0; font-size: 20px; }
+.receipt-viewer__image { max-height: calc(100dvh - 160px); overflow: auto; margin-top: 16px; background: #f2f6f2; border-radius: 10px; }
+.receipt-viewer__image img { display: block; max-width: 100%; height: auto; margin: auto; }
+.receipt-viewer.is-zoomed img { max-width: none; width: auto; min-width: 100%; }

@@ -209,6 +209,7 @@
     pending = { form, submitter: event.submitter };
     returnFocus = form.closest('[data-row-actions]')?.querySelector('summary') || event.submitter;
     dialog.querySelector('#workspace-confirm-description').textContent = form.dataset.confirm;
+    dialog.querySelector('[data-confirm-cancel]').textContent = form.dataset.confirmCancelLabel || 'Hủy';
     document.dispatchEvent(new Event('workspace:close-row-menu'));
     dialog.showModal();
   });

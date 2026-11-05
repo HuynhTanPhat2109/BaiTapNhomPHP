@@ -5,6 +5,7 @@ namespace App\Controllers\admin;
 use App\Models\AdminBooking;
 use App\Models\CoSo;
 use App\Services\BookingManagementService;
+use App\Services\BookingReceiptService;
 use App\Services\ValidationException;
 use Core\Application;
 use Core\Controller;
@@ -14,12 +15,14 @@ final class AdminBookingController extends Controller
 {
     private AdminBooking $model;
     private BookingManagementService $service;
+    private BookingReceiptService $receipts;
 
-    public function __construct(private Application $app)
+    public function __construct(private Application $app, ?BookingReceiptService $receipts = null)
     {
         $pdo = $app->pdo();
         $this->model = new AdminBooking($pdo);
-        $this->service = new BookingManagementService($pdo);
+        $this->receipts = $receipts ?? new BookingReceiptService($pdo);
+        $this->service = new BookingManagementService($pdo, receipts: $this->receipts);
     }
 
     /**
@@ -45,6 +48,16 @@ final class AdminBookingController extends Controller
         $courts = !empty($filters['facility_id']) ? $this->model->courtsByFacility((int) $filters['facility_id'], $scope) : [];
 
         $data = $this->model->page($filters, $scope);
+        $receiptDetails = [];
+        $payments = $this->model->paymentsFor(array_column($data['items'], 'ma_dat_san'));
+        foreach ($data['items'] as $item) {
+            $payment = $payments[$item['ma_dat_san']] ?? null;
+            $receiptDetails[$item['ma_dat_san']] = ['image' => $payment ? $this->receipts->info($payment) : null, 'can_confirm' => false];
+            if ($payment) {
+                try { $this->receipts->requireConfirmation($payment + $item); $receiptDetails[$item['ma_dat_san']]['can_confirm'] = true; }
+                catch (ValidationException $e) { $receiptDetails[$item['ma_dat_san']]['reason'] = reset($e->errors); }
+            }
+        }
 
         $notice = $_SESSION['booking_notice'] ?? null;
         $error = $_SESSION['booking_error'] ?? null;
@@ -61,6 +74,7 @@ final class AdminBookingController extends Controller
             'facilities' => $facilities,
             'courts' => $courts,
             'items' => $data['items'],
+            'receiptDetails' => $receiptDetails,
             'total' => $data['total'],
             'page' => $data['page'],
             'pages' => $data['pages'],
@@ -97,8 +111,21 @@ final class AdminBookingController extends Controller
         $services = $this->model->services($id);
         $bankAccount = $this->model->bankAccount((int) $booking['ma_co_so']);
         
+        $payment = (new \App\Models\ThanhToan($this->app->pdo()))->findByBookingId($id);
+        $receiptInfo = $payment ? $this->receipts->info($payment) : null;
+        $receiptImage = $receiptInfo ? url('/booking/receipt?id=' . $id) : null;
+        $receiptCanConfirm = false; $receiptReason = 'Khách hàng chưa gửi minh chứng chuyển khoản.';
+        if ($payment) {
+            try { $this->receipts->requireConfirmation($payment); $receiptCanConfirm = true; }
+            catch (ValidationException $e) { $receiptReason = reset($e->errors); }
+        }
+        $confirmation = null;
+        if (!empty($payment['xac_nhan_thu_cong_luc'])) {
+            $actor = $this->app->pdo()->prepare('SELECT ten_dang_nhap FROM tai_khoan WHERE ma_tai_khoan=:id');
+            $actor->execute(['id' => $payment['ma_tai_khoan_xac_nhan']]);
+            $confirmation = ['at' => $payment['xac_nhan_thu_cong_luc'], 'by' => $actor->fetchColumn() ?: ('#' . $payment['ma_tai_khoan_xac_nhan'])];
+        }
         $rawPaymentNote = $booking['ghi_chu_thanh_toan'] ?? '';
-        $receiptImage = \App\Services\ReceiptImage::findForBooking((int) $id, $rawPaymentNote);
         $booking['ghi_chu_thanh_toan'] = \App\Services\ReceiptImage::stripReceiptTag($rawPaymentNote);
 
         $notice = $_SESSION['booking_notice'] ?? null;
@@ -112,6 +139,8 @@ final class AdminBookingController extends Controller
             'user' => $user,
             'scope' => $scope,
             'booking' => $booking,
+            'receiptInfo' => $receiptInfo, 'receiptCanConfirm' => $receiptCanConfirm, 'receiptReason' => $receiptReason,
+            'confirmation' => $confirmation,
             'courts' => $courts,
             'services' => $services,
             'bankAccount' => $bankAccount,
@@ -139,27 +168,33 @@ final class AdminBookingController extends Controller
             throw new HttpException(404, 'Mã đặt sân không hợp lệ.');
         }
 
-        $bankTxnId = trim((string) ($_POST['ma_giao_dich'] ?? ''));
-        $actualAmount = trim((string) ($_POST['so_tien_thuc_nhan'] ?? ''));
-        $paidAt = trim((string) ($_POST['ngay_thanh_toan'] ?? ''));
-        $note = trim((string) ($_POST['ghi_chu'] ?? ''));
-
         try {
-            $result = $this->service->confirmBookingAndPayment(
-                $id,
-                $bankTxnId,
-                $actualAmount,
-                $paidAt,
-                $note,
-                $user
-            );
+            // This POST attests that the operator checked the actual receiving account.
+            // Bank IDs/timestamps/amounts or confirmation modes supplied by a client are ignored.
+            if (($_POST['confirmation_mode'] ?? '') === 'reconciliation') {
+                $value = $_POST['ngay_thanh_toan'] ?? '';
+                $format = is_string($value) && strlen($value) === 19 ? 'Y-m-d\TH:i:s' : 'Y-m-d\TH:i';
+                $date = is_string($value) ? \DateTimeImmutable::createFromFormat('!' . $format, $value, new \DateTimeZone('Asia/Ho_Chi_Minh')) : false;
+                if (!$date || $date->format($format) !== $value || $date->format('Y') < '1000') {
+                    throw new ValidationException(['reconciliation' => 'Nhập ngày giờ giao dịch thực tế trong quy trình ngoại lệ.']);
+                }
+                $version = $_POST['receipt_version'] ?? '';
+                if (!is_string($version) || !preg_match('/\A[a-f0-9]{64}\z/', $version)) throw new ValidationException(['receipt' => 'Tải lại minh chứng trước khi đối soát.']);
+                $result = $this->service->confirmReconciledPayment($id, post_string('ma_giao_dich'), post_string('so_tien_thuc_nhan'),
+                    $value, post_string('ghi_chu'), $user, $version);
+            } else {
+                $version = $_POST['receipt_version'] ?? '';
+                if (!is_string($version) || !preg_match('/\A[a-f0-9]{64}\z/', $version)) throw new ValidationException(['receipt' => 'Tải lại minh chứng để kiểm tra trước khi xác nhận.']);
+                $result = $this->service->confirmReceiptPayment($id, $user, $version);
+            }
 
             $_SESSION['booking_notice'] = $result['message'];
         } catch (ValidationException $e) {
             $_SESSION['booking_validation_errors'] = $e->errors;
             $_SESSION['booking_old'] = $_POST;
         } catch (\Throwable $e) {
-            $_SESSION['booking_error'] = 'Lỗi xử lý xác nhận: ' . $e->getMessage();
+            error_log('Booking confirmation failed: ' . get_class($e) . ' at ' . basename($e->getFile()) . ':' . $e->getLine());
+            $_SESSION['booking_error'] = 'Không thể hoàn tất xác nhận. Vui lòng tải lại và kiểm tra trạng thái trước khi thử lại.';
         }
 
         $this->redirectAfterAction($id, $user);
@@ -250,4 +285,5 @@ final class AdminBookingController extends Controller
         }
         $this->redirect('/admin/bookings/show?id=' . $id);
     }
+
 }

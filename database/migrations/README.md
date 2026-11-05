@@ -1,5 +1,14 @@
 # Nâng cấp database đã có
 
+## Xác nhận thủ công bằng minh chứng (05/11/2026)
+
+Sau khi review/sao lưu, chọn đúng database và Import `20261105_manual_receipt_confirmation.sql`
+đúng một lần. Không import lại schema chính trên dữ liệu đang dùng. Migration thêm4 cột nullable,
+FK người xác nhận và thay CHECK thanh toán thành công để không bắt tạo mã/giờ ngân hàng giả.
+Không có DML/backfill. Nếu cài mới bằng schema chính đã cập nhật, không chạy migration này.
+Chi tiết lưu ảnh riêng, cấu hình PHP/Apache và kiểm thử: [báo cáo minh chứng](../../docs/receipt-confirmation-review.md).
+Migration này chưa được agent chạy lên database ứng dụng.
+
 ## Booking và khóa chống request lặp
 
 Database đã có: chọn đúng database trong phpMyAdmin, sao lưu bằng Export,

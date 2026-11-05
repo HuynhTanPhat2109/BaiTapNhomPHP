@@ -6,7 +6,8 @@ use Core\{Application, Controller, HttpException};
 
 final class BookingController extends Controller
 {
-    public function __construct(private Application $app) {}
+    public function __construct(private Application $app, private ?\App\Services\BookingReceiptService $receipts = null) {}
+    private function receipts(): \App\Services\BookingReceiptService { return $this->receipts ??= new \App\Services\BookingReceiptService($this->app->pdo()); }
     private function service(): BookingService { return new BookingService($this->app->pdo()); }
     private function json(array $data, int $status = 200): void
     {
@@ -141,6 +142,8 @@ final class BookingController extends Controller
         if (!is_string($id) || !\App\Services\CoSoService::validId($id)) throw new HttpException(404,'Không tìm thấy booking.');
         $booking=$this->service()->inspect((int)$id,(int)$user['ma_khach_hang']);
         $now=CourtScheduleService::now();
+        if ($booking['trang_thai_dat_san'] === 'CHO_XAC_NHAN'
+            && $booking['het_han_giu_san_luc'] <= $now->format('Y-m-d H:i:s')) $booking['trang_thai_dat_san'] = 'HET_HAN';
         header('Cache-Control: no-store');
         if (($_GET['status']??'')==='1') {
             $paymentStatus = null;
@@ -152,8 +155,8 @@ final class BookingController extends Controller
                 $paymentStatus = $payment['trang_thai'] ?? null;
                 if (!empty($payment['ghi_chu'])) {
                     $paymentNote = \App\Services\ReceiptImage::stripReceiptTag($payment['ghi_chu']);
-                    $receiptSubmitted = (\App\Services\ReceiptImage::getReceiptFromNote($payment['ghi_chu']) !== null);
                 }
+                $receiptSubmitted = $payment && $this->receipts()->info($payment) !== null;
             } catch (\Throwable $e) {}
 
             $currentState = $booking['trang_thai_dat_san'];
@@ -206,7 +209,7 @@ final class BookingController extends Controller
             }
 
             if ($payment) {
-                $receiptImage = \App\Services\ReceiptImage::findForBooking((int) $id, $payment['ghi_chu'] ?? null);
+                $receiptImage = $this->receipts()->info($payment) ? url('/booking/receipt?id=' . (int) $id) : null;
             }
         } catch (\Throwable $e) {
             $paymentError = 'Không thể đọc cấu hình thanh toán. Vui lòng thử lại hoặc liên hệ cơ sở.';
@@ -247,6 +250,8 @@ final class BookingController extends Controller
             $pageTitle = 'Chờ xác nhận thanh toán';
         } elseif (in_array($booking['trang_thai_dat_san'], ['HET_HAN', 'DA_HUY'], true)) {
             $pageTitle = 'Đã hết thời gian giữ sân';
+        } elseif ($receiptSubmitted || $booking['trang_thai_dat_san'] === 'CHO_XAC_NHAN') {
+            $pageTitle = 'Đã gửi minh chứng – Chờ xác nhận thanh toán';
         }
 
         // Lấy thông tin chi tiết khách hàng
@@ -268,7 +273,7 @@ final class BookingController extends Controller
 
     /**
      * TH1: Tiếp nhận ảnh biên lai chuyển khoản từ khách hàng.
-     * Lưu biên lai trước hạn; chưa xác nhận giao dịch cho đến khi nhân viên đối soát.
+     * Bắt buộc phải có ảnh; gửi thành công chỉ là chờ nhân viên kiểm tra, chưa thanh toán thành công.
      */
     public function uploadReceipt(): void
     {
@@ -290,20 +295,32 @@ final class BookingController extends Controller
 
         $relativePath = null;
         try {
-            $relativePath = \App\Services\ReceiptImage::store($_FILES['bien_lai'] ?? null, $bookingId);
-            $this->service()->acceptReceipt($bookingId, (int)$user['ma_khach_hang'], $relativePath);
-            $relativePath = null; // Database now owns this image.
+            $this->receipts()->upload($bookingId, (int) $user['ma_khach_hang'], $_FILES['bien_lai'] ?? null);
+            $_SESSION['booking_receipt_notice'][$bookingId] = 'Đã gửi minh chứng – Chờ xác nhận thanh toán';
         } catch (\App\Services\ValidationException $e) {
             $_SESSION['booking_payment_error'][$bookingId] = $e->errors['bien_lai'] ?? 'Lỗi tải ảnh biên lai.';
         } catch (HttpException $e) {
             $_SESSION['booking_payment_error'][$bookingId] = $e->getMessage();
         } catch (\Throwable $e) {
-            error_log('Receipt submission failed: '.get_class($e));
-            $_SESSION['booking_payment_error'][$bookingId] = 'Không thể lưu biên lai. Vui lòng thử lại hoặc liên hệ cơ sở.';
-        } finally {
-            if ($relativePath !== null) \App\Services\ReceiptImage::remove($relativePath);
+            $_SESSION['booking_payment_error'][$bookingId] = 'Không thể lưu minh chứng. Vui lòng thử lại hoặc liên hệ cơ sở.';
         }
         $this->go('/booking/wait', 'id', (string)$bookingId);
+    }
+
+    public function receipt(): void
+    {
+        $user = $this->app->auth()->user();
+        if (!$user) throw new HttpException(403, 'Vui lòng đăng nhập.');
+        $id = $_GET['id'] ?? '';
+        if (!is_string($id) || !\App\Services\CoSoService::validId($id)) throw new HttpException(404, 'Không tìm thấy minh chứng.');
+        $image = $this->receipts()->authorized((int) $id, $user);
+        header('Content-Type: ' . $image['mime']);
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, no-store');
+        header("Content-Security-Policy: default-src 'none'; sandbox");
+        header('Content-Length: ' . filesize($image['absolute']));
+        header('Content-Disposition: inline');
+        readfile($image['absolute']);
     }
 
     /**
