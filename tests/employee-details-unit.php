@@ -34,13 +34,14 @@ $app = new Application($pdo);
 $controller = new EmployeeController($app);
 $render = static function (string $role, mixed $id) use ($actor, $controller, $pdo): string {
     $actor->role = $role;
-    $_GET = ['route' => ($role === 'QUAN_TRI_TAP_DOAN' ? '/admin' : '/company') . '/employees/show', 'id' => $id];
+    $_GET = ['route' => match ($role) { 'QUAN_TRI_TAP_DOAN' => '/admin', 'QUAN_LY_CO_SO' => '/facility', default => '/company' } . '/employees/show', 'id' => $id];
     $pdo->preparedQueries = [];
     ob_start();
     try { $controller->show(); return ob_get_contents(); }
     finally { ob_end_clean(); }
 };
-foreach ([['QUAN_TRI_TAP_DOAN', 1, 'memory.1', 'UX Company 02'], ['QUAN_LY_CONG_TY', 1001, 'memory.1001', 'UX Company 01']] as [$role, $id, $username, $company]) {
+foreach ([['QUAN_TRI_TAP_DOAN', 1, 'memory.1', 'UX Company 02'], ['QUAN_LY_CONG_TY', 1001, 'memory.1001', 'UX Company 01'],
+    ['QUAN_LY_CO_SO', 1001, 'memory.1001', 'UX Company 01']] as [$role, $id, $username, $company]) {
     $html = $render($role, $id);
     foreach (['Thông tin nhân viên', 'Tài khoản đăng nhập', 'Phân quyền', $username, $company] as $text) {
         employeeCheck(str_contains($html, $text), "$role: scoped detail displays $text");
@@ -59,6 +60,7 @@ employeeCheck(str_contains($render('QUAN_LY_CONG_TY', 9000), 'Chưa có tài kho
 employeeCheck(str_contains($render('QUAN_TRI_TAP_DOAN', 1001), 'memory.1001'), 'approved Admin scope now includes facility managers');
 employeeCheck(str_contains($render('QUAN_TRI_TAP_DOAN', 2001), 'memory.2001'), 'approved Admin scope includes staff from another company');
 employeeCheck(str_contains($render('QUAN_TRI_TAP_DOAN', 9000), 'Chưa có tài khoản đăng nhập'), 'approved Admin scope includes personnel without an account');
+employeeCheck(str_contains($render('QUAN_LY_CO_SO', 1001), 'memory.1001'), 'facility manager may read an employee in the assigned facility');
 $pdo->exec("UPDATE tai_khoan SET trang_thai='KHOA' WHERE ma_tai_khoan=1001");
 employeeCheck(str_contains($render('QUAN_LY_CONG_TY', 1001), 'Bị khóa'), 'locked employee account uses the real schema status');
 $pdo->exec("UPDATE nhan_vien SET ho_ten='<script>secretAttack()</script>' WHERE ma_nhan_vien=1001");
@@ -66,7 +68,7 @@ $html = $render('QUAN_LY_CONG_TY', 1001);
 employeeCheck(!str_contains($html, '<script>secretAttack()') && str_contains($html, '&lt;script&gt;secretAttack()'), 'employee fields are HTML escaped');
 foreach ([['QUAN_LY_CONG_TY', 2001, 404], ['QUAN_LY_CONG_TY', 1, 404],
     ['QUAN_TRI_TAP_DOAN', 999999, 404], ['QUAN_TRI_TAP_DOAN', [], 404], ['QUAN_TRI_TAP_DOAN', '0', 404],
-    ['QUAN_TRI_TAP_DOAN', '99999999999999999999999999999', 404], ['KHACH_HANG', 1, 403], ['QUAN_LY_CO_SO', 1001, 403], ['NHAN_VIEN', 1001, 403]] as [$role, $id, $status]) {
+    ['QUAN_TRI_TAP_DOAN', '99999999999999999999999999999', 404], ['KHACH_HANG', 1, 403], ['QUAN_LY_CO_SO', 2001, 404], ['NHAN_VIEN', 1001, 403]] as [$role, $id, $status]) {
     try { $render($role, $id); employeeCheck(false, 'expected scoped rejection'); }
     catch (HttpException $e) { employeeCheck($e->status === $status, "$role: invalid/out-of-scope detail rejected"); }
 }

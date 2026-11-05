@@ -17,14 +17,14 @@ final class NhanVien
         return $stmt->fetch() ?: null;
     }
 
-    public function findForCompany(int $id, int $companyId, bool $lock = false): ?array
+    public function findForCompany(int $id, int $companyId, bool $lock = false, ?int $facilityId = null): ?array
     {
         $stmt = $this->pdo->prepare("SELECT nv.* FROM nhan_vien nv
             LEFT JOIN tai_khoan tk ON tk.ma_tai_khoan = nv.ma_tai_khoan
             LEFT JOIN vai_tro vt ON vt.ma_vai_tro = tk.ma_vai_tro
-            WHERE nv.ma_nhan_vien = :id AND nv.ma_cong_ty = :company
-                AND (nv.ma_tai_khoan IS NULL OR vt.ten_vai_tro IN ('QUAN_LY_CO_SO', 'NHAN_VIEN'))" . ($lock ? ' FOR UPDATE' : ''));
-        $stmt->execute(['id' => $id, 'company' => $companyId]);
+            WHERE nv.ma_nhan_vien = :id AND nv.ma_cong_ty = :company"
+            . ($facilityId === null ? '' : ' AND nv.ma_co_so = :actor_facility') . ($lock ? ' FOR UPDATE' : ''));
+        $stmt->execute(['id' => $id, 'company' => $companyId] + ($facilityId === null ? [] : ['actor_facility' => $facilityId]));
         return $stmt->fetch() ?: null;
     }
 
@@ -33,15 +33,14 @@ final class NhanVien
         return $this->pdo->query('SELECT * FROM nhan_vien ORDER BY ma_nhan_vien DESC')->fetchAll();
     }
 
-    public function byCompany(int $companyId): array
+    public function byCompany(int $companyId, ?int $facilityId = null): array
     {
         $stmt = $this->pdo->prepare("SELECT nv.* FROM nhan_vien nv
             LEFT JOIN tai_khoan tk ON tk.ma_tai_khoan = nv.ma_tai_khoan
             LEFT JOIN vai_tro vt ON vt.ma_vai_tro = tk.ma_vai_tro
-            WHERE nv.ma_cong_ty = :company
-                AND (nv.ma_tai_khoan IS NULL OR vt.ten_vai_tro IN ('QUAN_LY_CO_SO', 'NHAN_VIEN'))
-            ORDER BY nv.ma_nhan_vien DESC");
-        $stmt->execute(['company' => $companyId]);
+            WHERE nv.ma_cong_ty = :company" . ($facilityId === null ? '' : ' AND nv.ma_co_so = :actor_facility') . '
+            ORDER BY nv.ma_nhan_vien DESC');
+        $stmt->execute(['company' => $companyId] + ($facilityId === null ? [] : ['actor_facility' => $facilityId]));
         return $stmt->fetchAll();
     }
 
@@ -52,23 +51,22 @@ final class NhanVien
             ORDER BY nv.ma_nhan_vien DESC")->fetchAll();
     }
 
-    public function page(array $filters, ?int $companyId = null): array
+    public function page(array $filters, ?int $companyId = null, ?int $facilityId = null): array
     {
-        // Admin sees all personnel; company managers retain their original restricted scope.
-        $where = $companyId === null ? []
-            : ["nv.ma_cong_ty=:actor_company", "(nv.ma_tai_khoan IS NULL OR vt.ten_vai_tro IN ('QUAN_LY_CO_SO','NHAN_VIEN'))"];
+        $where = $companyId === null ? [] : ['nv.ma_cong_ty=:actor_company'];
         $params = $companyId === null ? [] : ['actor_company' => $companyId];
+        if ($facilityId !== null) { $where[] = 'nv.ma_co_so=:actor_facility'; $params['actor_facility'] = $facilityId; }
         $order = match ($filters['sort']) {
             'name_asc' => 'nv.ho_ten ASC, nv.ma_nhan_vien DESC', 'name_desc' => 'nv.ho_ten DESC, nv.ma_nhan_vien DESC',
             default => 'nv.ma_nhan_vien DESC',
         };
-        $fields = ['q' => ['nv.ho_ten', 'nv.email', 'nv.so_dien_thoai'], 'trang_thai' => 'nv.trang_thai', 'vai_tro' => 'vt.ten_vai_tro'];
+        $fields = ['q' => ['nv.ho_ten', 'nv.email', 'nv.so_dien_thoai', 'tk.ten_dang_nhap', 'f.ten_co_so', 'c.ten_cong_ty'], 'trang_thai' => 'nv.trang_thai', 'vai_tro' => 'vt.ten_vai_tro'];
         $fields += $companyId === null ? ['ma_cong_ty' => 'nv.ma_cong_ty'] : ['ma_co_so' => 'nv.ma_co_so'];
         return AdminList::page($this->pdo, ' FROM nhan_vien nv LEFT JOIN tai_khoan tk ON tk.ma_tai_khoan=nv.ma_tai_khoan
             LEFT JOIN vai_tro vt ON vt.ma_vai_tro=tk.ma_vai_tro
             LEFT JOIN cong_ty_nhuong_quyen c ON c.ma_cong_ty=nv.ma_cong_ty
             LEFT JOIN co_so f ON f.ma_co_so=nv.ma_co_so AND f.ma_cong_ty=nv.ma_cong_ty',
-            'nv.*, vt.ten_vai_tro, c.ten_cong_ty, f.ten_co_so', 'nv.ma_nhan_vien',
+            'nv.*, vt.ten_vai_tro, tk.ten_dang_nhap, c.ten_cong_ty, f.ten_co_so', 'nv.ma_nhan_vien',
             $fields, $filters, $where, $params, $order);
     }
 

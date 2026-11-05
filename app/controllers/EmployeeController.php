@@ -13,6 +13,7 @@ use Core\HttpException;
 final class EmployeeController extends Controller
 {
     private EmployeeService $employees;
+    private ?int $facilityId = null;
 
     public function __construct(private Application $app)
     {
@@ -25,17 +26,18 @@ final class EmployeeController extends Controller
         $options = $this->employees->getOptions($role, $companyId);
         $filters = AdminListService::managementFilters($basePath . '/employees', $_GET);
         if ($companyId !== null) {
-            $options['facilities'] = (new CoSo($this->app->pdo()))->byCompany((int) $companyId);
+            if ($role === 'QUAN_LY_CONG_TY') $options['facilities'] = (new CoSo($this->app->pdo()))->byCompany((int) $companyId);
             if ($filters['ma_co_so'] !== '' && !in_array((int) $filters['ma_co_so'], array_map('intval', array_column($options['facilities'], 'ma_co_so')), true)) {
                 throw new HttpException(403, 'Cơ sở nằm ngoài phạm vi công ty của bạn.');
             }
         }
-        $result = (new NhanVien($this->app->pdo()))->page($filters, $companyId === null ? null : (int) $companyId);
+        $result = (new NhanVien($this->app->pdo()))->page($filters, $companyId === null ? null : (int) $companyId, $this->facilityId);
         if ($result['page'] !== $filters['page']) admin_list_redirect($basePath . '/employees', array_replace($filters, ['page' => $result['page']]));
         $notice = $_SESSION['employee_notice'] ?? null; unset($_SESSION['employee_notice']);
         $this->render($viewPrefix . '/index', $result + [
             'title' => 'Quản lý nhân viên',
             'employees' => $result['items'], 'filters' => $filters, 'notice' => $notice, 'options' => $options,
+            'basePath' => $basePath, 'actorRole' => $role,
         ]);
     }
 
@@ -70,6 +72,7 @@ final class EmployeeController extends Controller
         [$role, $companyId, $basePath, $viewPrefix] = $this->context();
         $this->render($viewPrefix . '/create', [
             'title' => 'Thêm nhân viên',
+            'basePath' => $basePath,
             'options' => $this->employees->getOptions($role, $companyId),
         ]);
     }
@@ -91,12 +94,13 @@ final class EmployeeController extends Controller
                 if (is_string($account['username'])) {
                     $old['username'] = $account['username'];
                 }
-                if ($role === 'QUAN_LY_CONG_TY') {
+                if (in_array($role, ['QUAN_LY_CONG_TY', 'QUAN_LY_CO_SO'], true)) {
                     $old['role'] = $account['role'];
                 }
             }
             $this->render($viewPrefix . '/create', [
                 'title' => 'Thêm nhân viên',
+                'basePath' => $basePath,
                 'options' => $this->employees->getOptions($role, $companyId),
                 'errors' => $e->errors,
                 'old' => $old,
@@ -108,9 +112,10 @@ final class EmployeeController extends Controller
     {
         [$role, $companyId, $basePath, $viewPrefix] = $this->context();
         $id = $_GET['id'] ?? null;
-        $employee = $this->employees->getEmployee($role, $companyId, $id);
+        $employee = $this->employees->getEmployee($role, $companyId, $id, true);
         $this->render($viewPrefix . '/edit', [
             'title' => 'Cập nhật nhân viên',
+            'basePath' => $basePath,
             'employee' => $employee,
             'options' => $this->employees->getOptions($role, $companyId, $employee['ma_co_so'] ?? null),
         ]);
@@ -120,7 +125,7 @@ final class EmployeeController extends Controller
     {
         [$role, $companyId, $basePath, $viewPrefix] = $this->context();
         $id = $_POST['id'] ?? null;
-        $employee = $this->employees->getEmployee($role, $companyId, $id);
+        $employee = $this->employees->getEmployee($role, $companyId, $id, true);
         $data = $this->formData($role);
 
         try {
@@ -130,6 +135,7 @@ final class EmployeeController extends Controller
         } catch (ValidationException $e) {
             $this->render($viewPrefix . '/edit', [
                 'title' => 'Cập nhật nhân viên',
+                'basePath' => $basePath,
                 'employee' => $employee,
                 'options' => $this->employees->getOptions($role, $companyId, $employee['ma_co_so'] ?? null),
                 'errors' => $e->errors,
@@ -149,7 +155,7 @@ final class EmployeeController extends Controller
             admin_list_redirect($basePath . '/employees');
         } catch (ValidationException $e) {
             $employee = $this->employees->getEmployee($role, $companyId, $id);
-            $this->render($viewPrefix . '/edit', ['title' => 'Cập nhật nhân viên', 'employee' => $employee,
+            $this->render($viewPrefix . '/edit', ['title' => 'Cập nhật nhân viên', 'employee' => $employee, 'basePath' => $basePath,
                 'options' => $this->employees->getOptions($role, $companyId, $employee['ma_co_so'] ?? null),
                 'errors' => $e->errors, 'old' => ['trang_thai' => $status]], 422);
         }
@@ -162,12 +168,17 @@ final class EmployeeController extends Controller
             throw new HttpException(403, 'Bạn cần đăng nhập để thực hiện thao tác này.');
         }
         $role = $user['ten_vai_tro'] ?? '';
-        $companyId = $role === 'QUAN_LY_CONG_TY' ? ($user['ma_cong_ty'] ?? null) : null;
+        $companyId = $role === 'QUAN_TRI_TAP_DOAN' ? null : ($user['ma_cong_ty'] ?? null);
+        $this->facilityId = $role === 'QUAN_LY_CO_SO' ? (int) ($user['ma_co_so'] ?? 0) : null;
+        $this->employees = new EmployeeService($this->app->pdo(), $user);
         if ($role === 'QUAN_TRI_TAP_DOAN') {
             return [$role, null, '/admin', 'admin/employees'];
         }
         if ($role === 'QUAN_LY_CONG_TY') {
             return [$role, $companyId, '/company', 'company/employees'];
+        }
+        if ($role === 'QUAN_LY_CO_SO') {
+            return [$role, $companyId, '/facility', 'company/employees'];
         }
         throw new HttpException(403, 'Không có quyền thực hiện thao tác này.');
     }
@@ -205,7 +216,8 @@ final class EmployeeController extends Controller
             return null;
         }
         $requestedRole = $_POST['role'] ?? '';
-        $allowedRole = is_string($requestedRole) && in_array($requestedRole, ['QUAN_LY_CO_SO', 'NHAN_VIEN'], true)
+        $allowed = $role === 'QUAN_LY_CO_SO' ? ['NHAN_VIEN'] : ['QUAN_LY_CO_SO', 'NHAN_VIEN'];
+        $allowedRole = is_string($requestedRole) && in_array($requestedRole, $allowed, true)
             ? $requestedRole
             : '';
         return [

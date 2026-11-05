@@ -27,6 +27,14 @@ final class CoSoController extends Controller
         $model = new CoSo($this->app->pdo());
         $scope = $this->scope();
         if ($filters['ma_cong_ty'] !== '' && $scope['company'] !== null && (int) $filters['ma_cong_ty'] !== $scope['company']) throw new HttpException(403, 'Công ty nằm ngoài phạm vi của bạn.');
+        if (in_array($scope['role'], ['QUAN_LY_CO_SO', 'NHAN_VIEN'], true)) {
+            $requested = $_GET['id'] ?? $_GET['ma_co_so'] ?? (string) $scope['facility'];
+            if (!CoSoService::validId($requested) || (int) $requested !== $scope['facility']) {
+                throw new HttpException(403, 'Cơ sở nằm ngoài phạm vi được phân công.');
+            }
+            $this->detail($this->record((int) $scope['facility']), true);
+            return;
+        }
         $result = $model->page($filters, $scope);
         if ($result['page'] !== $filters['page']) admin_list_redirect($this->listPath(), array_replace($filters, ['page' => $result['page']]));
         $notice = $_SESSION['facility_notice'] ?? null;
@@ -92,9 +100,14 @@ final class CoSoController extends Controller
 
     public function show(): void
     {
-        $item = $this->record($this->id($_GET['id'] ?? null));
+        $this->detail($this->record($this->id($_GET['id'] ?? null)));
+    }
+
+    private function detail(array $item, bool $facilityProfile = false): void
+    {
         $this->page('admin/co-so/show', [
-            'title' => 'Chi tiết cơ sở', 'item' => $item,
+            'title' => $facilityProfile ? 'Thông tin cơ sở' : 'Chi tiết cơ sở', 'item' => $item,
+            'facilityProfile' => $facilityProfile,
             'related' => (new CoSo($this->app->pdo()))->related((int) $item['ma_co_so']),
             'courts' => (new San($this->app->pdo()))->all((int) $item['ma_co_so']),
         ]);

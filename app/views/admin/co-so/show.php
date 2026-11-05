@@ -5,7 +5,13 @@ $detailTitle = $item['ten_co_so']; $detailId = $item['ma_co_so']; $detailCanEdit
 $detailStatusLabel = $item['trang_thai'] === 'HOAT_DONG' ? 'Hoạt động' : 'Tạm ngừng';
 ?>
 <section class="container catalog-page catalog-workspace detail-page workspace-page">
-    <?php require dirname(__DIR__) . '/partials/detail-header.php'; ?>
+    <?php if ($facilityProfile ?? false): ?>
+        <header class="detail-heading">
+            <p class="eyebrow">STRYKE / Thông tin cơ sở</p>
+            <div class="detail-title"><h1><?= e($detailTitle) ?></h1><span class="catalog-status" data-status="<?= e($item['trang_thai']) ?>"><?= e($detailStatusLabel) ?></span></div>
+            <?php if ($detailCanEdit): ?><a class="btn btn--primary detail-edit" href="<?= e(url($detailPath . '/edit') . '&id=' . $detailId) ?>">Chỉnh sửa thông tin</a><?php endif; ?>
+        </header>
+    <?php else: require dirname(__DIR__) . '/partials/detail-header.php'; endif; ?>
     <?php if ($item['trang_thai_cong_ty'] !== 'HOAT_DONG'): ?><p class="alert alert--danger" role="status">Công ty đã ngừng hoạt động. Không thể tạo hoặc kích hoạt sân tại cơ sở này.</p><?php endif; ?>
     <div class="detail-grid">
         <section class="detail-card" aria-labelledby="facility-info">

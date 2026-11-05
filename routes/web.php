@@ -50,6 +50,15 @@ $router->get('/company/employees/edit', [$employee, 'edit'], [new RoleMiddleware
 $router->post('/company/employees/update', [$employee, 'update'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 $router->post('/company/employees/status', [$employee, 'changeStatus'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 
+$facilityEmployees = [new RoleMiddleware($app, ['QUAN_LY_CO_SO'])];
+$router->get('/facility/employees', [$employee, 'index'], $facilityEmployees);
+$router->get('/facility/employees/show', [$employee, 'show'], $facilityEmployees);
+$router->get('/facility/employees/create', [$employee, 'create'], $facilityEmployees);
+$router->post('/facility/employees', [$employee, 'store'], $facilityEmployees);
+$router->get('/facility/employees/edit', [$employee, 'edit'], $facilityEmployees);
+$router->post('/facility/employees/update', [$employee, 'update'], $facilityEmployees);
+$router->post('/facility/employees/status', [$employee, 'changeStatus'], $facilityEmployees);
+
 // Preserve the existing company information/contracts page beside the new Dashboard.
 foreach (['/admin' => 'QUAN_TRI_TAP_DOAN', '/company' => 'QUAN_LY_CONG_TY', '/facility' => 'QUAN_LY_CO_SO', '/staff' => 'NHAN_VIEN'] as $home => $revenueRole) {
     $router->get($home . '/revenue', [new DashboardController($app), 'index'], [new RoleMiddleware($app, [$revenueRole])]);

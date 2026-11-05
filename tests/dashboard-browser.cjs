@@ -7,6 +7,7 @@ const net = require('node:net');
 const root = path.resolve(__dirname, '..');
 const out = path.join(root, 'storage/temp/dashboard-review');
 const results = [];
+const tableMeasurements = [];
 let browser, server, serverLog = '';
 const check = (ok, label) => { results.push({ pass: Boolean(ok), label }); if (!ok) throw new Error(label); };
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -15,6 +16,7 @@ async function freePort() {
   const port = socket.address().port; await new Promise(resolve => socket.close(resolve)); return port;
 }
 async function layout(page, label) {
+  await page.evaluate(() => document.fonts.ready);
   const sizes = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth,
     clipped: [...document.querySelectorAll('.dashboard-kpi-value, .dashboard-filters .btn')].filter(el => el.scrollWidth > el.clientWidth + 1).map(el => el.textContent),
     overlaps: [...document.querySelectorAll('.dashboard-kpi')].some(card => {
@@ -24,6 +26,70 @@ async function layout(page, label) {
     narrowColumns: [...document.querySelectorAll('.dashboard-table tr > :first-child')].some(el => el.getBoundingClientRect().width < 140),
   }));
   check(sizes.scroll <= sizes.width + 1 && !sizes.clipped.length && !sizes.overlaps && !sizes.narrowColumns, `${label}: no overflow, clipped values, overlapping icons or crushed table columns ${JSON.stringify(sizes)}`);
+  const alignment = await page.locator('.dashboard-kpi').evaluateAll(cards => cards.map(card => {
+    const rect = card.getBoundingClientRect();
+    return { top: rect.top, height: rect.height, title: card.querySelector('h3').getBoundingClientRect().top,
+      value: card.querySelector('.dashboard-kpi-value').getBoundingClientRect().top, hint: card.querySelector('small').getBoundingClientRect().top };
+  }));
+  const aligned = alignment.every(card => alignment.filter(other => Math.abs(other.top - card.top) < 1)
+    .every(other => ['height', 'title', 'value', 'hint'].every(key => Math.abs(other[key] - card[key]) < 1)));
+  if (!aligned) fs.writeFileSync(path.join(out, 'misaligned-kpis.json'), JSON.stringify({ label, alignment }, null, 2));
+  check(aligned, label + ': KPI heights, headings, values and descriptions align within each row');
+  const assetsAligned = await page.locator('.dashboard-asset-grid').evaluateAll(grids => grids.every(grid => {
+    const kpis = grid.closest('.dashboard-page').querySelector('.dashboard-kpis');
+    const cards = [...grid.children].map(card => ({ top: card.getBoundingClientRect().top, height: card.getBoundingClientRect().height,
+      value: card.querySelector('strong').getBoundingClientRect().top, label: card.querySelector('span').getBoundingClientRect().top }));
+    return getComputedStyle(grid).gridTemplateColumns.split(' ').length === getComputedStyle(kpis).gridTemplateColumns.split(' ').length
+      && cards.every(card => cards.filter(other => Math.abs(other.top - card.top) < 1)
+        .every(other => ['height', 'value', 'label'].every(key => Math.abs(other[key] - card[key]) < 1)));
+  }));
+  check(assetsAligned, label + ': asset totals use the same column count with aligned rows');
+  const stressAligned = await page.locator('.dashboard-kpi').evaluateAll(cards => {
+    if (!cards.length) return true;
+    const first = cards[0], value = first.querySelector('.dashboard-kpi-value'), hint = first.querySelector('small');
+    const originalValue = value.textContent, originalHint = hint.textContent;
+    try {
+      value.textContent = '9.999.999.999,99 đ';
+      hint.textContent = 'Mô tả dài để kiểm tra căn chỉnh khi số liệu và nội dung của các thẻ có nhiều dòng khác nhau. Số liệu của từng thẻ vẫn cần nằm cùng hàng và mô tả không đẩy nội dung các thẻ bên cạnh lên xuống.';
+      const boxes = cards.map(card => ({ top: card.getBoundingClientRect().top, height: card.getBoundingClientRect().height,
+        value: card.querySelector('.dashboard-kpi-value').getBoundingClientRect().top, hint: card.querySelector('small').getBoundingClientRect().top }));
+      return boxes.every(card => boxes.filter(other => Math.abs(other.top - card.top) < 1)
+        .every(other => ['height', 'value', 'hint'].every(key => Math.abs(other[key] - card[key]) < 1)));
+    } finally { value.textContent = originalValue; hint.textContent = originalHint; }
+  });
+  check(stressAligned, label + ': long money values/descriptions share row tracks without shifting other KPIs');
+  const recentAligned = await page.locator('[aria-label="Booking gần đây"] table').evaluateAll(tables => tables.every(table => {
+    const headings = [...table.querySelectorAll('thead th')];
+    return [...table.querySelectorAll('tbody tr')].every(row => row.children.length === headings.length
+      && [...row.children].every((cell, index) => Math.abs(cell.getBoundingClientRect().left - headings[index].getBoundingClientRect().left) < 1
+        && Math.abs(cell.getBoundingClientRect().width - headings[index].getBoundingClientRect().width) < 1));
+  }));
+  check(recentAligned, label + ': recent-booking header/body cell boundaries align');
+  const contentMeasurements = await page.locator('.dashboard-table').evaluateAll(tables => {
+    const textBox = element => {
+      const node = [...element.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+      if (node) { const range = document.createRange(); range.selectNodeContents(node); return range.getBoundingClientRect(); }
+      const child = element.querySelector('strong, a');
+      if (child) { const range = document.createRange(); range.selectNodeContents(child); return range.getBoundingClientRect(); }
+      return element.getBoundingClientRect();
+    };
+    return tables.flatMap(table => {
+      const headings = [...table.querySelectorAll('thead th')];
+      return [...table.querySelectorAll('tbody tr')].filter(row => row.children.length === headings.length)
+        .flatMap((row, rowIndex) => [...row.children].map((cell, index) => {
+          const header = headings[index], right = getComputedStyle(header).textAlign === 'right';
+          const headBox = textBox(header), badge = cell.querySelector('.dashboard-badge');
+          const bodyBox = badge ? badge.getBoundingClientRect() : textBox(cell);
+          const edge = right ? 'right' : 'left', headStyle = getComputedStyle(header), bodyStyle = getComputedStyle(cell);
+          return { table: table.closest('[aria-label]')?.getAttribute('aria-label'), row: rowIndex, column: header.textContent.trim(), edge,
+            header: headBox[edge], body: bodyBox[edge], delta: Math.abs(headBox[edge] - bodyBox[edge]),
+            paddingMatches: headStyle.paddingLeft === bodyStyle.paddingLeft && headStyle.paddingRight === bodyStyle.paddingRight,
+            badgeFits: !badge || badge.scrollWidth <= badge.clientWidth + 1 };
+        }));
+    });
+  });
+  tableMeasurements.push({ label, measurements: contentMeasurements });
+  check(contentMeasurements.every(item => item.delta < 1 && item.paddingMatches && item.badgeFits), label + ': actual text/badge edges align with headers, money right-aligned');
 }
 (async () => {
   fs.mkdirSync(out, { recursive: true });
@@ -80,6 +146,7 @@ async function layout(page, label) {
       await page.screenshot({ path: path.join(out, `${name}-${width}.png`), fullPage: true });
       await page.screenshot({ path: path.join(out, `${name}-${width}-top.png`) });
       if (width === 375) await page.locator('.dashboard-report').last().screenshot({ path: path.join(out, `${name}-booking-table-375.png`) });
+      await page.locator('[aria-label="Booking gần đây"]').screenshot({ path: path.join(out, `${name}-recent-bookings-${width}.png`) });
       await page.locator('.dashboard-chart-data summary').first().click();
       check(await page.locator('.dashboard-chart-data[open] tbody tr').count() >= 1, `${role}/${width}: accessible chart data table opens`);
       if (width >= 1024) {
@@ -128,6 +195,13 @@ async function layout(page, label) {
     await layout(page, `${name}/empty`);
     await page.screenshot({ path: path.join(out, `${name}-empty-375.png`), fullPage: true });
     check(errors.length === 0, `${name}: no JS/CSP errors ${errors.join(', ')}`);
+    for (const width of [1440, 1024, 768, 375]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto(url(dashboardHome, { fixture: 'long' }));
+      check((await page.locator('[aria-label="Booking gần đây"]').innerText()).includes('Tên cơ sở dài'), `${name}/${width}: long facility name fixture is present`);
+      await layout(page, `${name}/long-recent/${width}`);
+      await page.locator('[aria-label="Booking gần đây"]').screenshot({ path: path.join(out, `${name}-recent-long-${width}.png`) });
+    }
     // Invoice routes and native print stay unchanged; test real reads with the same RAM PDO.
     const invoicePage = await context.newPage(), invoiceErrors = [];
     invoicePage.on('pageerror', error => invoiceErrors.push(error.message));
@@ -218,6 +292,7 @@ async function layout(page, label) {
   if (browser) await browser.close(); if (server) server.kill();
   results.push({ pass: !/PHP (Warning|Fatal error|Parse error)/.test(serverLog), label: 'no PHP warnings/fatal errors' });
   fs.writeFileSync(path.join(out, 'browser-results.json'), JSON.stringify(results, null, 2)); fs.writeFileSync(path.join(out, 'server.log'), serverLog);
+  fs.writeFileSync(path.join(out, 'table-alignment.json'), JSON.stringify(tableMeasurements, null, 2));
   console.log(`${results.filter(r => r.pass).length} PASS / ${results.filter(r => !r.pass).length} FAIL; ${out}`);
   for (const result of results.filter(r => !r.pass)) console.error(result.label);
 });

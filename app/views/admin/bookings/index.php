@@ -169,7 +169,7 @@ $roleRoot = match ($scope['role'] ?? '') {
                     <th scope="col" style="padding: 12px 14px;">Tổng tiền</th>
                     <th scope="col" style="padding: 12px 14px;">Trạng thái Booking</th>
                     <th scope="col" style="padding: 12px 14px;">Thanh toán</th>
-                    <th scope="col" style="padding: 12px 14px; text-align: center;">Thao tác</th>
+                    <th class="booking-row-actions" scope="col">Thao tác</th>
                 </tr>
             </thead>
             <tbody>
@@ -254,7 +254,7 @@ $roleRoot = match ($scope['role'] ?? '') {
                             <?= e($paymentStatusLabels[$effectivePaymentSt] ?? $effectivePaymentSt) ?>
                         </span>
                     </td>
-                    <td style="padding: 12px 14px; text-align: center;">
+                    <td class="booking-row-actions">
                         <?php
                         $actions = App\Services\BookingManagementService::actions($row);
                         $bookingIcons = [

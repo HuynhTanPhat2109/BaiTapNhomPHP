@@ -57,4 +57,23 @@ navigationCheck($pricing['loai_ngay'] === 'CUOI_TUAN' && $pricing['ma_loai_san']
 foreach (['/facility/bank', '/company/dich-vu', '/login', '/booking/wait'] as $path) {
     navigationCheck(admin_context_url($path, $filters) === url($path), 'unrelated navigation unchanged: ' . $path);
 }
+
+foreach (['/company/employees', '/facility/employees'] as $list) {
+    $_POST = [];
+    $_GET = ['route' => $list, 'page' => '2', 'per_page' => '20', 'q' => 'Tên & tài khoản',
+        'ma_co_so' => '2', 'trang_thai' => 'DANG_LAM', 'sort' => 'name_asc'];
+    $return = admin_context_url($list);
+    $expected = navigationQuery($return);
+    navigationCheck($expected['page'] === '2' && $expected['ma_co_so'] === '2' && $expected['q'] === $_GET['q'], "$list retains scoped search/filter/page");
+    foreach (['show', 'create', 'edit', 'update', 'status'] as $action) {
+        $link = navigationQuery(admin_context_url($list . '/' . $action));
+        navigationCheck($link['route'] === $list . '/' . $action && $link['return_to'] === $return, "$list $action carries list context");
+    }
+    $_GET = ['route' => $list . '/update', 'return_to' => $return];
+    navigationCheck(admin_context_url($list) === $return, "$list validation/back restores context");
+    foreach (['https://evil.test' . $return, url($list === '/company/employees' ? '/facility/employees' : '/company/employees') . '&page=2'] as $unsafe) {
+        $_GET['return_to'] = $unsafe;
+        navigationCheck(admin_context_url($list) === url($list), "$list rejects external or other-role return URLs");
+    }
+}
 echo "PASS: $checks Admin navigation checks; no database.\n";
