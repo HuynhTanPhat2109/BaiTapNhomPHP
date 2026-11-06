@@ -150,4 +150,14 @@ final class NhanVien
         $check->execute(['id' => $id, 'company' => $companyId, 'status' => $status]);
         return $check->fetchColumn() !== false;
     }
+
+    /** Caller holds the employee row lock and creates the account in the same transaction. */
+    public function linkFirstAccount(int $id, int $companyId, int $accountId): bool
+    {
+        $stmt = $this->pdo->prepare("UPDATE nhan_vien SET ma_tai_khoan=:account
+            WHERE ma_nhan_vien=:id AND ma_cong_ty=:company
+                AND ma_tai_khoan IS NULL AND trang_thai='DANG_LAM'");
+        $stmt->execute(['account' => $accountId, 'id' => $id, 'company' => $companyId]);
+        return $stmt->rowCount() === 1;
+    }
 }

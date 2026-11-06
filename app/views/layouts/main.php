@@ -96,7 +96,7 @@ $publicHeader = !$isAdminArea && $accountArea === null;
                     <div class="account-menu__panel">
                         <a href="<?= e(url('/account')) ?>">Thông tin cá nhân</a>
                         <?php if ($navRole === 'KHACH_HANG'): ?>
-                            <a href="<?= e(url('/invoices')) ?>">Lịch sử hóa đơn</a>
+                            <a href="<?= e(url('/booking/history')) ?>">Lịch sử đặt sân</a>
                         <?php elseif (in_array($navRole, ['QUAN_LY_CO_SO', 'NHAN_VIEN'], true)): ?>
                             <a href="<?= e(url('/admin/bookings')) ?>">Quản lý đặt sân</a>
                             <a href="<?= e(url('/admin/invoices')) ?>">Hóa đơn cơ sở</a>

@@ -17,6 +17,24 @@ final class Booking
             THEN 'HET_HAN' ELSE b.trang_thai_dat_san END";
     }
 
+    /** Read boundary only: tt is the payment alias; use the same cutoff as the booking. */
+    public static function effectivePaymentStatusSql(): string
+    {
+        return "CASE WHEN tt.trang_thai='CHO_THANH_TOAN'
+            AND (" . self::effectiveStatusSql() . ")='HET_HAN' AND " . self::unprotectedSql() . "
+            THEN 'HET_HAN' ELSE tt.trang_thai END";
+    }
+
+    /** A single SELECT/cutoff keeps both display states consistent without writing on GET. */
+    public function effectiveStates(int $id): ?array
+    {
+        $now = $this->serverTime();
+        return $this->rows('SELECT ' . self::effectiveStatusSql() . ' AS booking_status, '
+            . self::effectivePaymentStatusSql() . ' AS payment_status
+            FROM dat_san b LEFT JOIN thanh_toan tt ON tt.ma_dat_san=b.ma_dat_san
+            WHERE b.ma_dat_san=?', [$now, $now, $id])[0] ?? null;
+    }
+
     private static function unprotectedSql(): string
     {
         // Legacy pending rows with a receipt link require manual review, not automatic expiry.

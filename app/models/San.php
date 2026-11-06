@@ -78,7 +78,7 @@ final class San
         $stmt = $this->pdo->prepare("SELECT COUNT(DISTINCT d.ma_dat_san) FROM chi_tiet_dat_san ct
             JOIN dat_san d ON d.ma_dat_san = ct.ma_dat_san
             WHERE ct.ma_san = :id AND TIMESTAMP(ct.ngay_choi, ct.gio_ket_thuc) > NOW()
-            AND (d.trang_thai_dat_san = 'DA_XAC_NHAN'
+            AND (d.trang_thai_dat_san IN ('CHO_XAC_NHAN', 'DA_XAC_NHAN')
                 OR (d.trang_thai_dat_san = 'CHO_THANH_TOAN' AND d.het_han_giu_san_luc > NOW()))");
         $stmt->execute(['id' => $id]);
         return ['chi_tiet_dat_san' => $references, 'booking_hieu_luc' => (int) $stmt->fetchColumn()];

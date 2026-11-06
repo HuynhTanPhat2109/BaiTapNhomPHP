@@ -242,6 +242,16 @@
 .page-admin .catalog-workspace .catalog-status[data-status="NGUNG"], .page-admin .catalog-workspace .catalog-status[data-status="TAM_NGUNG"] { color: #52635a; background: #edf0ee; }
 .page-admin .catalog-workspace .catalog-status[data-status="BAO_TRI"] { color: #81520e; background: #fff3da; }
 .page-admin .catalog-workspace .catalog-form, .page-admin .account-page.catalog-workspace > form { max-width: 900px; padding: 28px; }
+/* Employee status actions are compact forms, not profile cards. */
+.page-admin .account-page.catalog-workspace > form.employee-status-form { display: flex; align-items: center; width: auto; max-width: none; margin: 16px 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.page-admin .employee-status-form > .employee-status-btn { appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; max-width: 100%; margin: 0; padding: 10px 18px; border: 1px solid transparent; border-radius: 9px; font: inherit; font-size: 14px; font-weight: 600; line-height: 1.4; cursor: pointer; transition: background-color 160ms ease, border-color 160ms ease; }
+.page-admin .employee-status-form > .employee-status-btn--stop { border-color: #edcbd0; background: #fff0f2; color: #9f3342; }
+.page-admin .employee-status-form > .employee-status-btn--stop:hover { border-color: #ddb1ba; background: #fbe1e6; }
+.page-admin .employee-status-form > .employee-status-btn--activate { border-color: #cde1c7; background: #edf6e8; color: #2f623b; }
+.page-admin .employee-status-form > .employee-status-btn--activate:hover { border-color: #afcda7; background: #dfeeda; }
+.page-admin .employee-status-form > .employee-status-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.page-admin .employee-status-btn > svg { width: 18px; height: 18px; flex: 0 0 18px; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+@media (prefers-reduced-motion: reduce) { .page-admin .employee-status-form > .employee-status-btn { transition: none; } }
 .page-admin .catalog-workspace .catalog-form > .catalog-actions { padding-top: 22px; margin-top: 24px; border-top: 1px solid var(--border); }
 .page-admin .catalog-workspace .admin-form-heading { margin: 28px 0 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); font-size: var(--type-card); font-weight: 650; letter-spacing: -.02em; line-height: 1.4; }
 .page-admin .catalog-workspace .admin-form-heading:first-of-type { margin-top: 0; }

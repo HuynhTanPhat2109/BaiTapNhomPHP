@@ -24,6 +24,7 @@ $roleLabels = ['QUAN_LY_CONG_TY' => 'Quản lý công ty', 'QUAN_LY_CO_SO' => 'Q
         </section>
         <section class="detail-card" aria-labelledby="employee-account">
             <h2 id="employee-account">Tài khoản đăng nhập</h2>
+            <dl class="detail-fields"><div class="detail-field--wide"><dt>Trạng thái cấp tài khoản</dt><dd><?= $account !== null ? 'Đã cấp' : 'Chưa cấp' ?></dd></div></dl>
             <?php if ($account !== null): ?>
                 <dl class="detail-fields">
                     <div class="detail-field--wide"><dt>Tên đăng nhập</dt><dd><?= e($account['ten_dang_nhap']) ?></dd></div>

@@ -113,12 +113,39 @@ final class EmployeeController extends Controller
         [$role, $companyId, $basePath, $viewPrefix] = $this->context();
         $id = $_GET['id'] ?? null;
         $employee = $this->employees->getEmployee($role, $companyId, $id, true);
+        $accountNotice = $_SESSION['employee_account_notice'] ?? null;
+        unset($_SESSION['employee_account_notice']);
         $this->render($viewPrefix . '/edit', [
             'title' => 'Cập nhật nhân viên',
             'basePath' => $basePath,
             'employee' => $employee,
+            'actorRole' => $role, 'accountNotice' => $accountNotice,
             'options' => $this->employees->getOptions($role, $companyId, $employee['ma_co_so'] ?? null),
         ]);
+    }
+
+    public function grantAccount(): void
+    {
+        [$role, $companyId, $basePath, $viewPrefix] = $this->context();
+        $id = $_POST['id'] ?? null;
+        $employee = $this->employees->getEmployee($role, $companyId, $id, true);
+        $account = $this->accountData($role);
+        try {
+            if ($account === null) throw new ValidationException(['account' => 'Vui lòng nhập thông tin cấp tài khoản.']);
+            $account['password_confirmation'] = $_POST['password_confirmation'] ?? null;
+            $this->employees->grantAccount($role, $companyId, $id, $account);
+            $_SESSION['employee_account_notice'] = 'Đã cấp tài khoản cho nhân viên.';
+            $this->redirect($basePath . '/employees/edit?id=' . (int) $employee['ma_nhan_vien']);
+        } catch (ValidationException $e) {
+            // Re-read after a concurrent grant. Never repopulate password fields.
+            $employee = $this->employees->getEmployee($role, $companyId, $id, true);
+            $this->render($viewPrefix . '/edit', [
+                'title' => 'Sửa nhân viên', 'basePath' => $basePath, 'employee' => $employee,
+                'actorRole' => $role, 'provisionErrors' => $e->errors,
+                'provisionOld' => array_filter(['username' => $account['username'] ?? '', 'role' => $account['role'] ?? ''], 'is_string'),
+                'options' => $this->employees->getOptions($role, $companyId, $employee['ma_co_so'] ?? null),
+            ], 422);
+        }
     }
 
     public function update(): void

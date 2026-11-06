@@ -128,11 +128,11 @@ final class CoSo
 
     public function activeBookings(int $id, ?array $hours = null): int
     {
-        // Occupancy follows the database contract: drafts/expired holds do not reserve a court.
+        // Receipt review reserves future play even after the original payment deadline.
         $sql = "SELECT COUNT(DISTINCT d.ma_dat_san) FROM dat_san d
             JOIN chi_tiet_dat_san ct ON ct.ma_dat_san = d.ma_dat_san
             WHERE d.ma_co_so = :id AND TIMESTAMP(ct.ngay_choi, ct.gio_ket_thuc) > NOW()
-            AND (d.trang_thai_dat_san = 'DA_XAC_NHAN'
+            AND (d.trang_thai_dat_san IN ('CHO_XAC_NHAN', 'DA_XAC_NHAN')
                 OR (d.trang_thai_dat_san = 'CHO_THANH_TOAN' AND d.het_han_giu_san_luc > NOW()))";
         $params = ['id' => $id];
         if ($hours !== null) {

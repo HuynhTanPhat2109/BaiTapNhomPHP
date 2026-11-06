@@ -55,6 +55,20 @@
 .facility-tablist a[aria-selected="true"]{color:#cff88a;border-bottom-color:#b9ed6f;background:#203327}
 .facility-tabs [data-facility-panel]{padding:24px 4px;line-height:1.65;overflow-wrap:anywhere}
 .facility-tabs [data-facility-panel][hidden]{display:none}
+/* Public catalog tables, restricted to the Services tab. */
+.facility-tabs [data-facility-panel="services"] .facility-service-tables { padding: 16px; background: #f8fbf9; color: #244637; border-radius: 8px; }
+.facility-tabs [data-facility-panel="services"] .facility-service-tables h3 { margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid #ccdad2; color: #214a37; font-size: 15px; font-weight: 700; letter-spacing: .025em; }
+.facility-tabs [data-facility-panel="services"] .facility-service-tables h3:not(:first-child) { margin-top: 28px; }
+.facility-service-tables .facility-service-hint, .facility-service-tables .facility-service-empty { margin: 0 0 14px; color: #52685c; font-size: 12px; }
+.facility-service-tables .facility-service-scroll { max-width: 100%; overflow-x: auto; margin-bottom: 16px; }
+.facility-service-tables table { width: 100%; border-collapse: collapse; table-layout: fixed; background: #fff; color: #244637; font-size: 13px; line-height: 1.5; }
+.facility-service-tables caption { padding: 10px 12px; border: 1px solid #c4d5ca; border-bottom: 0; background: #e8f1eb; color: #214a37; font-weight: 700; text-align: left; }
+.facility-service-tables th, .facility-service-tables td { padding: 11px 8px; border: 1px solid #c4d5ca; text-align: center; vertical-align: middle; overflow-wrap: anywhere; }
+.facility-service-tables thead th { background: #eff4f0; color: #214a37; font-weight: 600; }
+.facility-service-tables .facility-service-validity { display: block; margin-top: 4px; color: #5b6f62; font-size: 10px; line-height: 1.4; }
+.facility-service-tables .facility-service-list th[scope="row"] { width: 54%; text-align: left; font-weight: 400; }
+.facility-service-tables .facility-service-group th { padding: 9px 12px; background: #e8edea; color: #244c38; text-align: left; font-weight: 700; }
+.facility-service-tables .facility-service-scroll:focus-visible { outline: 2px solid #477556; outline-offset: 2px; }
 .facility-tabs h3{font-size:18px;margin:0 0 16px}.facility-tab-empty{padding:22px;background:#182a20;border:1px solid #344b3a;border-radius:10px;color:#b8cbb5}
 .facility-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.facility-gallery figure{margin:0}.facility-gallery .court-photo{width:100%;height:auto;max-height:460px;object-fit:contain;border-radius:8px}.facility-gallery figcaption{font-size:13px;color:#acbda8;margin-top:8px}
 @media(prefers-reduced-motion:no-preference){.facility-tablist a{transition:color .15s,background .15s}.facility-tabs [data-facility-panel]:not([hidden]){animation:facility-tab-in .15s ease-out}@keyframes facility-tab-in{from{opacity:.6}to{opacity:1}}}

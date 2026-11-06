@@ -137,8 +137,8 @@ $roleRoot = match ($scope['role'] ?? '') {
                                     <div class="pos-item-sub"><?= e($c['ten_bo_mon']) ?> &bull; <?= e(date('d/m', strtotime($c['ngay_choi']))) ?> (<?= e(substr($c['gio_bat_dau'], 0, 5)) ?>-<?= e(substr($c['gio_ket_thuc'], 0, 5)) ?>)</div>
                                 </td>
                                 <td style="text-align: center; font-weight: 600;">1</td>
-                                <td style="text-align: right;"><?= number_format((float) $c['gia_tien'], 0, ',', '.') ?></td>
-                                <td style="text-align: right; font-weight: 700;"><?= number_format((float) $c['gia_tien'], 0, ',', '.') ?></td>
+                                <td style="text-align: right;"><?= number_format((float) $c['don_gia'], 0, ',', '.') ?></td>
+                                <td style="text-align: right; font-weight: 700;"><?= number_format((float) $c['thanh_tien'], 0, ',', '.') ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>

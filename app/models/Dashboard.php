@@ -81,12 +81,14 @@ final class Dashboard
             . $from . ($key ? " GROUP BY $key ORDER BY $key" : ''), $params);
     }
 
-    public function bookingStates(array $scope, array $range): array
+    public function bookingStates(array $scope, array $range, ?string $cutoff = null): array
     {
         [$where, $params] = $this->scope($scope);
-        return $this->rows('SELECT d.trang_thai_dat_san AS status, COUNT(*) AS total
-            FROM dat_san d JOIN co_so f ON f.ma_co_so = d.ma_co_so WHERE ' . $where
-            . ' AND d.ngay_tao >= :start AND d.ngay_tao < :end GROUP BY d.trang_thai_dat_san',
+        $cutoff ??= (string) $this->pdo->query('SELECT CURRENT_TIMESTAMP')->fetchColumn();
+        $effectiveStatus = str_replace('?', $this->pdo->quote($cutoff), Booking::effectiveStatusSql());
+        return $this->rows('SELECT ' . $effectiveStatus . ' AS status, COUNT(*) AS total
+            FROM dat_san b JOIN co_so f ON f.ma_co_so = b.ma_co_so WHERE ' . $where
+            . ' AND b.ngay_tao >= :start AND b.ngay_tao < :end GROUP BY status',
             $params + ['start' => $range['start'], 'end' => $range['end']]);
     }
 
@@ -121,14 +123,18 @@ final class Dashboard
         return ['courts' => (int) $courts, 'services' => (int) $services];
     }
 
-    public function recent(array $scope, array $range): array
+    public function recent(array $scope, array $range, ?string $cutoff = null): array
     {
         [$where, $params] = $this->scope($scope);
-        return $this->rows('SELECT d.ma_dat_san, d.ngay_tao, d.trang_thai_dat_san, d.tong_tien_tam_tinh,
-            p.trang_thai AS payment_status, f.ten_co_so FROM dat_san d
-            JOIN co_so f ON f.ma_co_so = d.ma_co_so LEFT JOIN thanh_toan p ON p.ma_dat_san = d.ma_dat_san
-            WHERE ' . $where . ' AND d.ngay_tao >= :start AND d.ngay_tao < :end
-            ORDER BY d.ngay_tao DESC, d.ma_dat_san DESC LIMIT 8', $params + ['start' => $range['start'], 'end' => $range['end']]);
+        $cutoff ??= (string) $this->pdo->query('SELECT CURRENT_TIMESTAMP')->fetchColumn();
+        $quotedCutoff = $this->pdo->quote($cutoff);
+        $effectiveStatus = str_replace('?', $quotedCutoff, Booking::effectiveStatusSql());
+        $effectivePayment = str_replace('?', $quotedCutoff, Booking::effectivePaymentStatusSql());
+        return $this->rows('SELECT b.ma_dat_san, b.ngay_tao, ' . $effectiveStatus . ' AS trang_thai_dat_san, b.tong_tien_tam_tinh,
+            ' . $effectivePayment . ' AS payment_status, f.ten_co_so FROM dat_san b
+            JOIN co_so f ON f.ma_co_so = b.ma_co_so LEFT JOIN thanh_toan tt ON tt.ma_dat_san = b.ma_dat_san
+            WHERE ' . $where . ' AND b.ngay_tao >= :start AND b.ngay_tao < :end
+            ORDER BY b.ngay_tao DESC, b.ma_dat_san DESC LIMIT 8', $params + ['start' => $range['start'], 'end' => $range['end']]);
     }
 
     public function popular(array $scope, array $range, bool $services): array

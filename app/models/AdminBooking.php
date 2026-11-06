@@ -28,7 +28,10 @@ final class AdminBooking
      */
     public function page(array $filters, array $scope): array
     {
-        $effectiveStatus = str_replace('?', 'CURRENT_TIMESTAMP', Booking::effectiveStatusSql());
+        // Reuse one database cutoff for SELECT, COUNT and every status filter on this page.
+        $cutoff = $this->pdo->quote((string) $this->pdo->query('SELECT CURRENT_TIMESTAMP')->fetchColumn());
+        $effectiveStatus = str_replace('?', $cutoff, Booking::effectiveStatusSql());
+        $effectivePayment = str_replace('?', $cutoff, Booking::effectivePaymentStatusSql());
         $where = [];
         $params = [];
 
@@ -61,7 +64,7 @@ final class AdminBooking
             } elseif ($filters['payment_status'] === 'CHO_THANH_TOAN') {
                 $where[] = "($effectiveStatus) = 'CHO_THANH_TOAN' AND tt.trang_thai = 'CHO_THANH_TOAN'";
             } else {
-                $where[] = 'tt.trang_thai = :payment_status';
+                $where[] = "($effectivePayment) = :payment_status";
                 $params['payment_status'] = $filters['payment_status'];
             }
         }
@@ -146,7 +149,7 @@ final class AdminBooking
                        tt.ma_giao_dich,
                        tt.ngay_thanh_toan,
                        tt.ngay_tao AS ngay_tao_thanh_toan,
-                       tt.trang_thai AS trang_thai_thanh_toan,
+                       ($effectivePayment) AS trang_thai_thanh_toan,
                        nv.ho_ten AS ten_nhan_vien_xac_nhan,
                        MIN(ct.ngay_choi) AS ngay_choi_dau,
                        MAX(ct.ngay_choi) AS ngay_choi_cuoi,
@@ -191,7 +194,9 @@ final class AdminBooking
      */
     public function find(int $bookingId, array $scope): ?array
     {
-        $effectiveStatus = str_replace('?', 'CURRENT_TIMESTAMP', Booking::effectiveStatusSql());
+        $cutoff = $this->pdo->quote((string) $this->pdo->query('SELECT CURRENT_TIMESTAMP')->fetchColumn());
+        $effectiveStatus = str_replace('?', $cutoff, Booking::effectiveStatusSql());
+        $effectivePayment = str_replace('?', $cutoff, Booking::effectivePaymentStatusSql());
         $sql = "SELECT b.*,
                        ($effectiveStatus) AS trang_thai_dat_san,
                        k.ho_ten AS ten_khach_hang,
@@ -210,7 +215,7 @@ final class AdminBooking
                        tt.so_tien AS so_tien_can_thanh_toan,
                        tt.so_tien_thuc_nhan,
                        tt.phuong_thuc,
-                       tt.trang_thai AS trang_thai_thanh_toan,
+                       ($effectivePayment) AS trang_thai_thanh_toan,
                        tt.ngay_tao AS ngay_tao_thanh_toan,
                        tt.ngay_thanh_toan,
                        tt.ma_giao_dich,
