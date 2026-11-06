@@ -151,6 +151,11 @@ final class BookingController extends Controller
                 $paymentService = new \App\Services\PaymentService($this->app->pdo());
                 $payment = $paymentService->getPaymentByBooking((int) $id);
                 $paymentStatus = $payment['trang_thai'] ?? null;
+                $states = (new \App\Models\Booking($this->app->pdo()))->effectiveStates((int) $id);
+                if ($states) {
+                    $booking['trang_thai_dat_san'] = $states['booking_status'];
+                    $paymentStatus = $states['payment_status'];
+                }
                 if (!empty($payment['ghi_chu'])) {
                     $paymentNote = \App\Services\ReceiptImage::stripReceiptTag($payment['ghi_chu']);
                 }
@@ -184,6 +189,11 @@ final class BookingController extends Controller
         try {
             $paymentService = new \App\Services\PaymentService($this->app->pdo());
             $payment = $paymentService->getPaymentByBooking((int) $id);
+            $states = (new \App\Models\Booking($this->app->pdo()))->effectiveStates((int) $id);
+            if ($states) {
+                $booking['trang_thai_dat_san'] = $states['booking_status'];
+                if ($payment) $payment['trang_thai'] = $states['payment_status'];
+            }
             if ($payment && $payment['trang_thai'] === 'CHO_THANH_TOAN') {
                 $bankModel = new \App\Models\TaiKhoanNganHang($this->app->pdo());
                 $bankAccount = $bankModel->getDefaultByFacility((int) $booking['ma_co_so']);

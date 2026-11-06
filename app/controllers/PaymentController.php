@@ -110,6 +110,11 @@ final class PaymentController extends Controller
         $booking = (new \App\Services\BookingService($this->app->pdo()))->inspect(
             (int)$payment['ma_dat_san'], (int)$user['ma_khach_hang']
         );
+        $states = (new \App\Models\Booking($this->app->pdo()))->effectiveStates((int) $payment['ma_dat_san']);
+        if ($states) {
+            $booking['trang_thai_dat_san'] = $states['booking_status'];
+            $payment['trang_thai'] = $states['payment_status'];
+        }
         $isExpired = $booking['trang_thai_dat_san'] === 'HET_HAN';
         $isSuccess = in_array($booking['trang_thai_dat_san'], ['DA_XAC_NHAN', 'HOAN_THANH'], true)
             && $payment['trang_thai'] === 'THANH_CONG';

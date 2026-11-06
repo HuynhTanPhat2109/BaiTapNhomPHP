@@ -67,6 +67,19 @@ final class CourtBrowser
         return $stmt->fetchAll();
     }
 
+    /** Public catalog only: stock and internal booking reservations are not selected. */
+    public function publicServices(int $facility): array
+    {
+        $stmt = $this->pdo->prepare("SELECT d.ten_dich_vu, d.loai_dich_vu, d.don_gia, d.don_vi_tinh
+            FROM dich_vu d JOIN co_so f ON f.ma_co_so=d.ma_co_so
+            JOIN cong_ty_nhuong_quyen c ON c.ma_cong_ty=f.ma_cong_ty
+            WHERE d.ma_co_so=:facility AND d.trang_thai='DANG_CUNG_CAP'
+                AND f.trang_thai='HOAT_DONG' AND c.trang_thai='HOAT_DONG'
+            ORDER BY d.loai_dich_vu, d.ten_dich_vu, d.ma_dich_vu");
+        $stmt->execute(['facility' => $facility]);
+        return $stmt->fetchAll();
+    }
+
     public function intervals(int $facility, string $date): array
     {
         // Public schedule deliberately excludes identities, contact information and money.

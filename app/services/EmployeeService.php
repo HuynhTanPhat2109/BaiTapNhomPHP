@@ -147,6 +147,48 @@ final class EmployeeService
         }
     }
 
+    public function grantAccount(string $actorRole, $actorCompanyId, $employeeId, array $account): int
+    {
+        $companyId = $this->actorCompanyId($actorRole, $actorCompanyId);
+        $id = self::requireId($employeeId, 'ma_nhan_vien');
+        try {
+            $this->pdo->beginTransaction();
+            // Serialize repeated/concurrent grants before creating an account; no orphan accounts.
+            $employee = $actorRole === 'QUAN_TRI_TAP_DOAN'
+                ? $this->employees->find($id, true)
+                : $this->employees->findForCompany($id, $companyId, true, $this->actorFacilityId($actorRole, $companyId));
+            if (!$employee) throw new HttpException(404, 'Không tìm thấy nhân viên.');
+            if ($employee['ma_tai_khoan'] !== null) {
+                throw new ValidationException(['account' => 'Nhân viên đã được cấp tài khoản. Không thể cấp thêm hoặc thay đổi tài khoản hiện có.']);
+            }
+            if ($employee['trang_thai'] !== 'DANG_LAM') {
+                throw new ValidationException(['account' => 'Chỉ cấp tài khoản cho nhân viên đang làm việc.']);
+            }
+            $companyId = (int) $employee['ma_cong_ty'];
+            $company = $this->requireCompany($companyId, true);
+            if ($company['trang_thai'] !== 'HOAT_DONG') {
+                throw new ValidationException(['account' => 'Công ty phải đang hoạt động để cấp tài khoản.']);
+            }
+            $facilityId = $employee['ma_co_so'] === null ? null : (int) $employee['ma_co_so'];
+            if ($facilityId !== null) $this->requireFacility($facilityId, $companyId, true, true);
+            $role = $this->accountRole($actorRole, $account, $facilityId);
+            if (!is_string($account['password_confirmation'] ?? null)
+                || $account['password_confirmation'] !== $account['password']) {
+                throw new ValidationException(['password_confirmation' => 'Mật khẩu xác nhận không khớp.']);
+            }
+            $accountId = $this->accounts->create($account['username'], $account['password'], $role);
+            if (!$this->employees->linkFirstAccount($id, $companyId, $accountId)) {
+                throw new HttpException(409, 'Thông tin cấp tài khoản vừa thay đổi. Vui lòng tải lại trang.');
+            }
+            $this->pdo->commit();
+            return $accountId;
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            $this->translateForeignKey($e, 'account');
+            throw $e;
+        }
+    }
+
     public function changeStatus(string $actorRole, $actorCompanyId, $employeeId, $status): bool
     {
         $companyId = $this->actorCompanyId($actorRole, $actorCompanyId);

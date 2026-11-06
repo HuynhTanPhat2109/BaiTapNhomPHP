@@ -41,6 +41,7 @@ $router->post('/admin/employees', [$employee, 'store'], [new RoleMiddleware($app
 $router->get('/admin/employees/edit', [$employee, 'edit'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
 $router->post('/admin/employees/update', [$employee, 'update'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
 $router->post('/admin/employees/status', [$employee, 'changeStatus'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
+$router->post('/admin/employees/account', [$employee, 'grantAccount'], [new RoleMiddleware($app, ['QUAN_TRI_TAP_DOAN'])]);
 
 $router->get('/company/employees', [$employee, 'index'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 $router->get('/company/employees/show', [$employee, 'show'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
@@ -49,6 +50,7 @@ $router->post('/company/employees', [$employee, 'store'], [new RoleMiddleware($a
 $router->get('/company/employees/edit', [$employee, 'edit'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 $router->post('/company/employees/update', [$employee, 'update'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 $router->post('/company/employees/status', [$employee, 'changeStatus'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
+$router->post('/company/employees/account', [$employee, 'grantAccount'], [new RoleMiddleware($app, ['QUAN_LY_CONG_TY'])]);
 
 $facilityEmployees = [new RoleMiddleware($app, ['QUAN_LY_CO_SO'])];
 $router->get('/facility/employees', [$employee, 'index'], $facilityEmployees);
@@ -58,6 +60,7 @@ $router->post('/facility/employees', [$employee, 'store'], $facilityEmployees);
 $router->get('/facility/employees/edit', [$employee, 'edit'], $facilityEmployees);
 $router->post('/facility/employees/update', [$employee, 'update'], $facilityEmployees);
 $router->post('/facility/employees/status', [$employee, 'changeStatus'], $facilityEmployees);
+$router->post('/facility/employees/account', [$employee, 'grantAccount'], $facilityEmployees);
 
 // Preserve the existing company information/contracts page beside the new Dashboard.
 foreach (['/admin' => 'QUAN_TRI_TAP_DOAN', '/company' => 'QUAN_LY_CONG_TY', '/facility' => 'QUAN_LY_CO_SO', '/staff' => 'NHAN_VIEN'] as $home => $revenueRole) {
@@ -81,4 +84,5 @@ require __DIR__ . '/prices.php';
 require __DIR__ . '/services.php';
 require __DIR__ . '/payment.php';
 require __DIR__ . '/bookings.php';
+require __DIR__ . '/customers.php';
 require __DIR__ . '/invoices.php';

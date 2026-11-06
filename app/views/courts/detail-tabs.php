@@ -9,7 +9,7 @@
         <?php require __DIR__ . '/detail-information.php'; ?>
     </section>
     <section id="<?= e($tabPrefix . '-services') ?>" data-facility-panel="services" aria-labelledby="<?= e($tabPrefix . '-tab-services') ?>">
-        <h3>Dịch vụ & bảng giá</h3><p class="facility-tab-empty">Thông tin dịch vụ và bảng giá chưa được cập nhật. Vui lòng liên hệ cơ sở để được hỗ trợ.</p>
+        <?php require __DIR__ . '/detail-services.php'; ?>
     </section>
     <section id="<?= e($tabPrefix . '-images') ?>" data-facility-panel="images" aria-labelledby="<?= e($tabPrefix . '-tab-images') ?>">
         <h3>Hình ảnh cơ sở</h3>

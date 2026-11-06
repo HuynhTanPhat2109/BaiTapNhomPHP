@@ -555,7 +555,9 @@ CREATE TABLE chi_tiet_dich_vu_dat (
 
 CREATE TABLE hoa_don (
     ma_hoa_don INT AUTO_INCREMENT PRIMARY KEY,
+    so_hoa_don VARCHAR(50) NULL,
     ma_dat_san INT NOT NULL UNIQUE,
+    ma_thanh_toan INT NULL,
     ma_nhan_vien INT NULL,
     ngay_lap DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     tien_san DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -566,6 +568,9 @@ CREATE TABLE hoa_don (
         'HUY'
     ) NOT NULL DEFAULT 'DA_LAP',
     ghi_chu VARCHAR(500),
+
+    UNIQUE KEY uq_hoadon_so_hoa_don (so_hoa_don),
+    UNIQUE KEY uq_hoadon_ma_thanh_toan (ma_thanh_toan),
 
     CONSTRAINT fk_hoadon_datsan
         FOREIGN KEY (ma_dat_san)
@@ -642,6 +647,44 @@ CREATE TABLE thanh_toan (
         )
 
 ) ENGINE=InnoDB;
+
+
+-- =========================================================
+-- FK đặt sau thanh_toan vì hoa_don được tạo trước bảng được tham chiếu.
+-- Cài mới đã có cấu trúc của migration 20261102_hoa_don_fields.sql;
+-- migration đó chỉ dành cho database cũ chưa có hai cột hóa đơn này.
+-- =========================================================
+
+ALTER TABLE hoa_don
+    ADD CONSTRAINT fk_hoadon_thanhtoan
+        FOREIGN KEY (ma_thanh_toan)
+        REFERENCES thanh_toan(ma_thanh_toan);
+
+
+-- =========================================================
+-- 18. TAI KHOAN NGAN HANG CO SO
+-- Cùng cấu trúc migration 20261101_tai_khoan_ngan_hang_co_so.sql.
+-- =========================================================
+
+CREATE TABLE tai_khoan_ngan_hang_co_so (
+    ma_tk_ngan_hang INT AUTO_INCREMENT PRIMARY KEY,
+    ma_co_so INT NOT NULL,
+    ten_ngan_hang VARCHAR(100) NOT NULL,
+    ma_bin VARCHAR(10) NOT NULL,
+    so_tai_khoan VARCHAR(50) NOT NULL,
+    ten_chu_tai_khoan VARCHAR(150) NOT NULL,
+    la_mac_dinh TINYINT(1) NOT NULL DEFAULT 1,
+    trang_thai ENUM('HOAT_DONG', 'NGUNG') NOT NULL DEFAULT 'HOAT_DONG',
+    ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_tknh_coso (ma_co_so, la_mac_dinh, trang_thai),
+    UNIQUE KEY uq_coso_bin_stk (ma_co_so, ma_bin, so_tai_khoan),
+
+    CONSTRAINT fk_tknh_coso
+        FOREIGN KEY (ma_co_so)
+        REFERENCES co_so(ma_co_so)
+        ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 -- =========================================================

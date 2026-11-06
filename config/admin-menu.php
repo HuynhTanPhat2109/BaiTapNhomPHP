@@ -32,6 +32,7 @@ return [
             ['label' => 'Sân thể thao', 'icon' => 'court', 'route' => '/company/san', 'template' => 'admin/san'],
             ['label' => 'Bảng giá', 'icon' => 'price', 'route' => '/company/bang-gia', 'template' => 'admin/bang-gia'],
             ['label' => 'Quản lý nhân viên', 'icon' => 'people', 'route' => '/company/employees', 'template' => 'company/employees'],
+            ['label' => 'Quản lý khách hàng', 'icon' => 'people', 'route' => '/admin/customers', 'template' => 'admin/customers'],
             ['label' => 'Dịch vụ', 'icon' => 'service', 'route' => '/company/dich-vu', 'template' => 'services/page'],
         ],
         'VẬN HÀNH' => [
@@ -42,6 +43,9 @@ return [
         ],
     ],
     'QUAN_LY_CO_SO' => [
+        'CÔNG TY' => [
+            ['label' => 'Quản lý khách hàng', 'icon' => 'people', 'route' => '/admin/customers', 'template' => 'admin/customers'],
+        ],
         'CƠ SỞ' => [
             ['label' => 'Tổng quan cơ sở', 'icon' => 'overview', 'route' => '/facility', 'template' => 'facility/dashboard'],
             ['label' => 'Quản lý nhân viên', 'icon' => 'people', 'route' => '/facility/employees', 'template' => 'company/employees'],
@@ -58,6 +62,9 @@ return [
         ],
     ],
     'NHAN_VIEN' => [
+        'CÔNG TY' => [
+            ['label' => 'Quản lý khách hàng', 'icon' => 'people', 'route' => '/admin/customers', 'template' => 'admin/customers'],
+        ],
         'VẬN HÀNH' => [
             ['label' => 'Tổng quan ca trực', 'icon' => 'overview', 'route' => '/staff', 'template' => 'staff/dashboard'],
             ['label' => 'Thông tin cơ sở', 'icon' => 'location', 'route' => '/staff/co-so', 'template' => 'admin/co-so'],

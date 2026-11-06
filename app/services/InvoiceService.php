@@ -80,6 +80,10 @@ final class InvoiceService
             throw new ValidationException(['payment' => 'Không tìm thấy thông tin thanh toán tương ứng.']);
         }
 
+        if ((int) $payment['ma_dat_san'] !== (int) $booking['ma_dat_san']) {
+            throw new ValidationException(['payment' => 'Thanh toán không thuộc đơn đặt sân này.']);
+        }
+
         // Hóa đơn CHỈ được tạo khi thanh toán thực sự mang trạng thái THANH_CONG
         if ($payment['trang_thai'] !== 'THANH_CONG') {
             throw new ValidationException([

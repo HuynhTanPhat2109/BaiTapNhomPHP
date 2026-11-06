@@ -1,8 +1,8 @@
 <?php
 $isDaLap = ($invoice['trang_thai'] ?? '') === 'DA_LAP';
 ?>
-<link rel="stylesheet" href="<?= e(base_path() . '/assets/css/invoice.css?v=' . filemtime(dirname(__DIR__, 4) . '/public/assets/css/invoice.css')) ?>">
-<script src="<?= e(base_path() . '/assets/js/invoice.js?v=' . filemtime(dirname(__DIR__, 4) . '/public/assets/js/invoice.js')) ?>" defer></script>
+<link rel="stylesheet" href="<?= e(base_path() . '/assets/css/invoice.css?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/css/invoice.css')) ?>">
+<script src="<?= e(base_path() . '/assets/js/invoice.js?v=' . filemtime(dirname(__DIR__, 3) . '/public/assets/js/invoice.js')) ?>" defer></script>
 
 <section class="container" style="padding-top: 24px; padding-bottom: 50px; max-width: 900px;">
     
@@ -84,8 +84,8 @@ $isDaLap = ($invoice['trang_thai'] ?? '') === 'DA_LAP';
                                     <div class="pos-item-sub"><?= e($c['ten_bo_mon']) ?> &bull; <?= e(date('d/m', strtotime($c['ngay_choi']))) ?> (<?= e(substr($c['gio_bat_dau'], 0, 5)) ?>-<?= e(substr($c['gio_ket_thuc'], 0, 5)) ?>)</div>
                                 </td>
                                 <td style="text-align: center; font-weight: 600;">1</td>
-                                <td style="text-align: right;"><?= number_format((float) $c['gia_tien'], 0, ',', '.') ?></td>
-                                <td style="text-align: right; font-weight: 700;"><?= number_format((float) $c['gia_tien'], 0, ',', '.') ?></td>
+                                <td style="text-align: right;"><?= number_format((float) $c['don_gia'], 0, ',', '.') ?></td>
+                                <td style="text-align: right; font-weight: 700;"><?= number_format((float) $c['thanh_tien'], 0, ',', '.') ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>

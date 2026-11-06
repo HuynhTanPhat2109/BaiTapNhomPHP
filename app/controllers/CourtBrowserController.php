@@ -27,7 +27,8 @@ final class CourtBrowserController extends Controller
         if ($openedFacility === null && $this->input('facility') !== '') $openedFacility = $this->facility($this->input('facility'));
         $this->render('courts/index', ['title' => 'Tìm sân của bạn', 'filters' => $filters,
             'openedFacility' => $openedFacility, 'openedCourts' => $openedFacility ? $this->model()->courts((int) $openedFacility['ma_co_so']) : [],
-            'provinces' => AdministrativeAddress::provinces(), 'sports' => $this->model()->sports(), 'items' => $this->model()->facilities($filters)]);
+            'provinces' => AdministrativeAddress::provinces(), 'sports' => $this->model()->sports(), 'items' => $this->model()->facilities($filters)]
+            + ($openedFacility ? $this->serviceTab($openedFacility) : []));
     }
     private function facility(?string $id = null): array
     {
@@ -47,8 +48,27 @@ final class CourtBrowserController extends Controller
     {
         $facility = $this->facility();
         $courts = $this->model()->courts((int) $facility['ma_co_so']);
+        extract($this->serviceTab($facility), EXTR_SKIP);
         header('Content-Type: text/html; charset=UTF-8');
         require dirname(__DIR__) . '/views/courts/detail-panel.php';
+    }
+
+    private function serviceTab(array $facility): array
+    {
+        $facilityPriceDate = CourtScheduleService::now()->format('Y-m-d');
+        $model = $this->model();
+        $facilityPriceGroups = \App\Services\CourtPriceList::group($model->priceList((int) $facility['ma_co_so'], $facilityPriceDate));
+        // Only groups with a currently effective public price need a table.
+        foreach ($facilityPriceGroups as &$sport) {
+            $sport['types'] = array_filter($sport['types'], static fn($type) => (bool) $type['rates']);
+        }
+        unset($sport);
+        $facilityPriceGroups = array_values(array_filter($facilityPriceGroups, static fn($sport) => (bool) $sport['types']));
+        $facilityServiceGroups = [];
+        foreach ($model->publicServices((int) $facility['ma_co_so']) as $service) {
+            $facilityServiceGroups[$service['loai_dich_vu']][] = $service;
+        }
+        return compact('facilityPriceDate', 'facilityPriceGroups', 'facilityServiceGroups');
     }
     public function schedule(): void
     {

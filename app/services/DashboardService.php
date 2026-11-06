@@ -69,6 +69,7 @@ final class DashboardService
             $this->pdo->beginTransaction();
         }
         try {
+            $statusCutoff = (string) $this->pdo->query('SELECT CURRENT_TIMESTAMP')->fetchColumn();
             $companyOptions = $this->model->companies($scope['role'] === 'QUAN_TRI_TAP_DOAN' ? null : $scope['company']);
             $companies = array_values(array_filter($companyOptions, static fn($c) => $scope['company'] === null || (int) $c['ma_cong_ty'] === $scope['company']));
             if ($scope['company'] !== null && !$companies) throw new HttpException(403, 'Công ty không thuộc phạm vi hợp lệ.');
@@ -82,7 +83,7 @@ final class DashboardService
             $totals = $this->model->revenue($scope, $filters)[0];
             $lifetime = $this->model->revenue($scope, null)[0];
             $states = array_fill_keys(['CHO_XAC_NHAN', 'CHO_THANH_TOAN', 'DA_XAC_NHAN', 'HOAN_THANH', 'DA_HUY', 'HET_HAN'], 0);
-            foreach ($this->model->bookingStates($scope, $filters) as $row) $states[$row['status']] = (int) $row['total'];
+            foreach ($this->model->bookingStates($scope, $filters, $statusCutoff) as $row) $states[$row['status']] = (int) $row['total'];
             $groupType = $scope['role'] === 'QUAN_TRI_TAP_DOAN' ? 'company' : 'facility';
             $revenueRows = array_column($this->model->revenue($scope, $filters, $groupType), null, 'bucket');
             $groups = [];
@@ -107,7 +108,7 @@ final class DashboardService
             $result = compact('scope', 'filters', 'companies', 'facilities', 'companyOptions', 'facilityOptions', 'totals', 'lifetime', 'states', 'groups', 'groupType', 'timeline');
             $result['assets'] = $this->model->assets($scope) + ['companies' => $scope['facility'] === null ? count($companies) : count(array_unique(array_column($selected, 'ma_cong_ty'))),
                 'facilities' => count($selected), 'active_facilities' => count(array_filter($selected, static fn($f) => $f['trang_thai'] === 'HOAT_DONG'))];
-            $result['recent'] = $this->model->recent($scope, $filters);
+            $result['recent'] = $this->model->recent($scope, $filters, $statusCutoff);
             $result['popular_courts'] = $this->model->popular($scope, $filters, false);
             $result['popular_services'] = $this->model->popular($scope, $filters, true);
             $result['catalog'] = $scope['role'] === 'QUAN_TRI_TAP_DOAN' ? $this->model->catalog() : [];

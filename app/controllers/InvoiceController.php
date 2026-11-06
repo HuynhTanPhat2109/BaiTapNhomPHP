@@ -132,6 +132,6 @@ final class InvoiceController extends Controller
         $courts = $data['courts'];
         $services = $data['services'];
 
-        require dirname(__DIR__, 2) . '/views/admin/invoices/print.php';
+        require dirname(__DIR__) . '/views/admin/invoices/print.php';
     }
 }

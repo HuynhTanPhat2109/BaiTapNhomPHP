@@ -37,4 +37,46 @@ $id = $employee['ma_nhan_vien'] ?? '';
         <div class="catalog-actions"><button class="btn btn--primary" type="submit">Lưu thay đổi</button>
         <a class="btn btn--outline admin-back-link" href="<?= e(admin_context_url('/admin/employees')) ?>">Quay lại danh sách</a></div>
     </form>
+    <?php $workingStatus = $employee['trang_thai'] ?? ''; ?>
+
+    <?php if (in_array($workingStatus, ['DANG_LAM', 'DA_NGHI'], true)): ?>
+        <form
+            class="employee-status-form"
+            method="post"
+            action="<?= e(admin_context_url('/admin/employees/status')) ?>"
+            data-confirm="<?= e(
+                ($workingStatus === 'DANG_LAM'
+                    ? 'Cho nghỉ nhân viên '
+                    : 'Kích hoạt lại nhân viên ')
+                . ($employee['ho_ten'] ?? '') . '?'
+            ) ?>"
+        >
+            <?= csrf_field() ?>
+
+            <input type="hidden" name="id" value="<?= e($id) ?>">
+            <input
+                type="hidden"
+                name="trang_thai"
+                value="<?= $workingStatus === 'DANG_LAM' ? 'DA_NGHI' : 'DANG_LAM' ?>"
+            >
+
+            <button
+                class="employee-status-btn <?= $workingStatus === 'DANG_LAM'
+                    ? 'employee-status-btn--stop'
+                    : 'employee-status-btn--activate' ?>"
+                type="submit"
+            >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 3v9m-5-7a8 8 0 1 0 10 0"/>
+                </svg>
+
+                <span>
+                    <?= $workingStatus === 'DANG_LAM'
+                        ? 'Cho nghỉ'
+                        : 'Kích hoạt lại' ?>
+                </span>
+            </button>
+        </form>
+    <?php endif; ?>
+    <?php require __DIR__ . '/account-provision.php'; ?>
 </section>
