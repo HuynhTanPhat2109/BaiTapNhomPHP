@@ -16,6 +16,7 @@ $status = $value($old, 'trang_thai', 'HOAT_DONG');
     </div><a class="btn btn--outline workspace-back admin-back-link" href="<?= e(admin_context_url('/admin/companies')) ?>">Quay lại danh sách</a></header>
     <form class="catalog-form module-form workspace-form" method="post" action="<?= e(admin_context_url('/admin/companies')) ?>">
         <?= csrf_field() ?>
+        <input type="hidden" name="company_create_token" value="<?= e($createToken ?? '') ?>">
                 <section class="module-form-card">
         <h2 class="admin-form-heading"><span class="module-step" aria-hidden="true">1</span>Thông tin doanh nghiệp</h2>
         <div class="module-fields">

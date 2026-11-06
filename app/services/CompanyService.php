@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CongTyNhuongQuyen;
 use DateTimeImmutable;
 use PDO;
+use PDOException;
 
 final class CompanyService
 {
@@ -92,7 +93,15 @@ final class CompanyService
         if ($errors) {
             throw new ValidationException($errors);
         }
-        return $this->companies->create(self::normalize($data));
+        try {
+            return $this->companies->create(self::normalize($data));
+        } catch (PDOException $e) {
+            // The UNIQUE tax-ID index is authoritative, including concurrent requests.
+            if ((int) ($e->errorInfo[1] ?? 0) === 1062) {
+                throw new ValidationException(['ma_so_thue' => 'Mã số thuế đã được sử dụng bởi công ty khác.']);
+            }
+            throw $e;
+        }
     }
 
     public function update(int $id, array $data): bool
@@ -101,7 +110,14 @@ final class CompanyService
         if ($errors) {
             throw new ValidationException($errors);
         }
-        return $this->companies->update($id, self::normalize($data));
+        try {
+            return $this->companies->update($id, self::normalize($data));
+        } catch (PDOException $e) {
+            if ((int) ($e->errorInfo[1] ?? 0) === 1062) {
+                throw new ValidationException(['ma_so_thue' => 'Mã số thuế đã được sử dụng bởi công ty khác.']);
+            }
+            throw $e;
+        }
     }
 
     public function changeStatus(int $id, string $status): bool
