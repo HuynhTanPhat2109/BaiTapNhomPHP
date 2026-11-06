@@ -64,15 +64,28 @@ final class CompanyController extends Controller
     {
         $this->render('admin/companies/create', [
             'title' => 'Thêm công ty nhượng quyền',
+            'createToken' => $this->issueCreateToken(),
         ]);
     }
 
     public function store(): void
     {
         $data = $this->formData();
+        $token = $_POST['company_create_token'] ?? null;
+        $validToken = is_string($token) && preg_match('/\A[a-f0-9]{48}\z/', $token)
+            && array_key_exists($token, $_SESSION['company_create_requests'] ?? []);
 
         try {
-            $this->companies->create($data);
+            if (!$validToken) {
+                throw new ValidationException(['ten_cong_ty' => 'Phiên biểu mẫu không hợp lệ hoặc đã cũ. Vui lòng kiểm tra và gửi lại.']);
+            }
+            // PHP holds the session lock: repeated submissions of this form reuse its result.
+            if ($_SESSION['company_create_requests'][$token] !== null) {
+                admin_list_redirect('/admin/companies');
+                return;
+            }
+            $id = $this->companies->create($data);
+            $_SESSION['company_create_requests'][$token] = $id;
             $_SESSION['company_notice'] = 'Đã thêm công ty.';
             admin_list_redirect('/admin/companies');
         } catch (ValidationException $e) {
@@ -80,6 +93,7 @@ final class CompanyController extends Controller
                 'title' => 'Thêm công ty nhượng quyền',
                 'errors' => $e->errors,
                 'old' => $data,
+                'createToken' => $validToken ? $token : $this->issueCreateToken(),
             ], 422);
         }
     }
@@ -156,6 +170,16 @@ final class CompanyController extends Controller
             'ngay_tham_gia' => $_POST['ngay_tham_gia'] ?? '',
             'trang_thai' => $_POST['trang_thai'] ?? '',
         ];
+    }
+
+    private function issueCreateToken(): string
+    {
+        // Bound session storage, while allowing separate forms in multiple tabs.
+        $tokens = array_slice($_SESSION['company_create_requests'] ?? [], -19, null, true);
+        $token = bin2hex(random_bytes(24));
+        $tokens[$token] = null;
+        $_SESSION['company_create_requests'] = $tokens;
+        return $token;
     }
 
     private function companyId(): int
